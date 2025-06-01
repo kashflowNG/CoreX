@@ -51,7 +51,7 @@ export function BitcoinPrice() {
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 bg-bitcoin rounded-full flex items-center justify-center">
-              <span className="text-xs font-bold text-black">£</span>
+              <span className="text-xs font-bold text-black">₿</span>
             </div>
             <span className="font-semibold text-foreground">Bitcoin</span>
             <span className="text-muted-foreground text-sm">BTC</span>
