@@ -1,4 +1,6 @@
 import { users, investmentPlans, investments, type User, type InsertUser, type InvestmentPlan, type InsertInvestmentPlan, type Investment, type InsertInvestment } from "@shared/schema";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 
 export interface IStorage {
   // User operations
@@ -20,168 +22,95 @@ export interface IStorage {
   getActiveInvestments(): Promise<Investment[]>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private investmentPlans: Map<number, InvestmentPlan>;
-  private investments: Map<number, Investment>;
-  private currentUserId: number;
-  private currentPlanId: number;
-  private currentInvestmentId: number;
-
-  constructor() {
-    this.users = new Map();
-    this.investmentPlans = new Map();
-    this.investments = new Map();
-    this.currentUserId = 1;
-    this.currentPlanId = 1;
-    this.currentInvestmentId = 1;
-
-    // Initialize default investment plans
-    this.initializeDefaultPlans();
-    
-    // Create default admin user
-    this.initializeAdminUser();
-  }
-
-  private initializeDefaultPlans() {
-    const plans = [
-      {
-        name: "Bronze Plan",
-        minAmount: "0.001",
-        roiPercentage: 15,
-        durationDays: 7,
-        color: "orange",
-        isActive: true,
-      },
-      {
-        name: "Silver Plan",
-        minAmount: "0.005",
-        roiPercentage: 25,
-        durationDays: 14,
-        color: "gray",
-        isActive: true,
-      },
-      {
-        name: "Gold Plan",
-        minAmount: "0.01",
-        roiPercentage: 40,
-        durationDays: 30,
-        color: "gold",
-        isActive: true,
-      },
-    ];
-
-    plans.forEach(plan => {
-      const id = this.currentPlanId++;
-      const investmentPlan: InvestmentPlan = { ...plan, id };
-      this.investmentPlans.set(id, investmentPlan);
-    });
-  }
-
-  private initializeAdminUser() {
-    const adminId = this.currentUserId++;
-    const adminUser: User = {
-      id: adminId,
-      email: "admin@corex.com",
-      password: "21232f297a57a5a743894a0e4a801fc3", // "admin" hashed with SHA256
-      bitcoinAddress: "1AdminCorexWalletAddress123456",
-      privateKey: "admin_private_key_placeholder_for_demo",
-      balance: "0.5", // Give admin some initial balance
-      isAdmin: true,
-      createdAt: new Date(),
-    };
-    this.users.set(adminId, adminUser);
-  }
-
+export class DatabaseStorage implements IStorage {
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(user => user.email === email);
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user || undefined;
   }
 
   async createUser(insertUser: InsertUser & { bitcoinAddress: string; privateKey: string }): Promise<User> {
-    const id = this.currentUserId++;
-    const user: User = {
-      ...insertUser,
-      id,
-      balance: "0",
-      isAdmin: false,
-      createdAt: new Date(),
-    };
-    this.users.set(id, user);
+    const [user] = await db
+      .insert(users)
+      .values({
+        ...insertUser,
+        balance: "0",
+        isAdmin: false,
+      })
+      .returning();
     return user;
   }
 
   async updateUserBalance(id: number, balance: string): Promise<User | undefined> {
-    const user = this.users.get(id);
-    if (!user) return undefined;
-    
-    const updatedUser = { ...user, balance };
-    this.users.set(id, updatedUser);
-    return updatedUser;
+    const [user] = await db
+      .update(users)
+      .set({ balance })
+      .where(eq(users.id, id))
+      .returning();
+    return user || undefined;
   }
 
   async getAllUsers(): Promise<User[]> {
-    return Array.from(this.users.values());
+    return await db.select().from(users);
   }
 
   async getInvestmentPlans(): Promise<InvestmentPlan[]> {
-    return Array.from(this.investmentPlans.values()).filter(plan => plan.isActive);
+    return await db.select().from(investmentPlans).where(eq(investmentPlans.isActive, true));
   }
 
   async getInvestmentPlan(id: number): Promise<InvestmentPlan | undefined> {
-    return this.investmentPlans.get(id);
+    const [plan] = await db.select().from(investmentPlans).where(eq(investmentPlans.id, id));
+    return plan || undefined;
   }
 
   async createInvestmentPlan(insertPlan: InsertInvestmentPlan): Promise<InvestmentPlan> {
-    const id = this.currentPlanId++;
-    const plan: InvestmentPlan = { 
-      ...insertPlan, 
-      id,
-      isActive: insertPlan.isActive ?? true 
-    };
-    this.investmentPlans.set(id, plan);
+    const [plan] = await db
+      .insert(investmentPlans)
+      .values(insertPlan)
+      .returning();
     return plan;
   }
 
   async getUserInvestments(userId: number): Promise<Investment[]> {
-    return Array.from(this.investments.values()).filter(inv => inv.userId === userId);
+    return await db.select().from(investments).where(eq(investments.userId, userId));
   }
 
   async createInvestment(insertInvestment: InsertInvestment): Promise<Investment> {
-    const id = this.currentInvestmentId++;
     const plan = await this.getInvestmentPlan(insertInvestment.planId);
     if (!plan) throw new Error("Investment plan not found");
 
     const startDate = new Date();
     const endDate = new Date(startDate.getTime() + plan.durationDays * 24 * 60 * 60 * 1000);
 
-    const investment: Investment = {
-      ...insertInvestment,
-      id,
-      startDate,
-      endDate,
-      currentProfit: "0",
-      isActive: true,
-    };
-    this.investments.set(id, investment);
+    const [investment] = await db
+      .insert(investments)
+      .values({
+        ...insertInvestment,
+        startDate,
+        endDate,
+        currentProfit: "0",
+        isActive: true,
+      })
+      .returning();
     return investment;
   }
 
   async updateInvestmentProfit(id: number, profit: string): Promise<Investment | undefined> {
-    const investment = this.investments.get(id);
-    if (!investment) return undefined;
-    
-    const updatedInvestment = { ...investment, currentProfit: profit };
-    this.investments.set(id, updatedInvestment);
-    return updatedInvestment;
+    const [investment] = await db
+      .update(investments)
+      .set({ currentProfit: profit })
+      .where(eq(investments.id, id))
+      .returning();
+    return investment || undefined;
   }
 
   async getActiveInvestments(): Promise<Investment[]> {
-    return Array.from(this.investments.values()).filter(inv => inv.isActive);
+    return await db.select().from(investments).where(eq(investments.isActive, true));
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
