@@ -3,7 +3,13 @@ import { createServer, type Server } from "http";
 import { z } from "zod";
 import { storage } from "./storage";
 import { insertUserSchema, insertInvestmentSchema } from "@shared/schema";
+import * as bitcoin from "bitcoinjs-lib";
+import * as ecc from "tiny-secp256k1";
+import { ECPairFactory } from "ecpair";
 import crypto from "crypto";
+
+// Initialize ECPair with secp256k1
+const ECPair = ECPairFactory(ecc);
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -16,18 +22,24 @@ const updateBalanceSchema = z.object({
 });
 
 function generateBitcoinWallet() {
-  // Generate a random private key (32 bytes)
-  const privateKeyBytes = crypto.randomBytes(32);
-  const privateKey = privateKeyBytes.toString('hex');
+  // Generate a random private key using Bitcoin's secure methods
+  const keyPair = ECPair.makeRandom();
+  const privateKey = keyPair.toWIF();
   
-  // Generate a mock Bitcoin address for demo purposes
-  // In production, you would use proper Bitcoin address generation
-  const addressBytes = crypto.randomBytes(20);
-  const address = '1' + addressBytes.toString('hex').substring(0, 26);
+  // Generate P2PKH (Legacy) Bitcoin address
+  const { address } = bitcoin.payments.p2pkh({ 
+    pubkey: keyPair.publicKey,
+    network: bitcoin.networks.bitcoin // Use mainnet for real addresses
+  });
+  
+  if (!address) {
+    throw new Error('Failed to generate Bitcoin address');
+  }
   
   return {
     privateKey,
     address,
+    publicKey: keyPair.publicKey.toString('hex')
   };
 }
 
