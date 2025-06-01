@@ -3,7 +3,6 @@ import { createServer, type Server } from "http";
 import { z } from "zod";
 import { storage } from "./storage";
 import { insertUserSchema, insertInvestmentSchema } from "@shared/schema";
-import * as bitcoin from "bitcoinjs-lib";
 import crypto from "crypto";
 
 const loginSchema = z.object({
@@ -17,13 +16,18 @@ const updateBalanceSchema = z.object({
 });
 
 function generateBitcoinWallet() {
-  const keyPair = bitcoin.ECPair.makeRandom();
-  const privateKey = keyPair.toWIF();
-  const { address } = bitcoin.payments.p2pkh({ pubkey: keyPair.publicKey });
+  // Generate a random private key (32 bytes)
+  const privateKeyBytes = crypto.randomBytes(32);
+  const privateKey = privateKeyBytes.toString('hex');
+  
+  // Generate a mock Bitcoin address for demo purposes
+  // In production, you would use proper Bitcoin address generation
+  const addressBytes = crypto.randomBytes(20);
+  const address = '1' + addressBytes.toString('hex').substring(0, 26);
   
   return {
     privateKey,
-    address: address!,
+    address,
   };
 }
 

@@ -119,7 +119,11 @@ export class MemStorage implements IStorage {
 
   async createInvestmentPlan(insertPlan: InsertInvestmentPlan): Promise<InvestmentPlan> {
     const id = this.currentPlanId++;
-    const plan: InvestmentPlan = { ...insertPlan, id };
+    const plan: InvestmentPlan = { 
+      ...insertPlan, 
+      id,
+      isActive: insertPlan.isActive ?? true 
+    };
     this.investmentPlans.set(id, plan);
     return plan;
   }
