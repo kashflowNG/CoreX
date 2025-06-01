@@ -16,7 +16,7 @@ export default function History() {
   const { currency } = useCurrency();
   const { data: bitcoinPrice } = useBitcoinPrice();
 
-  const { data: investments, isLoading } = useQuery({
+  const { data: investments, isLoading } = useQuery<Investment[]>({
     queryKey: ['/api/investments/user', user?.id],
     enabled: !!user?.id,
   });
@@ -45,9 +45,9 @@ export default function History() {
               </Card>
             ))}
           </div>
-        ) : investments && Array.isArray(investments) && investments.length > 0 ? (
+        ) : investments && investments.length > 0 ? (
           <div className="space-y-4">
-            {(investments as (Investment & { planName?: string })[]).map((investment) => {
+            {investments.map((investment) => {
               const progress = calculateInvestmentProgress(new Date(investment.startDate), new Date(investment.endDate));
               const currentValue = parseFloat(investment.amount) + parseFloat(investment.currentProfit);
               const currencyPrice = currency === 'USD' ? bitcoinPrice?.usd.price : bitcoinPrice?.gbp.price;
@@ -60,7 +60,7 @@ export default function History() {
                       <div className="flex items-center gap-2">
                         <TrendingUp className="w-5 h-5 text-bitcoin" />
                         <CardTitle className="text-lg dark-text">
-                          {investment.planName || `Plan ${investment.planId}`}
+                          Investment Plan {investment.planId}
                         </CardTitle>
                       </div>
                       <Badge variant={investment.isActive ? "default" : "secondary"}>
