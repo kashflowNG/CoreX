@@ -33,15 +33,24 @@ function generateBitcoinWallet() {
 
 async function fetchBitcoinPrice() {
   try {
-    const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd&include_24hr_change=true');
+    const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd,gbp&include_24hr_change=true');
     const data = await response.json();
     return {
-      price: data.bitcoin.usd,
-      change24h: data.bitcoin.usd_24h_change,
+      usd: {
+        price: data.bitcoin.usd,
+        change24h: data.bitcoin.usd_24h_change,
+      },
+      gbp: {
+        price: data.bitcoin.gbp,
+        change24h: data.bitcoin.gbp_24h_change || data.bitcoin.usd_24h_change, // fallback to USD change if GBP not available
+      }
     };
   } catch (error) {
     console.error('Error fetching Bitcoin price:', error);
-    return { price: 0, change24h: 0 };
+    return { 
+      usd: { price: 0, change24h: 0 },
+      gbp: { price: 0, change24h: 0 }
+    };
   }
 }
 

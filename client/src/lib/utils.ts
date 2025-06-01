@@ -18,7 +18,24 @@ export function formatUSD(amount: number): string {
   }).format(amount);
 }
 
+export function formatGBP(amount: number): string {
+  return new Intl.NumberFormat('en-GB', {
+    style: 'currency',
+    currency: 'GBP',
+    minimumFractionDigits: 2,
+  }).format(amount);
+}
+
+export function formatCurrency(amount: number, currency: 'USD' | 'GBP'): string {
+  return currency === 'USD' ? formatUSD(amount) : formatGBP(amount);
+}
+
 export function calculateUSDValue(btcAmount: string | number, btcPrice: number): number {
+  const btc = typeof btcAmount === 'string' ? parseFloat(btcAmount) : btcAmount;
+  return btc * btcPrice;
+}
+
+export function calculateCurrencyValue(btcAmount: string | number, btcPrice: number): number {
   const btc = typeof btcAmount === 'string' ? parseFloat(btcAmount) : btcAmount;
   return btc * btcPrice;
 }

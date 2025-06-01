@@ -1,6 +1,11 @@
-export interface BitcoinPrice {
+export interface CurrencyPrice {
   price: number;
   change24h: number;
+}
+
+export interface BitcoinPrice {
+  usd: CurrencyPrice;
+  gbp: CurrencyPrice;
 }
 
 export async function fetchBitcoinPrice(): Promise<BitcoinPrice> {

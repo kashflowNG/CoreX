@@ -1,11 +1,14 @@
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { TrendingUp, TrendingDown } from "lucide-react";
 import { useBitcoinPrice } from "@/hooks/use-bitcoin-price";
-import { formatUSD } from "@/lib/utils";
+import { useCurrency } from "@/hooks/use-currency";
+import { formatCurrency } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function BitcoinPrice() {
   const { data: bitcoinPrice, isLoading } = useBitcoinPrice();
+  const { currency, toggleCurrency } = useCurrency();
 
   if (isLoading) {
     return (
@@ -43,7 +46,8 @@ export function BitcoinPrice() {
     );
   }
 
-  const isPositive = bitcoinPrice.change24h >= 0;
+  const currentPriceData = currency === 'USD' ? bitcoinPrice.usd : bitcoinPrice.gbp;
+  const isPositive = currentPriceData.change24h >= 0;
 
   return (
     <div className="px-4 mb-6">
@@ -56,22 +60,32 @@ export function BitcoinPrice() {
             <span className="font-semibold text-foreground">Bitcoin</span>
             <span className="text-muted-foreground text-sm">BTC</span>
           </div>
-          <div className={`flex items-center gap-1 text-sm ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
-            {isPositive ? (
-              <TrendingUp className="w-3 h-3" />
-            ) : (
-              <TrendingDown className="w-3 h-3" />
-            )}
-            <span>{isPositive ? '+' : ''}{bitcoinPrice.change24h.toFixed(2)}%</span>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={toggleCurrency}
+              className="h-6 px-2 text-xs border-bitcoin text-bitcoin hover:bg-bitcoin hover:text-black"
+            >
+              {currency}
+            </Button>
+            <div className={`flex items-center gap-1 text-sm ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
+              {isPositive ? (
+                <TrendingUp className="w-3 h-3" />
+              ) : (
+                <TrendingDown className="w-3 h-3" />
+              )}
+              <span>{isPositive ? '+' : ''}{currentPriceData.change24h.toFixed(2)}%</span>
+            </div>
           </div>
         </div>
         <div className="flex items-end justify-between">
           <div>
             <p className="text-2xl font-bold text-foreground">
-              {formatUSD(bitcoinPrice.price)}
+              {formatCurrency(currentPriceData.price, currency)}
             </p>
             <p className={`text-sm ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
-              {isPositive ? '+' : ''}{formatUSD(bitcoinPrice.price * bitcoinPrice.change24h / 100)} (24h)
+              {isPositive ? '+' : ''}{formatCurrency(currentPriceData.price * currentPriceData.change24h / 100, currency)} (24h)
             </p>
           </div>
           <div className={`w-16 h-8 rounded opacity-70 ${isPositive ? 'bg-gradient-to-r from-green-400 to-bitcoin' : 'bg-gradient-to-r from-red-400 to-red-600'}`}></div>

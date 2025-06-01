@@ -4,11 +4,13 @@ import { Copy, Check } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useBitcoinPrice } from "@/hooks/use-bitcoin-price";
-import { formatBitcoin, formatUSD, calculateUSDValue } from "@/lib/utils";
+import { useCurrency } from "@/hooks/use-currency";
+import { formatBitcoin, formatCurrency, calculateCurrencyValue } from "@/lib/utils";
 
 export function WalletBalance() {
   const { user } = useAuth();
   const { data: bitcoinPrice } = useBitcoinPrice();
+  const { currency } = useCurrency();
   const [copied, setCopied] = useState(false);
 
   if (!user) return null;
@@ -23,7 +25,8 @@ export function WalletBalance() {
     }
   };
 
-  const usdValue = bitcoinPrice ? calculateUSDValue(user.balance, bitcoinPrice.price) : 0;
+  const currentPriceData = bitcoinPrice ? (currency === 'USD' ? bitcoinPrice.usd : bitcoinPrice.gbp) : null;
+  const fiatValue = currentPriceData ? calculateCurrencyValue(user.balance, currentPriceData.price) : 0;
 
   return (
     <div className="px-4 mb-6">
@@ -35,7 +38,7 @@ export function WalletBalance() {
             {formatBitcoin(user.balance)} BTC
           </h2>
           <p className="text-orange-100 text-lg">
-            ≈ {formatUSD(usdValue)} USD
+            ≈ {formatCurrency(fiatValue, currency)}
           </p>
           <div className="mt-4 pt-4 border-t border-orange-200 border-opacity-30">
             <p className="text-orange-100 text-xs mb-1">Wallet Address</p>
