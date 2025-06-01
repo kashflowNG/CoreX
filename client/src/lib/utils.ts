@@ -15,6 +15,7 @@ export function formatUSD(amount: number): string {
     style: 'currency',
     currency: 'USD',
     minimumFractionDigits: 2,
+    currencyDisplay: 'symbol',
   }).format(amount);
 }
 

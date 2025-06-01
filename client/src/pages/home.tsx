@@ -11,6 +11,7 @@ import type { Investment } from "@shared/schema";
 import { formatBitcoin, calculateInvestmentProgress, formatDate } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 import { useLocation } from "wouter";
+import { useEffect } from "react";
 
 export default function Home() {
   const { user, logout } = useAuth();
@@ -21,8 +22,13 @@ export default function Home() {
     enabled: !!user,
   });
 
+  useEffect(() => {
+    if (!user) {
+      setLocation('/login');
+    }
+  }, [user, setLocation]);
+
   if (!user) {
-    setLocation('/login');
     return null;
   }
 
@@ -44,7 +50,7 @@ export default function Home() {
       <header className="px-4 py-3 flex justify-between items-center">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-full bg-bitcoin flex items-center justify-center">
-            <span className="text-black text-sm font-bold">₿</span>
+            <span className="text-black text-sm font-bold">£</span>
           </div>
           <div>
             <h1 className="text-xl font-bold text-foreground">CoreX</h1>
