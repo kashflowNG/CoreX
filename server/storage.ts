@@ -38,6 +38,9 @@ export class MemStorage implements IStorage {
 
     // Initialize default investment plans
     this.initializeDefaultPlans();
+    
+    // Create default admin user
+    this.initializeAdminUser();
   }
 
   private initializeDefaultPlans() {
@@ -73,6 +76,21 @@ export class MemStorage implements IStorage {
       const investmentPlan: InvestmentPlan = { ...plan, id };
       this.investmentPlans.set(id, investmentPlan);
     });
+  }
+
+  private initializeAdminUser() {
+    const adminId = this.currentUserId++;
+    const adminUser: User = {
+      id: adminId,
+      email: "admin@corex.com",
+      password: "21232f297a57a5a743894a0e4a801fc3", // "admin" hashed with SHA256
+      bitcoinAddress: "1AdminCorexWalletAddress123456",
+      privateKey: "admin_private_key_placeholder_for_demo",
+      balance: "0.5", // Give admin some initial balance
+      isAdmin: true,
+      createdAt: new Date(),
+    };
+    this.users.set(adminId, adminUser);
   }
 
   async getUser(id: number): Promise<User | undefined> {
