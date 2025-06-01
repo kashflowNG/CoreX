@@ -30,11 +30,13 @@ export default function AdminNotifications() {
 
   const sendNotificationMutation = useMutation({
     mutationFn: async (notificationData: { userId: number; title: string; message: string; type: string }) => {
-      return await apiRequest('/api/notifications', {
+      const response = await fetch('/api/notifications', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(notificationData),
       });
+      if (!response.ok) throw new Error('Failed to send notification');
+      return response.json();
     },
     onSuccess: () => {
       toast({
