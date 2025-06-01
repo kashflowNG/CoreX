@@ -21,6 +21,13 @@ const updateBalanceSchema = z.object({
   balance: z.string(),
 });
 
+const notificationSchema = z.object({
+  userId: z.number(),
+  title: z.string(),
+  message: z.string(),
+  type: z.enum(["info", "success", "warning", "error"]).optional(),
+});
+
 function generateBitcoinWallet() {
   // Generate a random private key using Bitcoin's secure methods
   const keyPair = ECPair.makeRandom();
