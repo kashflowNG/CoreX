@@ -2,12 +2,14 @@ import { useAuth } from "@/hooks/use-auth";
 import { WalletBalance } from "@/components/wallet-balance";
 import { BitcoinPrice } from "@/components/bitcoin-price";
 import { InvestmentPlans } from "@/components/investment-plans";
+import { BitcoinSync } from "@/components/bitcoin-sync";
 import { BottomNavigation } from "@/components/bottom-navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Bell, User, Send, QrCode, Plus, ArrowUpDown } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import type { Investment } from "@shared/schema";
+import { Badge } from "@/components/ui/badge";
 import { formatBitcoin, calculateInvestmentProgress, formatDate } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 import { useLocation } from "wouter";
@@ -19,6 +21,11 @@ export default function Home() {
   const { data: investments } = useQuery<Investment[]>({
     queryKey: ['/api/investments/user', user?.id],
     enabled: !!user,
+  });
+
+  const { data: unreadCount } = useQuery<{ count: number }>({
+    queryKey: ['/api/notifications', user?.id, 'unread-count'],
+    enabled: !!user?.id,
   });
 
   if (!user) {
@@ -52,8 +59,13 @@ export default function Home() {
           </div>
         </div>
         <div className="flex gap-3">
-          <Button variant="ghost" size="icon" className="rounded-full">
+          <Button variant="ghost" size="icon" className="rounded-full relative" onClick={() => setLocation('/notifications')}>
             <Bell className="w-4 h-4" />
+            {unreadCount && unreadCount.count > 0 && (
+              <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 text-xs p-0 flex items-center justify-center">
+                {unreadCount.count > 9 ? '9+' : unreadCount.count}
+              </Badge>
+            )}
           </Button>
           <Button variant="ghost" size="icon" className="rounded-full" onClick={logout}>
             <User className="w-4 h-4" />
@@ -66,6 +78,11 @@ export default function Home() {
 
       {/* Bitcoin Price */}
       <BitcoinPrice />
+
+      {/* Bitcoin Sync */}
+      <div className="px-4 mb-6">
+        <BitcoinSync />
+      </div>
 
       {/* Quick Actions */}
       <div className="px-4 mb-6">
