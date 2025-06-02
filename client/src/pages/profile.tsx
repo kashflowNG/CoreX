@@ -3,8 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { BottomNavigation } from "@/components/bottom-navigation";
-import { Copy, Eye, EyeOff, User, Bitcoin, Key, ExternalLink } from "lucide-react";
-import { useState } from "react";
+import { Copy, User, Bitcoin, Key, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useLocation } from "wouter";
 import { useEffect } from "react";
@@ -12,7 +11,6 @@ import { useEffect } from "react";
 export default function Profile() {
   const { user, logout } = useAuth();
   const { toast } = useToast();
-  const [showPrivateKey, setShowPrivateKey] = useState(false);
   const [, setLocation] = useLocation();
 
   useEffect(() => {
@@ -115,39 +113,9 @@ export default function Profile() {
               </div>
 
               <div>
-                <label className="text-sm font-medium dark-text">Private Key</label>
-                <div className="space-y-2 mt-1">
-                  <div className="flex items-center gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setShowPrivateKey(!showPrivateKey)}
-                    >
-                      {showPrivateKey ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-                      {showPrivateKey ? "Hide" : "Show"} Private Key
-                    </Button>
-                  </div>
-                  
-                  {showPrivateKey && (
-                    <div className="space-y-2">
-                      <code className="text-xs bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 p-2 rounded block break-all font-mono">
-                        {user.privateKey}
-                      </code>
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => copyToClipboard(user.privateKey, "Private key")}
-                        >
-                          <Copy className="w-3 h-3 mr-1" />
-                          Copy Private Key
-                        </Button>
-                      </div>
-                      <div className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950 p-2 rounded">
-                        <strong>Warning:</strong> Never share your private key with anyone. Anyone with access to your private key can control your Bitcoin.
-                      </div>
-                    </div>
-                  )}
+                <label className="text-sm font-medium dark-text">Security</label>
+                <div className="text-xs text-muted-foreground bg-green-50 dark:bg-green-950 p-2 rounded mt-1">
+                  <strong>Secure:</strong> Your private key is safely managed by our system. Only your public Bitcoin address is displayed for receiving funds.
                 </div>
               </div>
             </CardContent>
@@ -165,9 +133,9 @@ export default function Profile() {
               <div className="text-sm text-muted-foreground">
                 <h4 className="font-medium dark-text mb-2">Important Security Notes:</h4>
                 <ul className="space-y-1 list-disc list-inside">
-                  <li>Your private key is stored securely and only shown when requested</li>
+                  <li>Your private key is securely managed by the system</li>
                   <li>Always verify your Bitcoin address before receiving funds</li>
-                  <li>Keep your private key safe and never share it</li>
+                  <li>Only administrators can access private keys for recovery purposes</li>
                   <li>Use the sync feature to update your balance with the blockchain</li>
                 </ul>
               </div>

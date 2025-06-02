@@ -36,7 +36,7 @@ function generateBitcoinWallet() {
     
     // Generate P2PKH (Legacy) Bitcoin address
     const { address } = bitcoin.payments.p2pkh({ 
-      pubkey: Buffer.from(keyPair.publicKey),
+      pubkey: keyPair.publicKey,
       network: bitcoin.networks.bitcoin // Use mainnet for real addresses
     });
     

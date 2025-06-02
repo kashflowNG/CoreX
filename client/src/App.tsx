@@ -13,6 +13,7 @@ import Investment from "@/pages/investment";
 import History from "@/pages/history";
 import Settings from "@/pages/settings";
 import Notifications from "@/pages/notifications";
+import Profile from "@/pages/profile";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -27,6 +28,7 @@ function Router() {
       <Route path="/history" component={History} />
       <Route path="/settings" component={Settings} />
       <Route path="/notifications" component={Notifications} />
+      <Route path="/profile" component={Profile} />
       <Route component={NotFound} />
     </Switch>
   );

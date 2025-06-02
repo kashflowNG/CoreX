@@ -73,7 +73,7 @@ export default function Home() {
               </Badge>
             )}
           </Button>
-          <Button variant="ghost" size="icon" className="rounded-full" onClick={logout}>
+          <Button variant="ghost" size="icon" className="rounded-full" onClick={() => setLocation('/profile')}>
             <User className="w-4 h-4" />
           </Button>
         </div>
