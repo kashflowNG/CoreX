@@ -16,11 +16,13 @@ export function NotificationsPanel() {
 
   const { data: notifications, isLoading } = useQuery<Notification[]>({
     queryKey: ['/api/notifications', user?.id],
+    queryFn: () => fetch(`/api/notifications/${user?.id}`).then(res => res.json()),
     enabled: !!user?.id,
   });
 
   const { data: unreadCount } = useQuery<{ count: number }>({
     queryKey: ['/api/notifications', user?.id, 'unread-count'],
+    queryFn: () => fetch(`/api/notifications/${user?.id}/unread-count`).then(res => res.json()),
     enabled: !!user?.id,
   });
 
