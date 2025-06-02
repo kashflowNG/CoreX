@@ -25,18 +25,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async (email: string, password: string) => {
+    console.log('Attempting login for:', email);
+    
     const response = await fetch('/api/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
     });
 
+    console.log('Login response status:', response.status);
+
     if (!response.ok) {
       const error = await response.json();
+      console.error('Login failed:', error);
       throw new Error(error.message);
     }
 
     const userData = await response.json();
+    console.log('Login successful for user:', userData.email);
     setUser(userData);
     localStorage.setItem('corex_user', JSON.stringify(userData));
   };

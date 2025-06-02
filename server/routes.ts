@@ -400,6 +400,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
+      // Hash the provided password to compare with stored hash
       const hashedPassword = crypto.createHash('sha256').update(password).digest('hex');
       if (user.password !== hashedPassword) {
         return res.status(401).json({ message: "Invalid credentials" });
@@ -409,6 +410,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { privateKey, password: _, ...userResponse } = user;
       res.json(userResponse);
     } catch (error) {
+      console.error('Login error:', error);
       res.status(400).json({ message: error instanceof Error ? error.message : "Login failed" });
     }
   });
