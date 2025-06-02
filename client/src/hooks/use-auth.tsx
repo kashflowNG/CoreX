@@ -54,10 +54,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     // Store in localStorage first
     localStorage.setItem('corex_user', JSON.stringify(userData));
-    // Then update state
+    // Then update state synchronously
     setUser(userData);
     
-    console.log('User state updated, redirecting...');
+    console.log('User state updated:', userData.email);
+    
+    // Force a re-render by updating loading state
+    setIsLoading(false);
   };
 
   const register = async (email: string, password: string) => {

@@ -28,7 +28,10 @@ export default function Login() {
         description: "You have successfully logged in.",
       });
       console.log('Redirecting to home page...');
-      setLocation('/');
+      // Small delay to ensure state is updated before redirect
+      setTimeout(() => {
+        setLocation('/');
+      }, 100);
     } catch (error) {
       console.error('Login error in component:', error);
       toast({
