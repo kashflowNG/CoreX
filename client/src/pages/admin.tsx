@@ -13,6 +13,7 @@ import type { User } from "@shared/schema";
 import { formatBitcoin } from "@/lib/utils";
 import { BottomNavigation } from "@/components/bottom-navigation";
 import { useLocation } from "wouter";
+import { Users, DollarSign, TrendingUp, Edit, RefreshCw, Bitcoin, Send } from "lucide-react";
 
 interface AdminStats {
   totalUsers: number;
@@ -79,6 +80,36 @@ export default function Admin() {
     },
   });
 
+  const syncAllBalancesMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch('/api/admin/sync-all-balances', {
+        method: 'POST',
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message);
+      }
+
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/stats'] });
+      toast({
+        title: "Balances Synced",
+        description: data.message,
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Sync Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleUpdateBalance = (user: User) => {
     setSelectedUser(user);
     setNewBalance(user.balance);
@@ -139,6 +170,38 @@ export default function Admin() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Bitcoin Management */}
+        <Card className="dark-card dark-border">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-foreground">
+              <Bitcoin className="w-5 h-5" />
+              Bitcoin Management
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Button
+              onClick={() => syncAllBalancesMutation.mutate()}
+              disabled={syncAllBalancesMutation.isPending}
+              className="w-full bg-bitcoin hover:bg-bitcoin/90 text-black"
+            >
+              {syncAllBalancesMutation.isPending ? (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                  Syncing Balances...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Sync All User Balances with Blockchain
+                </>
+              )}
+            </Button>
+            <p className="text-xs text-muted-foreground mt-2">
+              This will check all user Bitcoin addresses on the blockchain and update their balances accordingly.
+            </p>
+          </CardContent>
+        </Card>
 
         {/* User Management */}
         <Card className="dark-card dark-border">
