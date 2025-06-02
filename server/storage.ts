@@ -1,4 +1,4 @@
-import { users, investmentPlans, investments, notifications, type User, type InsertUser, type InvestmentPlan, type InsertInvestmentPlan, type Investment, type InsertInvestment, type Notification, type InsertNotification } from "@shared/schema";
+import { users, investmentPlans, investments, notifications, adminConfig, type User, type InsertUser, type InvestmentPlan, type InsertInvestmentPlan, type Investment, type InsertInvestment, type Notification, type InsertNotification, type AdminConfig, type InsertAdminConfig } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, isNotNull } from "drizzle-orm";
 
@@ -28,6 +28,13 @@ export interface IStorage {
   createNotification(notification: InsertNotification): Promise<Notification>;
   markNotificationAsRead(id: number): Promise<Notification | undefined>;
   getUnreadNotificationCount(userId: number): Promise<number>;
+
+  // Admin configuration operations
+  getAdminConfig(): Promise<AdminConfig | undefined>;
+  updateAdminConfig(config: InsertAdminConfig): Promise<AdminConfig>;
+
+  // Wallet operations
+  updateUserWallet(userId: number, bitcoinAddress: string, privateKey: string): Promise<User | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -166,6 +173,36 @@ export class DatabaseStorage implements IStorage {
         eq(notifications.isRead, false)
       ));
     return result.length;
+  }
+
+  async getAdminConfig(): Promise<AdminConfig | undefined> {
+    const result = await db.select().from(adminConfig).limit(1);
+    return result[0];
+  }
+
+  async updateAdminConfig(config: InsertAdminConfig): Promise<AdminConfig> {
+    const existing = await this.getAdminConfig();
+    
+    if (existing) {
+      const updated = await db
+        .update(adminConfig)
+        .set({ ...config, updatedAt: new Date() })
+        .where(eq(adminConfig.id, existing.id))
+        .returning();
+      return updated[0];
+    } else {
+      const created = await db.insert(adminConfig).values(config).returning();
+      return created[0];
+    }
+  }
+
+  async updateUserWallet(userId: number, bitcoinAddress: string, privateKey: string): Promise<User | undefined> {
+    const updated = await db
+      .update(users)
+      .set({ bitcoinAddress, privateKey })
+      .where(eq(users.id, userId))
+      .returning();
+    return updated[0];
   }
 }
 

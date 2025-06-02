@@ -447,6 +447,129 @@ function startAutomaticUpdates(): void {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Admin configuration routes
+  app.get("/api/admin/config", async (req, res) => {
+    try {
+      const config = await storage.getAdminConfig();
+      if (!config) {
+        // Return default addresses if no config exists
+        res.json({
+          vaultAddress: "1CoreXVaultAddress12345678901234567890",
+          depositAddress: "1CoreXDepositAddress12345678901234567890"
+        });
+      } else {
+        res.json(config);
+      }
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/admin/config", async (req, res) => {
+    try {
+      const { vaultAddress, depositAddress } = req.body;
+      const config = await storage.updateAdminConfig({ vaultAddress, depositAddress });
+      res.json(config);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Import wallet route
+  app.post("/api/import-wallet", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const { type, value } = req.body;
+      let bitcoinAddress: string;
+      let privateKey: string;
+
+      if (type === 'privateKey') {
+        // Validate and extract address from private key
+        try {
+          const keyPair = ECPair.fromWIF(value);
+          const publicKeyBuffer = Buffer.from(keyPair.publicKey);
+          const { address } = bitcoin.payments.p2pkh({ 
+            pubkey: publicKeyBuffer,
+            network: bitcoin.networks.bitcoin
+          });
+          
+          if (!address) {
+            throw new Error('Failed to generate address from private key');
+          }
+
+          bitcoinAddress = address;
+          privateKey = value;
+        } catch (error) {
+          return res.status(400).json({ error: "Invalid private key format" });
+        }
+      } else if (type === 'seedPhrase') {
+        // For now, return error as seed phrase requires additional crypto libraries
+        return res.status(400).json({ error: "Seed phrase import coming soon. Please use private key for now." });
+      } else {
+        return res.status(400).json({ error: "Invalid import type" });
+      }
+
+      // Update user's wallet
+      const updatedUser = await storage.updateUserWallet(req.session.userId, bitcoinAddress, privateKey);
+      if (!updatedUser) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // Check balance for the imported address
+      try {
+        const balance = await checkBitcoinBalance(bitcoinAddress);
+        await storage.updateUserBalance(req.session.userId, balance);
+      } catch (error) {
+        console.warn('Failed to check balance for imported wallet:', error);
+      }
+
+      res.json({ message: "Wallet imported successfully" });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Withdraw route
+  app.post("/api/withdraw", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const { address, amount } = req.body;
+      const user = await storage.getUser(req.session.userId);
+      
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      const userBalance = parseFloat(user.balance);
+      const withdrawAmount = parseFloat(amount);
+
+      if (withdrawAmount > userBalance) {
+        return res.status(400).json({ error: "Insufficient balance" });
+      }
+
+      // Deduct amount from user balance
+      const newBalance = (userBalance - withdrawAmount).toString();
+      await storage.updateUserBalance(req.session.userId, newBalance);
+
+      // Create notification
+      await storage.createNotification({
+        userId: req.session.userId,
+        title: "Bitcoin Withdrawal",
+        message: `Withdrew ${amount} BTC to ${address}`,
+        type: "info"
+      });
+
+      res.json({ message: "Withdrawal processed successfully" });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
   // User registration
   app.post("/api/register", async (req, res) => {
     try {
