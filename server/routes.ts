@@ -1,6 +1,13 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { z } from "zod";
+
+// Extend Express Request type to include session
+declare module 'express-session' {
+  interface SessionData {
+    userId: number;
+  }
+}
 import { storage } from "./storage";
 import { insertUserSchema, insertInvestmentSchema } from "@shared/schema";
 import * as bitcoin from "bitcoinjs-lib";
@@ -657,11 +664,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create new wallet route
   app.post("/api/create-wallet", async (req, res) => {
     try {
-      if (!req.session?.userId) {
+      // Accept userId from session or request body
+      const userId = req.session?.userId || req.body?.userId;
+      
+      if (!userId) {
         return res.status(401).json({ error: "Not authenticated" });
       }
 
-      const user = await storage.getUser(req.session.userId);
+      const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ error: "User not found" });
       }
@@ -674,13 +684,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const wallet = generateBitcoinWallet();
       
       // Update user's wallet
-      const updatedUser = await storage.updateUserWallet(req.session.userId, wallet.address, wallet.privateKey);
+      const updatedUser = await storage.updateUserWallet(userId, wallet.address, wallet.privateKey);
       if (!updatedUser) {
         return res.status(500).json({ error: "Failed to create wallet" });
       }
 
       res.json({ message: "Wallet created successfully", address: wallet.address });
     } catch (error: any) {
+      console.error('Create wallet error:', error);
       res.status(500).json({ error: error.message });
     }
   });
@@ -700,6 +711,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (user.password !== hashedPassword) {
         return res.status(401).json({ message: "Invalid credentials" });
       }
+
+      // Set session userId for authentication
+      req.session.userId = user.id;
 
       // Don't return private key and password in response
       const { privateKey, password: _, ...userResponse } = user;

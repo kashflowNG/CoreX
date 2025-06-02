@@ -34,7 +34,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string) => {
     console.log('Attempting login for:', email);
-    
+
     const response = await fetch('/api/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -51,14 +51,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const userData = await response.json();
     console.log('Login successful for user:', userData.email);
-    
+
     // Store in localStorage first
     localStorage.setItem('corex_user', JSON.stringify(userData));
     // Then update state synchronously
     setUser(userData);
-    
+
     console.log('User state updated:', userData.email);
-    
+
     // Force a re-render by updating loading state
     setIsLoading(false);
   };

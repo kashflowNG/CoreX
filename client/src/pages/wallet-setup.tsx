@@ -17,7 +17,7 @@ export default function WalletSetup() {
 
   const createWalletMutation = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/create-wallet");
+      const res = await apiRequest("POST", "/api/create-wallet", { userId: user?.id });
       return res.json();
     },
     onSuccess: () => {
