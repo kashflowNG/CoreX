@@ -92,7 +92,7 @@ export function BitcoinSync() {
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium dark-text">Bitcoin Address:</span>
             <Badge variant="outline" className="font-mono text-xs">
-              {user.bitcoinAddress.substring(0, 8)}...{user.bitcoinAddress.substring(-8)}
+              {user.bitcoinAddress ? `${user.bitcoinAddress.substring(0, 8)}...${user.bitcoinAddress.substring(-6)}` : 'No wallet'}
             </Badge>
           </div>
           <div className="flex gap-2">
