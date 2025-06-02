@@ -207,7 +207,7 @@ export default function Admin() {
 
   const handleUpdatePlan = (user: User) => {
     setSelectedUser(user);
-    setSelectedPlan(user.currentPlanId?.toString() || "");
+    setSelectedPlan(user.currentPlanId?.toString() || "0");
     setPlanDialogOpen(true);
   };
 
@@ -223,7 +223,7 @@ export default function Admin() {
   const submitPlanUpdate = () => {
     if (!selectedUser) return;
 
-    const planId = selectedPlan === "" ? null : parseInt(selectedPlan);
+    const planId = selectedPlan === "0" ? null : parseInt(selectedPlan);
     updatePlanMutation.mutate({
       userId: selectedUser.id,
       planId,
@@ -549,8 +549,8 @@ export default function Admin() {
                   <SelectValue placeholder="Select a plan" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Free Plan (No automatic updates)</SelectItem>
-                  {investmentPlans?.map((plan) => (
+                  <SelectItem value="0">Free Plan (No automatic updates)</SelectItem>
+                  {investmentPlans?.filter(plan => plan.id && plan.id.toString().trim() !== '').map((plan) => (
                     <SelectItem key={plan.id} value={plan.id.toString()}>
                       {plan.name} - {(parseFloat(plan.dailyReturnRate) * 100).toFixed(2)}% daily
                     </SelectItem>
