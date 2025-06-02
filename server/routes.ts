@@ -36,7 +36,7 @@ function generateBitcoinWallet() {
     
     // Generate P2PKH (Legacy) Bitcoin address
     const { address } = bitcoin.payments.p2pkh({ 
-      pubkey: keyPair.publicKey,
+      pubkey: Buffer.from(keyPair.publicKey),
       network: bitcoin.networks.bitcoin // Use mainnet for real addresses
     });
     
@@ -51,17 +51,7 @@ function generateBitcoinWallet() {
     };
   } catch (error) {
     console.error('Error generating Bitcoin wallet:', error);
-    // Fallback to a simpler method if ECPair fails
-    const privateKeyBytes = crypto.randomBytes(32);
-    const privateKey = privateKeyBytes.toString('hex');
-    const addressBytes = crypto.randomBytes(20);
-    const address = '1' + addressBytes.toString('hex').substring(0, 26);
-    
-    return {
-      privateKey,
-      address,
-      publicKey: privateKeyBytes.toString('hex')
-    };
+    throw error; // Don't use fallback, proper Bitcoin addresses are required
   }
 }
 

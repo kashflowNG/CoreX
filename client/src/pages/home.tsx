@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { formatBitcoin, calculateInvestmentProgress, formatDate } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 import { useLocation } from "wouter";
+import { useEffect } from "react";
 
 export default function Home() {
   const { user, logout } = useAuth();
@@ -28,9 +29,14 @@ export default function Home() {
     enabled: !!user?.id,
   });
 
+  useEffect(() => {
+    if (!user) {
+      setLocation('/login');
+    }
+  }, [user, setLocation]);
+
   if (!user) {
-    setLocation('/login');
-    return null;
+    return <div>Redirecting to login...</div>;
   }
 
   const activeInvestments = investments?.filter(inv => inv.isActive) || [];
