@@ -43,15 +43,6 @@ export default function Home() {
 
   return (
     <div className="max-w-sm mx-auto bg-background min-h-screen relative">
-      {/* Status Bar */}
-      <div className="flex justify-between items-center px-4 py-2 text-sm text-muted-foreground">
-        <span>9:41</span>
-        <div className="flex gap-1">
-          <span>•••</span>
-          <span>📶</span>
-          <span>🔋</span>
-        </div>
-      </div>
 
       {/* Header */}
       <header className="px-4 py-3 flex justify-between items-center">
