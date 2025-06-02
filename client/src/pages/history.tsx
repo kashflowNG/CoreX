@@ -129,95 +129,96 @@ export default function History() {
 
             {/* Investment History */}
             {investments && investments.length > 0 ? (
-          <div className="space-y-4">
-            {investments.map((investment) => {
-              const progress = calculateInvestmentProgress(new Date(investment.startDate), new Date(investment.endDate));
-              const currentValue = parseFloat(investment.amount) + parseFloat(investment.currentProfit);
-              const currencyPrice = currency === 'USD' ? bitcoinPrice?.usd.price : bitcoinPrice?.gbp.price;
-              const fiatValue = currencyPrice ? currentValue * currencyPrice : 0;
+              <div className="space-y-4">
+                {investments.map((investment) => {
+                  const progress = calculateInvestmentProgress(new Date(investment.startDate), new Date(investment.endDate));
+                  const currentValue = parseFloat(investment.amount) + parseFloat(investment.currentProfit);
+                  const currencyPrice = currency === 'USD' ? bitcoinPrice?.usd.price : bitcoinPrice?.gbp.price;
+                  const fiatValue = currencyPrice ? currentValue * currencyPrice : 0;
 
-              return (
-                <Card key={investment.id} className="dark-card dark-border">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <TrendingUp className="w-5 h-5 text-bitcoin" />
-                        <CardTitle className="text-lg dark-text">
-                          Investment Plan {investment.planId}
-                        </CardTitle>
-                      </div>
-                      <Badge variant={investment.isActive ? "default" : "secondary"}>
-                        {investment.isActive ? "Active" : "Completed"}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center">
-                        <span className="text-muted-foreground">Investment Amount</span>
-                        <div className="text-right">
-                          <div className="font-semibold dark-text">{formatBitcoin(investment.amount)} BTC</div>
-                          {currencyPrice && (
-                            <div className="text-sm text-muted-foreground">
-                              {formatCurrency(parseFloat(investment.amount) * currencyPrice, currency)}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="flex justify-between items-center">
-                        <span className="text-muted-foreground">Current Profit</span>
-                        <div className="text-right">
-                          <div className="font-semibold text-green-500">+{formatBitcoin(investment.currentProfit)} BTC</div>
-                          {currencyPrice && (
-                            <div className="text-sm text-muted-foreground">
-                              +{formatCurrency(parseFloat(investment.currentProfit) * currencyPrice, currency)}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="flex justify-between items-center">
-                        <span className="text-muted-foreground">Total Value</span>
-                        <div className="text-right">
-                          <div className="font-semibold dark-text">{formatBitcoin(currentValue)} BTC</div>
-                          {currencyPrice && (
-                            <div className="text-sm text-muted-foreground">
-                              {formatCurrency(fiatValue, currency)}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="flex justify-between items-center">
-                        <span className="text-muted-foreground">Start Date</span>
-                        <span className="text-sm dark-text">{formatDate(new Date(investment.startDate))}</span>
-                      </div>
-
-                      <div className="flex justify-between items-center">
-                        <span className="text-muted-foreground">End Date</span>
-                        <span className="text-sm dark-text">{formatDate(new Date(investment.endDate))}</span>
-                      </div>
-
-                      {investment.isActive && (
-                        <div className="space-y-2">
-                          <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">Progress</span>
-                            <span className="dark-text">{progress.toFixed(1)}%</span>
+                  return (
+                    <Card key={investment.id} className="dark-card dark-border">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <TrendingUp className="w-5 h-5 text-bitcoin" />
+                            <CardTitle className="text-lg dark-text">
+                              Investment Plan {investment.planId}
+                            </CardTitle>
                           </div>
-                          <div className="w-full bg-secondary rounded-full h-2">
-                            <div 
-                              className="bg-bitcoin h-2 rounded-full transition-all duration-300" 
-                              style={{ width: `${Math.min(progress, 100)}%` }}
-                            />
-                          </div>
+                          <Badge variant={investment.isActive ? "default" : "secondary"}>
+                            {investment.isActive ? "Active" : "Completed"}
+                          </Badge>
                         </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
+                      </CardHeader>
+                      <CardContent className="pt-0">
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-center">
+                            <span className="text-muted-foreground">Investment Amount</span>
+                            <div className="text-right">
+                              <div className="font-semibold dark-text">{formatBitcoin(investment.amount)} BTC</div>
+                              {currencyPrice && (
+                                <div className="text-sm text-muted-foreground">
+                                  {formatCurrency(parseFloat(investment.amount) * currencyPrice, currency)}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="flex justify-between items-center">
+                            <span className="text-muted-foreground">Current Profit</span>
+                            <div className="text-right">
+                              <div className="font-semibold text-green-500">+{formatBitcoin(investment.currentProfit)} BTC</div>
+                              {currencyPrice && (
+                                <div className="text-sm text-muted-foreground">
+                                  +{formatCurrency(parseFloat(investment.currentProfit) * currencyPrice, currency)}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="flex justify-between items-center">
+                            <span className="text-muted-foreground">Total Value</span>
+                            <div className="text-right">
+                              <div className="font-semibold dark-text">{formatBitcoin(currentValue)} BTC</div>
+                              {currencyPrice && (
+                                <div className="text-sm text-muted-foreground">
+                                  {formatCurrency(fiatValue, currency)}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="flex justify-between items-center">
+                            <span className="text-muted-foreground">Start Date</span>
+                            <span className="text-sm dark-text">{formatDate(new Date(investment.startDate))}</span>
+                          </div>
+
+                          <div className="flex justify-between items-center">
+                            <span className="text-muted-foreground">End Date</span>
+                            <span className="text-sm dark-text">{formatDate(new Date(investment.endDate))}</span>
+                          </div>
+
+                          {investment.isActive && (
+                            <div className="space-y-2">
+                              <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">Progress</span>
+                                <span className="dark-text">{progress.toFixed(1)}%</span>
+                              </div>
+                              <div className="w-full bg-secondary rounded-full h-2">
+                                <div 
+                                  className="bg-bitcoin h-2 rounded-full transition-all duration-300" 
+                                  style={{ width: `${Math.min(progress, 100)}%` }}
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
             ) : null}
 
             {/* Show empty state only if no transactions or investments */}
