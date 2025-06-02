@@ -240,26 +240,85 @@ async function fetchBitcoinPrice() {
   }
 }
 
-// Automatic price update system for investment plans
+// Advanced investment growth system
 async function processAutomaticUpdates(): Promise<void> {
   try {
-    console.log('Processing automatic price updates...');
+    console.log('Processing automatic investment updates...');
     
-    // Get all users
+    // Process individual investments first
+    const activeInvestments = await storage.getActiveInvestments();
+    
+    for (const investment of activeInvestments) {
+      const plan = await storage.getInvestmentPlan(investment.planId);
+      if (!plan || !plan.isActive) continue;
+      
+      // Calculate investment growth based on plan's daily return rate
+      const dailyRate = parseFloat(plan.dailyReturnRate);
+      const intervalRate = dailyRate / 144; // 10-minute intervals
+      
+      const investmentAmount = parseFloat(investment.amount);
+      const currentProfit = parseFloat(investment.currentProfit);
+      const profitIncrease = investmentAmount * intervalRate;
+      
+      if (profitIncrease > 0) {
+        const newProfit = currentProfit + profitIncrease;
+        await storage.updateInvestmentProfit(investment.id, newProfit.toFixed(8));
+        
+        // Update user's balance with the profit
+        const user = await storage.getUser(investment.userId);
+        if (user) {
+          const currentBalance = parseFloat(user.balance);
+          const newBalance = currentBalance + profitIncrease;
+          await storage.updateUserBalance(investment.userId, newBalance.toFixed(8));
+          
+          // Create detailed investment notification
+          const transactionId = crypto.randomBytes(32).toString('hex');
+          const marketSources = [
+            "Bitcoin Mining Pool",
+            "DeFi Yield Farming",
+            "Arbitrage Trading",
+            "Market Maker Bot",
+            "Liquidity Provision"
+          ];
+          const randomSource = marketSources[Math.floor(Math.random() * marketSources.length)];
+          
+          await storage.createNotification({
+            userId: investment.userId,
+            title: "Investment Profit Generated",
+            message: `💰 +${profitIncrease.toFixed(8)} BTC earned from ${randomSource}
+
+Investment ID: #${investment.id}
+Plan: ${plan.name}
+Principal: ${investmentAmount.toFixed(8)} BTC
+Total Profit: ${newProfit.toFixed(8)} BTC
+Rate: ${(dailyRate * 100).toFixed(2)}% daily
+
+Transaction ID: ${transactionId.substring(0, 16)}...
+Your balance: ${newBalance.toFixed(8)} BTC`,
+            type: 'success',
+            isRead: false,
+          });
+          
+          console.log(`Investment #${investment.id} earned +${profitIncrease.toFixed(8)} BTC for user ${investment.userId}`);
+        }
+      }
+    }
+    
+    // Process general user plan growth (for non-investment based growth)
     const allUsers = await storage.getAllUsers();
     
     for (const user of allUsers) {
       const currentBalance = parseFloat(user.balance);
       
-      if (user.currentPlanId) {
-        // User has an active investment plan
+      // Only apply general growth if user has no active investments but has a plan
+      const userInvestments = await storage.getUserInvestments(user.id);
+      const hasActiveInvestments = userInvestments.some(inv => inv.isActive);
+      
+      if (user.currentPlanId && !hasActiveInvestments && currentBalance > 0) {
         const plan = await storage.getInvestmentPlan(user.currentPlanId);
         if (!plan || !plan.isActive) continue;
         
-        // Calculate price increase based on plan's daily return rate
         const dailyRate = parseFloat(plan.dailyReturnRate);
-        
-        // Calculate increase per interval (daily rate / 144 intervals per day for 10-minute intervals)
         const intervalRate = dailyRate / 144;
         const increase = currentBalance * intervalRate;
         
@@ -267,36 +326,27 @@ async function processAutomaticUpdates(): Promise<void> {
           const newBalance = currentBalance + increase;
           await storage.updateUserBalance(user.id, newBalance.toFixed(8));
           
-          // Create notification for the price update
           const transactionId = crypto.randomBytes(32).toString('hex');
-          const marketSources = [
-            "Binance Trading Bot",
-            "Coinbase Pro Algorithm", 
-            "Market Volatility Profit",
-            "DeFi Yield Farming",
-            "Arbitrage Trading"
-          ];
+          const marketSources = ["Trading Bot", "Market Analysis", "Auto Trading"];
           const randomSource = marketSources[Math.floor(Math.random() * marketSources.length)];
           
           await storage.createNotification({
             userId: user.id,
-            title: "Investment Profit Generated",
-            message: `💰 +${increase.toFixed(8)} BTC earned from ${randomSource}
+            title: "Plan Bonus Earned",
+            message: `🎯 +${increase.toFixed(8)} BTC bonus from ${randomSource}
 
 Plan: ${plan.name}
-Rate: ${(intervalRate * 100).toFixed(4)}% per interval
+Rate: ${(dailyRate * 100).toFixed(2)}% daily
 Transaction ID: ${transactionId.substring(0, 16)}...
 
-Your new balance: ${newBalance.toFixed(8)} BTC`,
+Your balance: ${newBalance.toFixed(8)} BTC`,
             type: 'success',
             isRead: false,
           });
-          
-          console.log(`Updated balance for user ${user.id}: +${increase.toFixed(8)} BTC (${plan.name})`);
         }
-      } else {
-        // User is on free plan - apply 3.67% increase every 10 minutes
-        const freeplanRate = 0.0367; // 3.67% per 10 minutes
+      } else if (!user.currentPlanId && currentBalance > 0) {
+        // Free users get smaller growth
+        const freeplanRate = 0.0001; // 0.01% per 10 minutes
         const increase = currentBalance * freeplanRate;
         
         if (increase > 0 && currentBalance > 0) {
