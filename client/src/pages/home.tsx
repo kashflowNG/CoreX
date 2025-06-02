@@ -21,6 +21,7 @@ export default function Home() {
   const { data: investments } = useQuery<Investment[]>({
     queryKey: ['/api/investments/user', user?.id],
     enabled: !!user?.id,
+    refetchInterval: 30000, // Refresh every 30 seconds
   });
 
   const { data: investmentPlans } = useQuery<InvestmentPlan[]>({
