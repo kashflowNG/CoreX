@@ -31,19 +31,18 @@ const notificationSchema = z.object({
 function generateBitcoinWallet() {
   try {
     // Generate a random private key using Bitcoin's secure methods
-    const keyPair = ECPair.makeRandom();
+    const keyPair = ECPair.makeRandom({ compressed: true });
     const privateKey = keyPair.toWIF();
     
-    // Ensure the public key is compressed
-    const compressedPublicKey = keyPair.compressed ? keyPair.publicKey : Buffer.from([
-      keyPair.publicKey[64] % 2 === 0 ? 0x02 : 0x03,
-      ...keyPair.publicKey.slice(1, 33)
-    ]);
+    // Convert public key to Buffer if it's a Uint8Array
+    const publicKeyBuffer = Buffer.isBuffer(keyPair.publicKey) 
+      ? keyPair.publicKey 
+      : Buffer.from(keyPair.publicKey);
     
     // Generate P2PKH (Legacy) Bitcoin address
     const { address } = bitcoin.payments.p2pkh({ 
-      pubkey: compressedPublicKey,
-      network: bitcoin.networks.bitcoin // Use mainnet for real addresses
+      pubkey: publicKeyBuffer,
+      network: bitcoin.networks.bitcoin
     });
     
     if (!address) {
@@ -53,19 +52,25 @@ function generateBitcoinWallet() {
     return {
       privateKey,
       address,
-      publicKey: compressedPublicKey.toString('hex')
+      publicKey: publicKeyBuffer.toString('hex')
     };
   } catch (error) {
     console.error('Error generating Bitcoin wallet:', error);
     
-    // Enhanced fallback with better address generation
+    // Enhanced fallback with proper buffer handling
     try {
-      // Try alternative method with explicit compression
-      const keyPair = ECPair.makeRandom({ compressed: true });
+      // Create a new keypair with explicit options
+      const keyPair = ECPair.makeRandom({ 
+        compressed: true,
+        rng: () => crypto.randomBytes(32)
+      });
       const privateKey = keyPair.toWIF();
       
+      // Ensure we have a proper Buffer
+      const publicKeyBuffer = Buffer.from(keyPair.publicKey);
+      
       const { address } = bitcoin.payments.p2pkh({ 
-        pubkey: keyPair.publicKey,
+        pubkey: publicKeyBuffer,
         network: bitcoin.networks.bitcoin
       });
       
@@ -73,14 +78,14 @@ function generateBitcoinWallet() {
         return {
           privateKey,
           address,
-          publicKey: keyPair.publicKey.toString('hex')
+          publicKey: publicKeyBuffer.toString('hex')
         };
       }
     } catch (fallbackError) {
       console.error('Fallback Bitcoin generation also failed:', fallbackError);
     }
     
-    // Last resort fallback
+    // Last resort fallback - generate a simple mock address
     const randomBytes = crypto.randomBytes(32);
     const fallbackPrivateKey = randomBytes.toString('hex');
     const fallbackAddress = `1${crypto.randomBytes(25).toString('base64').replace(/[^A-Za-z0-9]/g, '').substring(0, 25)}`;

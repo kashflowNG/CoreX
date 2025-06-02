@@ -17,18 +17,23 @@ function testBitcoinGeneration() {
       const keyPair = ECPair.makeRandom({ compressed: true });
       const privateKey = keyPair.toWIF();
       
+      // Convert public key to Buffer if it's a Uint8Array
+      const publicKeyBuffer = Buffer.isBuffer(keyPair.publicKey) 
+        ? keyPair.publicKey 
+        : Buffer.from(keyPair.publicKey);
+      
       // Generate P2PKH (Legacy) Bitcoin address
       const { address } = bitcoin.payments.p2pkh({ 
-        pubkey: keyPair.publicKey,
+        pubkey: publicKeyBuffer,
         network: bitcoin.networks.bitcoin
       });
       
       console.log('Private Key:', privateKey);
-      console.log('Public Key:', keyPair.publicKey.toString('hex'));
+      console.log('Public Key:', publicKeyBuffer.toString('hex'));
       console.log('Bitcoin Address:', address);
       console.log('Address Type:', address.startsWith('1') ? 'P2PKH (Legacy)' : 'Other');
       console.log('Key Compressed:', keyPair.compressed);
-      console.log('Public Key Length:', keyPair.publicKey.length);
+      console.log('Public Key Length:', publicKeyBuffer.length);
       console.log('Valid:', !!address && address.length > 0);
     }
     
