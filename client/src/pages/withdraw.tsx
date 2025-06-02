@@ -9,7 +9,7 @@ import { useLocation } from "wouter";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { formatBitcoin } from "@/lib/utils";
-import { useMutation, queryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 
 export default function Withdraw() {
@@ -19,13 +19,12 @@ export default function Withdraw() {
   const [address, setAddress] = useState("");
   const [amount, setAmount] = useState("");
 
+  const queryClient = useQueryClient();
+
   const withdrawMutation = useMutation({
     mutationFn: async (data: { address: string; amount: string }) => {
-      return apiRequest("/api/withdraw", {
-        method: "POST",
-        body: JSON.stringify(data),
-        headers: { "Content-Type": "application/json" },
-      });
+      const res = await apiRequest("POST", "/api/withdraw", data);
+      return res.json();
     },
     onSuccess: () => {
       toast({
