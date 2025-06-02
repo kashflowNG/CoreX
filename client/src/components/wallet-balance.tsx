@@ -13,7 +13,7 @@ export function WalletBalance() {
   const { currency } = useCurrency();
   const [copied, setCopied] = useState(false);
 
-  if (!user) return null;
+  if (!user || !user.hasWallet || !user.bitcoinAddress) return null;
 
   const copyAddress = async () => {
     try {

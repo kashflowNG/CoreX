@@ -17,6 +17,7 @@ import Profile from "@/pages/profile";
 import Withdraw from "@/pages/withdraw";
 import Deposit from "@/pages/deposit";
 import ImportWallet from "@/pages/import-wallet";
+import WalletSetup from "@/pages/wallet-setup";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -35,6 +36,7 @@ function Router() {
       <Route path="/withdraw" component={Withdraw} />
       <Route path="/deposit" component={Deposit} />
       <Route path="/import-wallet" component={ImportWallet} />
+      <Route path="/wallet-setup" component={WalletSetup} />
       <Route component={NotFound} />
     </Switch>
   );
