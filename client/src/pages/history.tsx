@@ -23,6 +23,7 @@ export default function History() {
 
   const { data: notifications, isLoading: loadingNotifications } = useQuery<Notification[]>({
     queryKey: ['/api/notifications', user?.id],
+    queryFn: () => fetch(`/api/notifications/${user?.id}`).then(res => res.json()),
     enabled: !!user?.id,
   });
 

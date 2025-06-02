@@ -30,6 +30,7 @@ export default function Home() {
 
   const { data: unreadCount } = useQuery<{ count: number }>({
     queryKey: ['/api/notifications', user?.id, 'unread-count'],
+    queryFn: () => fetch(`/api/notifications/${user?.id}/unread-count`).then(res => res.json()),
     enabled: !!user?.id,
   });
 
