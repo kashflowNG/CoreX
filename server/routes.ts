@@ -478,18 +478,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Import wallet route
   app.post("/api/import-wallet", async (req, res) => {
     try {
-      if (!req.session.userId) {
-        return res.status(401).json({ error: "Not authenticated" });
+      const { type, value, userId } = req.body;
+      
+      if (!userId) {
+        return res.status(401).json({ error: "User ID is required" });
       }
 
-      const { type, value } = req.body;
       let bitcoinAddress: string;
       let privateKey: string;
 
       if (type === 'privateKey') {
-        // Validate and extract address from private key
+        // Validate and extract address from private key - support multiple formats
         try {
-          const keyPair = ECPair.fromWIF(value);
+          let keyPair;
+          let cleanValue = value.trim();
+          
+          // Try different private key formats
+          if (cleanValue.length === 64) {
+            // Raw hex format (64 characters)
+            const buffer = Buffer.from(cleanValue, 'hex');
+            keyPair = ECPair.fromPrivateKey(buffer);
+          } else if (cleanValue.length === 66 && cleanValue.startsWith('0x')) {
+            // Hex with 0x prefix
+            const buffer = Buffer.from(cleanValue.slice(2), 'hex');
+            keyPair = ECPair.fromPrivateKey(buffer);
+          } else {
+            // WIF format (starts with 5, K, L, or c)
+            keyPair = ECPair.fromWIF(cleanValue);
+          }
+          
           const publicKeyBuffer = Buffer.from(keyPair.publicKey);
           const { address } = bitcoin.payments.p2pkh({ 
             pubkey: publicKeyBuffer,
@@ -501,19 +518,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
 
           bitcoinAddress = address;
-          privateKey = value;
+          privateKey = keyPair.toWIF(); // Always store in WIF format
         } catch (error) {
-          return res.status(400).json({ error: "Invalid private key format" });
+          return res.status(400).json({ error: "Invalid private key format. Supported formats: WIF (5/K/L/c...), hex (64 chars), or hex with 0x prefix" });
         }
       } else if (type === 'seedPhrase') {
-        // For now, return error as seed phrase requires additional crypto libraries
-        return res.status(400).json({ error: "Seed phrase import coming soon. Please use private key for now." });
+        return res.status(400).json({ error: "Seed phrase import is not yet supported. Please use private key import." });
       } else {
         return res.status(400).json({ error: "Invalid import type" });
       }
 
       // Update user's wallet
-      const updatedUser = await storage.updateUserWallet(req.session.userId, bitcoinAddress, privateKey);
+      const updatedUser = await storage.updateUserWallet(userId, bitcoinAddress, privateKey);
       if (!updatedUser) {
         return res.status(404).json({ error: "User not found" });
       }
@@ -521,7 +537,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check balance for the imported address
       try {
         const balance = await checkBitcoinBalance(bitcoinAddress);
-        await storage.updateUserBalance(req.session.userId, balance);
+        await storage.updateUserBalance(userId, balance);
       } catch (error) {
         console.warn('Failed to check balance for imported wallet:', error);
       }

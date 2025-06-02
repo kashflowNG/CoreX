@@ -23,7 +23,10 @@ export default function ImportWallet() {
 
   const importWalletMutation = useMutation({
     mutationFn: async (data: { type: 'privateKey' | 'seedPhrase'; value: string }) => {
-      const res = await apiRequest("POST", "/api/import-wallet", data);
+      const res = await apiRequest("POST", "/api/import-wallet", {
+        ...data,
+        userId: user?.id
+      });
       return res.json();
     },
     onSuccess: () => {
@@ -112,7 +115,7 @@ export default function ImportWallet() {
                   <Input
                     id="privateKey"
                     type="password"
-                    placeholder="Enter your private key (starts with 5, K, or L)"
+                    placeholder="Enter private key (WIF: 5/K/L/c..., Hex: 64 chars, or 0x...)"
                     value={privateKey}
                     onChange={(e) => setPrivateKey(e.target.value)}
                     className="mt-1 font-mono"
@@ -128,7 +131,7 @@ export default function ImportWallet() {
                 </Button>
 
                 <div className="text-xs text-muted-foreground space-y-1">
-                  <p>• Private key must be in WIF format</p>
+                  <p>• Supports WIF, hex (64 chars), or 0x-prefixed formats</p>
                   <p>• Your funds will be accessible immediately</p>
                   <p>• Keep your private key secure</p>
                 </div>
