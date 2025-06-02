@@ -220,6 +220,16 @@ export default function Admin() {
     });
   };
 
+  const submitPlanUpdate = () => {
+    if (!selectedUser) return;
+
+    const planId = selectedPlan === "" ? null : parseInt(selectedPlan);
+    updatePlanMutation.mutate({
+      userId: selectedUser.id,
+      planId,
+    });
+  };
+
   const togglePrivateKey = (userId: number) => {
     if (showPrivateKeys[userId]) {
       // Hide the private key
@@ -348,23 +358,45 @@ export default function Admin() {
                   <TableRow>
                     <TableHead className="text-muted-foreground">Email</TableHead>
                     <TableHead className="text-muted-foreground">Balance</TableHead>
+                    <TableHead className="text-muted-foreground">Investment Plan</TableHead>
                     <TableHead className="text-muted-foreground">Actions</TableHead>
                     <TableHead className="text-muted-foreground">Private Key</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {users?.map((user) => (
-                    <TableRow key={user.id}>
+                  {users?.map((user) => {
+                    const userPlan = investmentPlans?.find(plan => plan.id === user.currentPlanId);
+                    return (
+                      <TableRow key={user.id}>
                       <TableCell className="text-foreground">{user.email}</TableCell>
                       <TableCell className="text-bitcoin">{formatBitcoin(user.balance)} BTC</TableCell>
+                      <TableCell className="text-foreground">
+                        {userPlan ? (
+                          <span className="px-2 py-1 rounded text-xs" style={{ backgroundColor: userPlan.color + '20', color: userPlan.color }}>
+                            {userPlan.name}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground text-xs">Free Plan</span>
+                        )}
+                      </TableCell>
                       <TableCell>
-                        <Button
-                          size="sm"
-                          onClick={() => handleUpdateBalance(user)}
-                          className="bg-bitcoin hover:bg-bitcoin/90 text-black"
-                        >
-                          Update
-                        </Button>
+                        <div className="flex gap-1">
+                          <Button
+                            size="sm"
+                            onClick={() => handleUpdateBalance(user)}
+                            className="bg-bitcoin hover:bg-bitcoin/90 text-black"
+                          >
+                            <Edit className="w-3 h-3" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={() => handleUpdatePlan(user)}
+                            variant="outline"
+                            className="border-muted"
+                          >
+                            <Settings className="w-3 h-3" />
+                          </Button>
+                        </div>
                       </TableCell>
                       <TableCell>
                        {showPrivateKeys[user.id] ? (
@@ -394,7 +426,8 @@ export default function Admin() {
                         )}
                       </TableCell>
                     </TableRow>
-                  ))}
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
@@ -486,6 +519,54 @@ export default function Admin() {
                 {updateBalanceMutation.isPending ? "Updating..." : "Update Balance"}
               </Button>
               <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Update Plan Dialog */}
+      <Dialog open={planDialogOpen} onOpenChange={setPlanDialogOpen}>
+        <DialogContent className="dark-card dark-border">
+          <DialogHeader>
+            <DialogTitle className="text-foreground">Update Investment Plan</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="userEmail">User Email</Label>
+              <Input
+                id="userEmail"
+                value={selectedUser?.email || ""}
+                disabled
+                className="bg-muted"
+              />
+            </div>
+            <div>
+              <Label htmlFor="plan">Investment Plan</Label>
+              <Select value={selectedPlan} onValueChange={setSelectedPlan}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a plan" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Free Plan (No automatic updates)</SelectItem>
+                  {investmentPlans?.map((plan) => (
+                    <SelectItem key={plan.id} value={plan.id.toString()}>
+                      {plan.name} - {(parseFloat(plan.dailyReturnRate) * 100).toFixed(2)}% daily
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                onClick={submitPlanUpdate}
+                disabled={updatePlanMutation.isPending}
+                className="bg-bitcoin hover:bg-bitcoin/90 text-black flex-1"
+              >
+                {updatePlanMutation.isPending ? "Updating..." : "Update Plan"}
+              </Button>
+              <Button variant="outline" onClick={() => setPlanDialogOpen(false)}>
                 Cancel
               </Button>
             </div>
