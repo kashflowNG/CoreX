@@ -5,7 +5,7 @@ import { BitcoinSync } from "@/components/bitcoin-sync";
 import { BottomNavigation } from "@/components/bottom-navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Bell, User, Send, QrCode, Plus, ArrowUpDown } from "lucide-react";
+import { Bell, User, Send, QrCode, Plus, ArrowUpDown, TrendingUp, Activity } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import type { Investment, InvestmentPlan } from "@shared/schema";
 import { Badge } from "@/components/ui/badge";
@@ -19,8 +19,8 @@ export default function Home() {
   const [, setLocation] = useLocation();
 
   const { data: investments } = useQuery<Investment[]>({
-    queryKey: ['/api/investments/user', user.id],
-    enabled: !!user,
+    queryKey: ['/api/investments/user', user?.id],
+    enabled: !!user?.id,
   });
 
   const { data: investmentPlans } = useQuery<InvestmentPlan[]>({
