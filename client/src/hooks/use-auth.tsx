@@ -18,8 +18,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Check for stored user data
     const storedUser = localStorage.getItem('corex_user');
+    console.log('AuthProvider initializing, stored user:', storedUser ? 'found' : 'not found');
     if (storedUser) {
-      setUser(JSON.parse(storedUser));
+      try {
+        const userData = JSON.parse(storedUser);
+        console.log('Restoring user from localStorage:', userData.email);
+        setUser(userData);
+      } catch (error) {
+        console.error('Error parsing stored user data:', error);
+        localStorage.removeItem('corex_user');
+      }
     }
     setIsLoading(false);
   }, []);
@@ -43,8 +51,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const userData = await response.json();
     console.log('Login successful for user:', userData.email);
-    setUser(userData);
+    
+    // Store in localStorage first
     localStorage.setItem('corex_user', JSON.stringify(userData));
+    // Then update state
+    setUser(userData);
+    
+    console.log('User state updated, redirecting...');
   };
 
   const register = async (email: string, password: string) => {

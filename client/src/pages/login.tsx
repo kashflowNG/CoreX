@@ -20,13 +20,17 @@ export default function Login() {
     setIsLoading(true);
 
     try {
+      console.log('Starting login process...');
       await login(email, password);
+      console.log('Login completed, showing success toast...');
       toast({
         title: "Welcome back!",
         description: "You have successfully logged in.",
       });
+      console.log('Redirecting to home page...');
       setLocation('/');
     } catch (error) {
+      console.error('Login error in component:', error);
       toast({
         title: "Login failed",
         description: error instanceof Error ? error.message : "Invalid credentials",
