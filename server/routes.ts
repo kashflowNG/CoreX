@@ -28,6 +28,11 @@ const notificationSchema = z.object({
   type: z.enum(["info", "success", "warning", "error"]).optional(),
 });
 
+const updatePlanSchema = z.object({
+  userId: z.number(),
+  planId: z.number().nullable(),
+});
+
 function generateBitcoinWallet() {
   try {
     // Generate a random private key using Bitcoin's secure methods
@@ -233,6 +238,77 @@ async function fetchBitcoinPrice() {
       gbp: { price: 0, change24h: 0 }
     };
   }
+}
+
+// Automatic price update system for investment plans
+async function processAutomaticUpdates(): Promise<void> {
+  try {
+    console.log('Processing automatic price updates...');
+    
+    // Get all users with active investment plans
+    const usersWithPlans = await storage.getUsersWithPlans();
+    
+    for (const user of usersWithPlans) {
+      if (!user.currentPlanId) continue;
+      
+      const plan = await storage.getInvestmentPlan(user.currentPlanId);
+      if (!plan || !plan.isActive) continue;
+      
+      // Calculate price increase based on plan's daily return rate
+      const currentBalance = parseFloat(user.balance);
+      const dailyRate = parseFloat(plan.dailyReturnRate);
+      
+      // Calculate increase per interval (daily rate / 144 intervals per day for 10-minute intervals)
+      const intervalRate = dailyRate / 144;
+      const increase = currentBalance * intervalRate;
+      
+      if (increase > 0) {
+        const newBalance = currentBalance + increase;
+        await storage.updateUserBalance(user.id, newBalance.toFixed(8));
+        
+        // Create notification for the price update
+        const transactionId = crypto.randomBytes(32).toString('hex');
+        const marketSources = [
+          "Binance Trading Bot",
+          "Coinbase Pro Algorithm", 
+          "Market Volatility Profit",
+          "DeFi Yield Farming",
+          "Arbitrage Trading"
+        ];
+        const randomSource = marketSources[Math.floor(Math.random() * marketSources.length)];
+        
+        await storage.createNotification({
+          userId: user.id,
+          title: "Investment Profit Generated",
+          message: `💰 +${increase.toFixed(8)} BTC earned from ${randomSource}
+
+Plan: ${plan.name}
+Rate: ${(intervalRate * 100).toFixed(4)}% per interval
+Transaction ID: ${transactionId.substring(0, 16)}...
+
+Your new balance: ${newBalance.toFixed(8)} BTC`,
+          type: 'success',
+          isRead: false,
+        });
+        
+        console.log(`Updated balance for user ${user.id}: +${increase.toFixed(8)} BTC (${plan.name})`);
+      }
+    }
+  } catch (error) {
+    console.error('Error processing automatic updates:', error);
+  }
+}
+
+// Global update intervals storage
+const updateIntervals = new Map<number, NodeJS.Timeout>();
+
+function startAutomaticUpdates(): void {
+  console.log('Starting automatic price update system...');
+  
+  // Set up the main 10-minute interval for investment plan updates
+  setInterval(processAutomaticUpdates, 10 * 60 * 1000); // 10 minutes
+  
+  console.log('Automatic updates will run every 10 minutes');
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {

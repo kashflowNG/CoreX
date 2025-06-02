@@ -1,6 +1,6 @@
 import { users, investmentPlans, investments, notifications, type User, type InsertUser, type InvestmentPlan, type InsertInvestmentPlan, type Investment, type InsertInvestment, type Notification, type InsertNotification } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, isNotNull } from "drizzle-orm";
 
 export interface IStorage {
   // User operations
@@ -76,7 +76,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUsersWithPlans(): Promise<User[]> {
-    return await db.select().from(users).where(users.currentPlanId !== null);
+    return await db.select().from(users).where(isNotNull(users.currentPlanId));
   }
 
   async getInvestmentPlans(): Promise<InvestmentPlan[]> {
