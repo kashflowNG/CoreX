@@ -302,6 +302,52 @@ Your new balance: ${newBalance.toFixed(8)} BTC`,
 // Global update intervals storage
 const updateIntervals = new Map<number, NodeJS.Timeout>();
 
+async function initializeDefaultPlans(): Promise<void> {
+  try {
+    const existingPlans = await storage.getInvestmentPlans();
+    if (existingPlans.length === 0) {
+      console.log('Creating default investment plans...');
+      
+      await storage.createInvestmentPlan({
+        name: "Starter Plan",
+        minAmount: "0.001",
+        roiPercentage: 5,
+        durationDays: 30,
+        color: "#3B82F6",
+        updateIntervalMinutes: 10,
+        dailyReturnRate: "0.0020",
+        isActive: true,
+      });
+      
+      await storage.createInvestmentPlan({
+        name: "Growth Plan",
+        minAmount: "0.01",
+        roiPercentage: 15,
+        durationDays: 60,
+        color: "#10B981",
+        updateIntervalMinutes: 10,
+        dailyReturnRate: "0.0050",
+        isActive: true,
+      });
+      
+      await storage.createInvestmentPlan({
+        name: "Premium Plan",
+        minAmount: "0.1",
+        roiPercentage: 25,
+        durationDays: 90,
+        color: "#F59E0B",
+        updateIntervalMinutes: 10,
+        dailyReturnRate: "0.0080",
+        isActive: true,
+      });
+      
+      console.log('Default investment plans created successfully');
+    }
+  } catch (error) {
+    console.error('Error initializing default plans:', error);
+  }
+}
+
 function startAutomaticUpdates(): void {
   console.log('Starting automatic price update system...');
   
@@ -667,6 +713,51 @@ Your new balance: ${newBalance.toFixed(8)} BTC`,
     }
   });
 
+  // Update user investment plan
+  app.post("/api/admin/update-plan", async (req, res) => {
+    try {
+      const { userId, planId } = updatePlanSchema.parse(req.body);
+      
+      const user = await storage.updateUserPlan(userId, planId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Create notification about plan change
+      if (planId) {
+        const plan = await storage.getInvestmentPlan(planId);
+        if (plan) {
+          await storage.createNotification({
+            userId,
+            title: "Investment Plan Updated",
+            message: `🎯 Your investment plan has been updated to: ${plan.name}
+
+Daily Return Rate: ${(parseFloat(plan.dailyReturnRate) * 100).toFixed(2)}%
+Updates every: ${plan.updateIntervalMinutes} minutes
+
+You will now receive automatic profit updates based on your new plan.`,
+            type: 'success',
+            isRead: false,
+          });
+        }
+      } else {
+        await storage.createNotification({
+          userId,
+          title: "Investment Plan Removed",
+          message: `📋 Your investment plan has been removed.
+
+You are now on the free plan and will no longer receive automatic profit updates.`,
+          type: 'info',
+          isRead: false,
+        });
+      }
+
+      res.json({ message: "Plan updated successfully", user });
+    } catch (error) {
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to update plan" });
+    }
+  });
+
   // Test Bitcoin wallet generation (admin only)
   app.post("/api/admin/test-bitcoin-generation", async (req, res) => {
     try {
@@ -715,5 +806,12 @@ Your new balance: ${newBalance.toFixed(8)} BTC`,
   });
 
   const httpServer = createServer(app);
+  
+  // Initialize default investment plans if they don't exist
+  await initializeDefaultPlans();
+  
+  // Start the automatic price update system
+  startAutomaticUpdates();
+  
   return httpServer;
 }

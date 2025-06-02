@@ -9,11 +9,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
-import type { User } from "@shared/schema";
+import type { User, InvestmentPlan } from "@shared/schema";
 import { formatBitcoin } from "@/lib/utils";
 import { BottomNavigation } from "@/components/bottom-navigation";
 import { useLocation } from "wouter";
-import { Users, DollarSign, TrendingUp, Edit, RefreshCw, Bitcoin, Send, Copy, Key } from "lucide-react";
+import { Users, DollarSign, TrendingUp, Edit, RefreshCw, Bitcoin, Send, Copy, Key, Settings } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface AdminStats {
   totalUsers: number;
@@ -28,6 +29,8 @@ export default function Admin() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [newBalance, setNewBalance] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [planDialogOpen, setPlanDialogOpen] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<string>("");
   const [userPrivateKeys, setUserPrivateKeys] = useState<{ [userId: number]: string }>({});
   const [showPrivateKeys, setShowPrivateKeys] = useState<{ [userId: number]: boolean }>({});
 
@@ -45,6 +48,10 @@ export default function Admin() {
 
   const { data: users } = useQuery<User[]>({
     queryKey: ['/api/admin/users'],
+  });
+
+  const { data: investmentPlans } = useQuery<InvestmentPlan[]>({
+    queryKey: ['/api/investment-plans'],
   });
 
   const updateBalanceMutation = useMutation({
@@ -158,10 +165,50 @@ export default function Admin() {
     },
   });
 
+  const updatePlanMutation = useMutation({
+    mutationFn: async ({ userId, planId }: { userId: number; planId: number | null }) => {
+      const response = await fetch('/api/admin/update-plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, planId }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message);
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
+      setPlanDialogOpen(false);
+      setSelectedPlan("");
+      setSelectedUser(null);
+      toast({
+        title: "Plan Updated",
+        description: "User investment plan has been successfully updated.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Update Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleUpdateBalance = (user: User) => {
     setSelectedUser(user);
     setNewBalance(user.balance);
     setDialogOpen(true);
+  };
+
+  const handleUpdatePlan = (user: User) => {
+    setSelectedUser(user);
+    setSelectedPlan(user.currentPlanId?.toString() || "");
+    setPlanDialogOpen(true);
   };
 
   const submitBalanceUpdate = () => {
