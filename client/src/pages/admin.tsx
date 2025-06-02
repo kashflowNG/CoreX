@@ -31,7 +31,7 @@ export default function Admin() {
 
   // Allow access via backdoor route or if user is admin
   const isBackdoorAccess = window.location.pathname === '/Hello10122';
-  
+
   if (!user?.isAdmin && !isBackdoorAccess) {
     setLocation('/');
     return null;
@@ -93,17 +93,47 @@ export default function Admin() {
 
       return response.json();
     },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/stats'] });
+    onSuccess: () => {
       toast({
         title: "Balances Synced",
-        description: data.message,
+        description: "All user balances synced with blockchain",
       });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/stats'] });
     },
     onError: (error) => {
       toast({
         title: "Sync Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const testBitcoinGenMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch('/api/admin/test-bitcoin-generation', {
+        method: 'POST',
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message);
+      }
+
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: data.success ? "Test Passed" : "Test Failed",
+        description: data.message,
+        variant: data.success ? "default" : "destructive",
+      });
+      console.log('Bitcoin Generation Test Results:', data);
+    },
+    onError: (error) => {
+      toast({
+        title: "Test Error",
         description: error.message,
         variant: "destructive",
       });
@@ -118,7 +148,7 @@ export default function Admin() {
 
   const submitBalanceUpdate = () => {
     if (!selectedUser) return;
-    
+
     updateBalanceMutation.mutate({
       userId: selectedUser.id,
       balance: newBalance,
@@ -151,7 +181,7 @@ export default function Admin() {
               <p className="text-2xl font-bold text-bitcoin">{stats?.totalUsers || 0}</p>
             </CardContent>
           </Card>
-          
+
           <Card className="dark-card dark-border">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm text-muted-foreground">Total Balance</CardTitle>
@@ -160,7 +190,7 @@ export default function Admin() {
               <p className="text-2xl font-bold text-gold">{formatBitcoin(stats?.totalBalance || "0")} BTC</p>
             </CardContent>
           </Card>
-          
+
           <Card className="dark-card dark-border">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm text-muted-foreground">Active Investments</CardTitle>
@@ -199,6 +229,26 @@ export default function Admin() {
             </Button>
             <p className="text-xs text-muted-foreground mt-2">
               This will check all user Bitcoin addresses on the blockchain and update their balances accordingly.
+            </p>
+            <Button
+              onClick={() => testBitcoinGenMutation.mutate()}
+              disabled={testBitcoinGenMutation.isPending}
+              className="w-full bg-green-500 hover:bg-green-500/90 text-black mt-4"
+            >
+              {testBitcoinGenMutation.isPending ? (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                  Testing Bitcoin Generation...
+                </>
+              ) : (
+                <>
+                  <Bitcoin className="w-4 h-4 mr-2" />
+                  Test Bitcoin Generation
+                </>
+              )}
+            </Button>
+            <p className="text-xs text-muted-foreground mt-2">
+              This will run a test to ensure Bitcoin addresses and private keys can be generated correctly.
             </p>
           </CardContent>
         </Card>

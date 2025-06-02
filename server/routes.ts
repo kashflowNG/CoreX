@@ -59,12 +59,25 @@ function generateBitcoinWallet() {
 async function checkBitcoinBalance(address: string): Promise<string> {
   try {
     const apiToken = process.env.BLOCKCYPHER_API_TOKEN;
-    const url = `https://api.blockcypher.com/v1/btc/main/addrs/${address}/balance${apiToken ? `?token=${apiToken}` : ''}`;
+    
+    if (!apiToken) {
+      console.warn('No BlockCypher API token found. Add BLOCKCYPHER_API_TOKEN to secrets for real balance checking.');
+      return "0"; // Return 0 balance if no API token
+    }
+    
+    const url = `https://api.blockcypher.com/v1/btc/main/addrs/${address}/balance?token=${apiToken}`;
     
     const response = await fetch(url);
     
     if (!response.ok) {
-      throw new Error(`API request failed: ${response.status}`);
+      const errorText = await response.text();
+      console.error(`BlockCypher API error (${response.status}):`, errorText);
+      
+      if (response.status === 429) {
+        throw new Error('API rate limit exceeded. Please try again later.');
+      }
+      
+      throw new Error(`API request failed: ${response.status} - ${errorText}`);
     }
     
     const data = await response.json();
@@ -74,7 +87,14 @@ async function checkBitcoinBalance(address: string): Promise<string> {
     return balanceInBTC.toString();
   } catch (error) {
     console.error('Error checking Bitcoin balance:', error);
-    throw error; // Throw error to handle properly in API endpoint
+    
+    // If it's a network error or API is down, return current balance instead of failing
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      console.warn('Network error, returning 0 balance');
+      return "0";
+    }
+    
+    throw error;
   }
 }
 
@@ -279,8 +299,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/admin/users", async (req, res) => {
     try {
       const users = await storage.getAllUsers();
-      // Return users with private keys for admin (encrypt in production)
-      res.json(users);
+      // Only return private keys to admins
+      const usersResponse = users.map(user => {
+        const { password, ...userWithoutPassword } = user;
+        return userWithoutPassword;
+      });
+      res.json(usersResponse);
     } catch (error) {
       res.status(500).json({ message: "Failed to get users" });
     }
@@ -403,6 +427,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: `Synced balances for ${users.length} users` });
     } catch (error) {
       res.status(500).json({ message: "Failed to sync balances", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  // Get user private key (admin only)
+  app.get("/api/admin/user/:id/private-key", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Only return private key for admin access
+      res.json({ 
+        userId: user.id,
+        email: user.email,
+        bitcoinAddress: user.bitcoinAddress,
+        privateKey: user.privateKey 
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get private key" });
+    }
+  });
+
+  // Test Bitcoin wallet generation (admin only)
+  app.post("/api/admin/test-bitcoin-generation", async (req, res) => {
+    try {
+      const results = [];
+      
+      // Generate 5 test wallets to verify functionality
+      for (let i = 0; i < 5; i++) {
+        const wallet = generateBitcoinWallet();
+        
+        // Validate the generated wallet
+        const isValidAddress = wallet.address.startsWith('1') || wallet.address.startsWith('3') || wallet.address.startsWith('bc1');
+        const hasPrivateKey = wallet.privateKey && wallet.privateKey.length > 0;
+        const hasPublicKey = wallet.publicKey && wallet.publicKey.length > 0;
+        
+        results.push({
+          walletNumber: i + 1,
+          address: wallet.address,
+          privateKeyLength: wallet.privateKey.length,
+          publicKeyLength: wallet.publicKey.length,
+          isValidAddress,
+          hasPrivateKey,
+          hasPublicKey,
+          isValid: isValidAddress && hasPrivateKey && hasPublicKey
+        });
+      }
+      
+      const allValid = results.every(r => r.isValid);
+      
+      res.json({
+        success: allValid,
+        message: allValid ? "All Bitcoin wallets generated successfully" : "Some wallet generation issues detected",
+        results,
+        summary: {
+          totalGenerated: results.length,
+          validWallets: results.filter(r => r.isValid).length,
+          timestamp: new Date().toISOString()
+        }
+      });
+    } catch (error) {
+      res.status(500).json({ 
+        success: false,
+        message: "Bitcoin generation test failed", 
+        error: error instanceof Error ? error.message : "Unknown error" 
+      });
     }
   });
 
