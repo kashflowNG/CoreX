@@ -53,20 +53,20 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async updateUserBalance(id: number, balance: string): Promise<User | undefined> {
+  async updateUserBalance(userId: number, balance: string): Promise<User | undefined> {
     const [user] = await db
       .update(users)
       .set({ balance })
-      .where(eq(users.id, id))
+      .where(eq(users.id, userId))
       .returning();
     return user || undefined;
   }
 
-  async updateUserPlan(id: number, planId: number | null): Promise<User | undefined> {
+  async updateUserPlan(userId: number, planId: number | null): Promise<User | undefined> {
     const [user] = await db
       .update(users)
       .set({ currentPlanId: planId })
-      .where(eq(users.id, id))
+      .where(eq(users.id, userId))
       .returning();
     return user || undefined;
   }
