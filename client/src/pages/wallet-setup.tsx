@@ -135,7 +135,7 @@ export default function WalletSetup() {
               </p>
               
               <div className="space-y-2 text-xs text-muted-foreground">
-                <p>• Supports private key (WIF format)</p>
+                <p>• Supports private keys and seed phrases</p>
                 <p>• Compatible with most Bitcoin wallets</p>
                 <p>• Access your existing Bitcoin balance</p>
                 <p>• Secure import process</p>

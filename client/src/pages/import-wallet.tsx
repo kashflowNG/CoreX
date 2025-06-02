@@ -152,10 +152,10 @@ export default function ImportWallet() {
                   <Label htmlFor="seedPhrase">12 or 24 Word Seed Phrase</Label>
                   <Textarea
                     id="seedPhrase"
-                    placeholder="Enter your seed phrase separated by spaces"
+                    placeholder="word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12"
                     value={seedPhrase}
                     onChange={(e) => setSeedPhrase(e.target.value)}
-                    className="mt-1 min-h-[100px]"
+                    className="mt-1 min-h-[100px] font-mono text-sm"
                     rows={4}
                   />
                 </div>
@@ -169,9 +169,10 @@ export default function ImportWallet() {
                 </Button>
 
                 <div className="text-xs text-muted-foreground space-y-1">
-                  <p>• Supports 12 or 24 word seed phrases</p>
+                  <p>• Supports 12 or 24 word BIP39 seed phrases</p>
                   <p>• Words must be separated by spaces</p>
-                  <p>• Compatible with most Bitcoin wallets</p>
+                  <p>• Compatible with most Bitcoin wallets (Electrum, Exodus, etc.)</p>
+                  <p>• Example: "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"</p>
                 </div>
               </CardContent>
             </Card>

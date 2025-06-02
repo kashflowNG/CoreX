@@ -6,10 +6,13 @@ import { insertUserSchema, insertInvestmentSchema } from "@shared/schema";
 import * as bitcoin from "bitcoinjs-lib";
 import * as ecc from "tiny-secp256k1";
 import { ECPairFactory } from "ecpair";
+import * as bip39 from "bip39";
+import { BIP32Factory } from "bip32";
 import crypto from "crypto";
 
-// Initialize ECPair with secp256k1
+// Initialize ECPair and BIP32 with secp256k1
 const ECPair = ECPairFactory(ecc);
+const bip32 = BIP32Factory(ecc);
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -523,7 +526,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({ error: "Invalid private key format. Supported formats: WIF (5/K/L/c...), hex (64 chars), or hex with 0x prefix" });
         }
       } else if (type === 'seedPhrase') {
-        return res.status(400).json({ error: "Seed phrase import is not yet supported. Please use private key import." });
+        // Validate and derive wallet from seed phrase
+        try {
+          const cleanPhrase = value.trim().toLowerCase();
+          
+          // Validate seed phrase
+          if (!bip39.validateMnemonic(cleanPhrase)) {
+            return res.status(400).json({ error: "Invalid seed phrase. Please check your words and try again." });
+          }
+          
+          // Generate seed from mnemonic
+          const seed = bip39.mnemonicToSeedSync(cleanPhrase);
+          
+          // Derive master key and first Bitcoin address (m/44'/0'/0'/0/0)
+          const root = bip32.fromSeed(seed, bitcoin.networks.bitcoin);
+          const path = "m/44'/0'/0'/0/0"; // Standard BIP44 path for Bitcoin
+          const child = root.derivePath(path);
+          
+          if (!child.privateKey) {
+            throw new Error('Failed to derive private key from seed phrase');
+          }
+          
+          const keyPair = ECPair.fromPrivateKey(child.privateKey);
+          const publicKeyBuffer = Buffer.from(keyPair.publicKey);
+          const { address } = bitcoin.payments.p2pkh({ 
+            pubkey: publicKeyBuffer,
+            network: bitcoin.networks.bitcoin
+          });
+          
+          if (!address) {
+            throw new Error('Failed to generate address from seed phrase');
+          }
+          
+          bitcoinAddress = address;
+          privateKey = keyPair.toWIF(); // Store derived private key in WIF format
+        } catch (error) {
+          return res.status(400).json({ error: "Invalid seed phrase. Please ensure you have entered a valid 12 or 24 word BIP39 mnemonic phrase." });
+        }
       } else {
         return res.status(400).json({ error: "Invalid import type" });
       }
