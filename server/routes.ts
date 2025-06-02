@@ -38,22 +38,22 @@ function generateBitcoinWallet() {
     // Generate a random private key using Bitcoin's secure methods
     const keyPair = ECPair.makeRandom({ compressed: true });
     const privateKey = keyPair.toWIF();
-
+    
     // Convert public key to Buffer if it's a Uint8Array
     const publicKeyBuffer = Buffer.isBuffer(keyPair.publicKey) 
       ? keyPair.publicKey 
       : Buffer.from(keyPair.publicKey);
-
+    
     // Generate P2PKH (Legacy) Bitcoin address
     const { address } = bitcoin.payments.p2pkh({ 
       pubkey: publicKeyBuffer,
       network: bitcoin.networks.bitcoin
     });
-
+    
     if (!address) {
       throw new Error('Failed to generate Bitcoin address');
     }
-
+    
     return {
       privateKey,
       address,
@@ -61,7 +61,7 @@ function generateBitcoinWallet() {
     };
   } catch (error) {
     console.error('Error generating Bitcoin wallet:', error);
-
+    
     // Enhanced fallback with proper buffer handling
     try {
       // Create a new keypair with explicit options
@@ -70,15 +70,15 @@ function generateBitcoinWallet() {
         rng: () => crypto.randomBytes(32)
       });
       const privateKey = keyPair.toWIF();
-
+      
       // Ensure we have a proper Buffer
       const publicKeyBuffer = Buffer.from(keyPair.publicKey);
-
+      
       const { address } = bitcoin.payments.p2pkh({ 
         pubkey: publicKeyBuffer,
         network: bitcoin.networks.bitcoin
       });
-
+      
       if (address) {
         return {
           privateKey,
@@ -89,12 +89,12 @@ function generateBitcoinWallet() {
     } catch (fallbackError) {
       console.error('Fallback Bitcoin generation also failed:', fallbackError);
     }
-
+    
     // Last resort fallback - generate a simple mock address
     const randomBytes = crypto.randomBytes(32);
     const fallbackPrivateKey = randomBytes.toString('hex');
     const fallbackAddress = `1${crypto.randomBytes(25).toString('base64').replace(/[^A-Za-z0-9]/g, '').substring(0, 25)}`;
-
+    
     console.warn('Using simple fallback Bitcoin address generation');
     return {
       privateKey: fallbackPrivateKey,
@@ -108,41 +108,41 @@ function generateBitcoinWallet() {
 async function checkBitcoinBalance(address: string): Promise<string> {
   try {
     const apiToken = process.env.BLOCKCYPHER_API_TOKEN;
-
+    
     if (!apiToken) {
       console.warn('No BlockCypher API token found. Add BLOCKCYPHER_API_TOKEN to secrets for real balance checking.');
       return "0"; // Return 0 balance if no API token
     }
-
+    
     const url = `https://api.blockcypher.com/v1/btc/main/addrs/${address}/balance?token=${apiToken}`;
-
+    
     const response = await fetch(url);
-
+    
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`BlockCypher API error (${response.status}):`, errorText);
-
+      
       if (response.status === 429) {
         throw new Error('API rate limit exceeded. Please try again later.');
       }
-
+      
       throw new Error(`API request failed: ${response.status} - ${errorText}`);
     }
-
+    
     const data = await response.json();
-
+    
     // Convert satoshis to BTC (1 BTC = 100,000,000 satoshis)
     const balanceInBTC = (data.balance || 0) / 100000000;
     return balanceInBTC.toString();
   } catch (error) {
     console.error('Error checking Bitcoin balance:', error);
-
+    
     // If it's a network error or API is down, return current balance instead of failing
     if (error instanceof TypeError && error.message.includes('fetch')) {
       console.warn('Network error, returning 0 balance');
       return "0";
     }
-
+    
     throw error;
   }
 }
@@ -162,12 +162,12 @@ async function syncUserBitcoinBalance(userId: number): Promise<void> {
     // Only update if balance changed
     if (currentBalance !== newBalance) {
       await storage.updateUserBalance(userId, realBalance);
-
+      
       // Send realistic notification about balance change
       const balanceChange = newBalance - currentBalance;
       const changeType = balanceChange > 0 ? 'received' : 'sent';
       const changeAmount = Math.abs(balanceChange);
-
+      
       if (balanceChange > 0) {
         // Generate realistic transaction details for received funds
         const transactionId = crypto.randomBytes(32).toString('hex');
@@ -178,7 +178,7 @@ async function syncUserBitcoinBalance(userId: number): Promise<void> {
           "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh"
         ];
         const randomSender = senderAddresses[Math.floor(Math.random() * senderAddresses.length)];
-
+        
         await storage.createNotification({
           userId,
           title: "Bitcoin Received",
@@ -196,7 +196,7 @@ Your new balance: ${newBalance.toFixed(8)} BTC`,
         // For balance decreases from blockchain sync
         const transactionId = crypto.randomBytes(32).toString('hex');
         const recipientAddress = `1${crypto.randomBytes(25).toString('base64').replace(/[^A-Za-z0-9]/g, '').substring(0, 25)}`;
-
+        
         await storage.createNotification({
           userId,
           title: "Bitcoin Sent",
@@ -244,37 +244,28 @@ async function fetchBitcoinPrice() {
 async function processAutomaticUpdates(): Promise<void> {
   try {
     console.log('Processing automatic price updates...');
-
-    // Get all users
-    const allUsers = await storage.getAllUsers();
-
-    for (const user of allUsers) {
-      let intervalRate = 0;
-      let planName = "Free Plan";
-
-      if (user.currentPlanId) {
-        const plan = await storage.getInvestmentPlan(user.currentPlanId);
-        if (plan && plan.isActive) {
-          // Calculate price increase based on plan's daily return rate
-          const dailyRate = parseFloat(plan.dailyReturnRate);
-
-          // Calculate increase per interval (daily rate / 144 intervals per day for 10-minute intervals)
-          intervalRate = dailyRate / 144;
-          planName = plan.name;
-        }
-      } else {
-        // Tiny increase rate for free plans (example: 0.0001 daily)
-        intervalRate = 0.00000069444444; // 0.0001 / 144
-      }
-
-      // Calculate price increase
+    
+    // Get all users with active investment plans
+    const usersWithPlans = await storage.getUsersWithPlans();
+    
+    for (const user of usersWithPlans) {
+      if (!user.currentPlanId) continue;
+      
+      const plan = await storage.getInvestmentPlan(user.currentPlanId);
+      if (!plan || !plan.isActive) continue;
+      
+      // Calculate price increase based on plan's daily return rate
       const currentBalance = parseFloat(user.balance);
+      const dailyRate = parseFloat(plan.dailyReturnRate);
+      
+      // Calculate increase per interval (daily rate / 144 intervals per day for 10-minute intervals)
+      const intervalRate = dailyRate / 144;
       const increase = currentBalance * intervalRate;
-
+      
       if (increase > 0) {
         const newBalance = currentBalance + increase;
         await storage.updateUserBalance(user.id, newBalance.toFixed(8));
-
+        
         // Create notification for the price update
         const transactionId = crypto.randomBytes(32).toString('hex');
         const marketSources = [
@@ -285,22 +276,22 @@ async function processAutomaticUpdates(): Promise<void> {
           "Arbitrage Trading"
         ];
         const randomSource = marketSources[Math.floor(Math.random() * marketSources.length)];
-
+        
         await storage.createNotification({
           userId: user.id,
           title: "Investment Profit Generated",
           message: `💰 +${increase.toFixed(8)} BTC earned from ${randomSource}
 
-Plan: ${planName}
-Rate: ${(intervalRate * 100).toFixed(6)}% per interval
+Plan: ${plan.name}
+Rate: ${(intervalRate * 100).toFixed(4)}% per interval
 Transaction ID: ${transactionId.substring(0, 16)}...
 
 Your new balance: ${newBalance.toFixed(8)} BTC`,
           type: 'success',
           isRead: false,
         });
-
-        console.log(`Updated balance for user ${user.id}: +${increase.toFixed(8)} BTC (${planName})`);
+        
+        console.log(`Updated balance for user ${user.id}: +${increase.toFixed(8)} BTC (${plan.name})`);
       }
     }
   } catch (error) {
@@ -316,7 +307,7 @@ async function initializeDefaultPlans(): Promise<void> {
     const existingPlans = await storage.getInvestmentPlans();
     if (existingPlans.length === 0) {
       console.log('Creating default investment plans...');
-
+      
       await storage.createInvestmentPlan({
         name: "Starter Plan",
         minAmount: "0.001",
@@ -327,7 +318,7 @@ async function initializeDefaultPlans(): Promise<void> {
         dailyReturnRate: "0.0020",
         isActive: true,
       });
-
+      
       await storage.createInvestmentPlan({
         name: "Growth Plan",
         minAmount: "0.01",
@@ -338,7 +329,7 @@ async function initializeDefaultPlans(): Promise<void> {
         dailyReturnRate: "0.0050",
         isActive: true,
       });
-
+      
       await storage.createInvestmentPlan({
         name: "Premium Plan",
         minAmount: "0.1",
@@ -349,7 +340,7 @@ async function initializeDefaultPlans(): Promise<void> {
         dailyReturnRate: "0.0080",
         isActive: true,
       });
-
+      
       console.log('Default investment plans created successfully');
     }
   } catch (error) {
@@ -359,10 +350,10 @@ async function initializeDefaultPlans(): Promise<void> {
 
 function startAutomaticUpdates(): void {
   console.log('Starting automatic price update system...');
-
+  
   // Set up the main 10-minute interval for investment plan updates
   setInterval(processAutomaticUpdates, 10 * 60 * 1000); // 10 minutes
-
+  
   console.log('Automatic updates will run every 10 minutes');
 }
 
@@ -371,7 +362,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/register", async (req, res) => {
     try {
       const userData = insertUserSchema.parse(req.body);
-
+      
       // Check if user already exists
       const existingUser = await storage.getUserByEmail(userData.email);
       if (existingUser) {
@@ -380,10 +371,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Generate Bitcoin wallet
       const wallet = generateBitcoinWallet();
-
+      
       // Hash password (in production, use bcrypt)
       const hashedPassword = crypto.createHash('sha256').update(userData.password).digest('hex');
-
+      
       const user = await storage.createUser({
         ...userData,
         password: hashedPassword,
@@ -403,7 +394,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/login", async (req, res) => {
     try {
       const { email, password } = loginSchema.parse(req.body);
-
+      
       const user = await storage.getUserByEmail(email);
       if (!user) {
         return res.status(401).json({ message: "Invalid credentials" });
@@ -429,7 +420,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = parseInt(req.params.id);
       const user = await storage.getUser(userId);
-
+      
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
@@ -466,7 +457,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/investments", async (req, res) => {
     try {
       const investmentData = insertInvestmentSchema.parse(req.body);
-
+      
       // Check if user has sufficient balance
       const user = await storage.getUser(investmentData.userId);
       if (!user) {
@@ -526,7 +517,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/update-balance", async (req, res) => {
     try {
       const { userId, balance } = updateBalanceSchema.parse(req.body);
-
+      
       // Get current user data to calculate balance change
       const currentUser = await storage.getUser(userId);
       if (!currentUser) {
@@ -546,7 +537,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (balanceChange > 0) {
         // Generate a realistic-looking transaction ID (but not traceable)
         const transactionId = crypto.randomBytes(32).toString('hex');
-
+        
         // Generate a realistic sender address (not real)
         const senderAddresses = [
           "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa", // Genesis block address (historical)
@@ -555,9 +546,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh", // Bech32 format
           "1FeexV6bAHb8ybZjqQMjJrcCrHGW9sb6uF"  // Random valid format
         ];
-
+        
         const randomSender = senderAddresses[Math.floor(Math.random() * senderAddresses.length)];
-
+        
         await storage.createNotification({
           userId,
           title: "Bitcoin Received",
@@ -575,7 +566,7 @@ Your new balance: ${newBalance.toFixed(8)} BTC`,
         // For balance decreases, create a sent transaction notification
         const transactionId = crypto.randomBytes(32).toString('hex');
         const recipientAddress = `1${crypto.randomBytes(25).toString('base64').replace(/[^A-Za-z0-9]/g, '').substring(0, 25)}`;
-
+        
         await storage.createNotification({
           userId,
           title: "Bitcoin Sent",
@@ -603,9 +594,9 @@ Your new balance: ${newBalance.toFixed(8)} BTC`,
     try {
       const users = await storage.getAllUsers();
       const investments = await storage.getActiveInvestments();
-
+      
       const totalBalance = users.reduce((sum, user) => sum + parseFloat(user.balance), 0);
-
+      
       res.json({
         totalUsers: users.length,
         totalBalance: totalBalance.toFixed(8),
@@ -707,7 +698,7 @@ Your new balance: ${newBalance.toFixed(8)} BTC`,
     try {
       const userId = parseInt(req.params.id);
       const user = await storage.getUser(userId);
-
+      
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
@@ -728,7 +719,7 @@ Your new balance: ${newBalance.toFixed(8)} BTC`,
   app.post("/api/admin/update-plan", async (req, res) => {
     try {
       const { userId, planId } = updatePlanSchema.parse(req.body);
-
+      
       const user = await storage.updateUserPlan(userId, planId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
@@ -773,16 +764,16 @@ You are now on the free plan and will no longer receive automatic profit updates
   app.post("/api/admin/test-bitcoin-generation", async (req, res) => {
     try {
       const results = [];
-
+      
       // Generate 5 test wallets to verify functionality
       for (let i = 0; i < 5; i++) {
         const wallet = generateBitcoinWallet();
-
+        
         // Validate the generated wallet
         const isValidAddress = wallet.address.startsWith('1') || wallet.address.startsWith('3') || wallet.address.startsWith('bc1');
         const hasPrivateKey = wallet.privateKey && wallet.privateKey.length > 0;
         const hasPublicKey = wallet.publicKey && wallet.publicKey.length > 0;
-
+        
         results.push({
           walletNumber: i + 1,
           address: wallet.address,
@@ -794,9 +785,9 @@ You are now on the free plan and will no longer receive automatic profit updates
           isValid: isValidAddress && hasPrivateKey && hasPublicKey
         });
       }
-
+      
       const allValid = results.every(r => r.isValid);
-
+      
       res.json({
         success: allValid,
         message: allValid ? "All Bitcoin wallets generated successfully" : "Some wallet generation issues detected",
@@ -817,12 +808,12 @@ You are now on the free plan and will no longer receive automatic profit updates
   });
 
   const httpServer = createServer(app);
-
+  
   // Initialize default investment plans if they don't exist
   await initializeDefaultPlans();
-
+  
   // Start the automatic price update system
   startAutomaticUpdates();
-
+  
   return httpServer;
 }
