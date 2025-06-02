@@ -4,12 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BottomNavigation } from "@/components/bottom-navigation";
-import { ArrowUpRight, ArrowDownLeft, TrendingUp } from "lucide-react";
+import { ArrowUpRight, ArrowDownLeft, TrendingUp, Bitcoin, Bell } from "lucide-react";
 import { formatBitcoin, formatDate, calculateInvestmentProgress } from "@/lib/utils";
 import { useCurrency } from "@/hooks/use-currency";
 import { formatCurrency } from "@/lib/utils";
 import { useBitcoinPrice } from "@/hooks/use-bitcoin-price";
-import type { Investment } from "@shared/schema";
+import type { Investment, Notification } from "@shared/schema";
 
 export default function History() {
   const { user } = useAuth();
@@ -18,6 +18,11 @@ export default function History() {
 
   const { data: investments, isLoading } = useQuery<Investment[]>({
     queryKey: ['/api/investments/user', user?.id],
+    enabled: !!user?.id,
+  });
+
+  const { data: notifications, isLoading: loadingNotifications } = useQuery<Notification[]>({
+    queryKey: ['/api/notifications', user?.id],
     enabled: !!user?.id,
   });
 
@@ -33,7 +38,7 @@ export default function History() {
           <p className="text-muted-foreground">Your investment and transaction history</p>
         </div>
 
-        {isLoading ? (
+        {isLoading || loadingNotifications ? (
           <div className="space-y-4">
             {[...Array(3)].map((_, i) => (
               <Card key={i} className="dark-card dark-border">
@@ -45,7 +50,85 @@ export default function History() {
               </Card>
             ))}
           </div>
-        ) : investments && investments.length > 0 ? (
+        ) : (
+          <div className="space-y-4">
+            {/* Bitcoin Transactions from Notifications */}
+            {notifications && notifications
+              .filter(notif => notif.title.includes("Bitcoin Received") || notif.title.includes("Bitcoin Sent"))
+              .map((notification) => {
+                const isReceived = notification.title.includes("Bitcoin Received");
+                const message = notification.message;
+                
+                // Extract Bitcoin amount from message
+                const amountMatch = message.match(/(\d+\.?\d*) BTC/);
+                const amount = amountMatch ? amountMatch[1] : "0";
+                
+                // Extract transaction ID
+                const txMatch = message.match(/Transaction ID: ([a-zA-Z0-9]+)/);
+                const txId = txMatch ? txMatch[1] : "";
+                
+                const currencyPrice = currency === 'USD' ? bitcoinPrice?.usd.price : bitcoinPrice?.gbp.price;
+                const fiatValue = currencyPrice ? parseFloat(amount) * currencyPrice : 0;
+
+                return (
+                  <Card key={`notif-${notification.id}`} className="dark-card dark-border">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          {isReceived ? (
+                            <ArrowDownLeft className="w-5 h-5 text-green-500" />
+                          ) : (
+                            <ArrowUpRight className="w-5 h-5 text-red-500" />
+                          )}
+                          <CardTitle className="text-lg dark-text">
+                            {isReceived ? "Bitcoin Received" : "Bitcoin Sent"}
+                          </CardTitle>
+                        </div>
+                        <Badge variant={isReceived ? "default" : "secondary"}>
+                          {isReceived ? "Received" : "Sent"}
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center">
+                          <span className="text-muted-foreground">Amount</span>
+                          <div className="text-right">
+                            <div className={`font-semibold ${isReceived ? "text-green-500" : "text-red-500"}`}>
+                              {isReceived ? "+" : "-"}{formatBitcoin(amount)} BTC
+                            </div>
+                            {currencyPrice && (
+                              <div className="text-sm text-muted-foreground">
+                                {isReceived ? "+" : "-"}{formatCurrency(fiatValue, currency)}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {txId && (
+                          <div className="flex justify-between items-center">
+                            <span className="text-muted-foreground">Transaction ID</span>
+                            <span className="text-sm dark-text font-mono">{txId}...</span>
+                          </div>
+                        )}
+
+                        <div className="flex justify-between items-center">
+                          <span className="text-muted-foreground">Date</span>
+                          <span className="text-sm dark-text">{formatDate(new Date(notification.createdAt))}</span>
+                        </div>
+
+                        <div className="flex justify-between items-center">
+                          <span className="text-muted-foreground">Status</span>
+                          <Badge variant="default" className="text-xs">Confirmed</Badge>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+
+            {/* Investment History */}
+            {investments && investments.length > 0 ? (
           <div className="space-y-4">
             {investments.map((investment) => {
               const progress = calculateInvestmentProgress(new Date(investment.startDate), new Date(investment.endDate));
@@ -135,17 +218,22 @@ export default function History() {
                 </Card>
               );
             })}
+            ) : null}
+
+            {/* Show empty state only if no transactions or investments */}
+            {(!investments || investments.length === 0) && 
+             (!notifications || notifications.filter(n => n.title.includes("Bitcoin")).length === 0) && (
+              <Card className="dark-card dark-border">
+                <CardContent className="p-8 text-center">
+                  <TrendingUp className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold dark-text mb-2">No Transaction History</h3>
+                  <p className="text-muted-foreground mb-4">
+                    You haven't made any transactions or investments yet. Start investing or receive Bitcoin to see your history here.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
           </div>
-        ) : (
-          <Card className="dark-card dark-border">
-            <CardContent className="p-8 text-center">
-              <TrendingUp className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold dark-text mb-2">No Investment History</h3>
-              <p className="text-muted-foreground mb-4">
-                You haven't made any investments yet. Start investing to see your history here.
-              </p>
-            </CardContent>
-          </Card>
         )}
       </div>
 

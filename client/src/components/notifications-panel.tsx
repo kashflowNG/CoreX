@@ -95,7 +95,7 @@ export function NotificationsPanel() {
                           <Badge variant="secondary" className="text-xs">New</Badge>
                         )}
                       </div>
-                      <p className="text-sm text-muted-foreground mb-2">{notification.message}</p>
+                      <p className="text-sm text-muted-foreground mb-2 whitespace-pre-line">{notification.message}</p>
                       <div className="flex items-center justify-between">
                         <span className="text-xs text-muted-foreground">
                           {formatDate(new Date(notification.createdAt))}
