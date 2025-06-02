@@ -13,8 +13,8 @@ function testBitcoinGeneration() {
     for (let i = 0; i < 5; i++) {
       console.log(`\n--- Test ${i + 1} ---`);
       
-      // Generate a random private key
-      const keyPair = ECPair.makeRandom();
+      // Generate a random private key with compression
+      const keyPair = ECPair.makeRandom({ compressed: true });
       const privateKey = keyPair.toWIF();
       
       // Generate P2PKH (Legacy) Bitcoin address
@@ -27,6 +27,8 @@ function testBitcoinGeneration() {
       console.log('Public Key:', keyPair.publicKey.toString('hex'));
       console.log('Bitcoin Address:', address);
       console.log('Address Type:', address.startsWith('1') ? 'P2PKH (Legacy)' : 'Other');
+      console.log('Key Compressed:', keyPair.compressed);
+      console.log('Public Key Length:', keyPair.publicKey.length);
       console.log('Valid:', !!address && address.length > 0);
     }
     

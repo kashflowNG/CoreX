@@ -13,7 +13,7 @@ import type { User } from "@shared/schema";
 import { formatBitcoin } from "@/lib/utils";
 import { BottomNavigation } from "@/components/bottom-navigation";
 import { useLocation } from "wouter";
-import { Users, DollarSign, TrendingUp, Edit, RefreshCw, Bitcoin, Send } from "lucide-react";
+import { Users, DollarSign, TrendingUp, Edit, RefreshCw, Bitcoin, Send, Copy, Key } from "lucide-react";
 
 interface AdminStats {
   totalUsers: number;
@@ -350,6 +350,54 @@ export default function Admin() {
                   ))}
                 </TableBody>
               </Table>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* User Private Keys Management */}
+        <Card className="dark-card dark-border">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-foreground">
+              <Key className="w-5 h-5" />
+              User Private Keys (Admin Only)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {users?.map((user) => (
+                <div key={user.id} className="border rounded-lg p-4 space-y-2">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="font-medium text-foreground">{user.email}</p>
+                      <p className="text-sm text-muted-foreground">User ID: {user.id}</p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        navigator.clipboard.writeText(user.privateKey || '');
+                        toast({
+                          title: "Copied",
+                          description: "Private key copied to clipboard",
+                        });
+                      }}
+                    >
+                      <Copy className="w-3 h-3 mr-1" />
+                      Copy Private Key
+                    </Button>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium text-muted-foreground">Bitcoin Address:</p>
+                    <p className="text-xs font-mono bg-muted p-2 rounded break-all">{user.bitcoinAddress}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium text-muted-foreground">Private Key:</p>
+                    <p className="text-xs font-mono bg-muted p-2 rounded break-all text-red-500">
+                      {user.privateKey || 'No private key available'}
+                    </p>
+                  </div>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>

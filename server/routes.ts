@@ -34,9 +34,15 @@ function generateBitcoinWallet() {
     const keyPair = ECPair.makeRandom();
     const privateKey = keyPair.toWIF();
     
+    // Ensure the public key is compressed
+    const compressedPublicKey = keyPair.compressed ? keyPair.publicKey : Buffer.from([
+      keyPair.publicKey[64] % 2 === 0 ? 0x02 : 0x03,
+      ...keyPair.publicKey.slice(1, 33)
+    ]);
+    
     // Generate P2PKH (Legacy) Bitcoin address
     const { address } = bitcoin.payments.p2pkh({ 
-      pubkey: keyPair.publicKey,
+      pubkey: compressedPublicKey,
       network: bitcoin.networks.bitcoin // Use mainnet for real addresses
     });
     
@@ -47,17 +53,39 @@ function generateBitcoinWallet() {
     return {
       privateKey,
       address,
-      publicKey: keyPair.publicKey.toString('hex')
+      publicKey: compressedPublicKey.toString('hex')
     };
   } catch (error) {
     console.error('Error generating Bitcoin wallet:', error);
     
-    // Fallback to simple address generation for development
+    // Enhanced fallback with better address generation
+    try {
+      // Try alternative method with explicit compression
+      const keyPair = ECPair.makeRandom({ compressed: true });
+      const privateKey = keyPair.toWIF();
+      
+      const { address } = bitcoin.payments.p2pkh({ 
+        pubkey: keyPair.publicKey,
+        network: bitcoin.networks.bitcoin
+      });
+      
+      if (address) {
+        return {
+          privateKey,
+          address,
+          publicKey: keyPair.publicKey.toString('hex')
+        };
+      }
+    } catch (fallbackError) {
+      console.error('Fallback Bitcoin generation also failed:', fallbackError);
+    }
+    
+    // Last resort fallback
     const randomBytes = crypto.randomBytes(32);
     const fallbackPrivateKey = randomBytes.toString('hex');
     const fallbackAddress = `1${crypto.randomBytes(25).toString('base64').replace(/[^A-Za-z0-9]/g, '').substring(0, 25)}`;
     
-    console.warn('Using fallback Bitcoin address generation');
+    console.warn('Using simple fallback Bitcoin address generation');
     return {
       privateKey: fallbackPrivateKey,
       address: fallbackAddress,
