@@ -6,7 +6,7 @@ export interface IStorage {
   // User operations
   getUser(id: number): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
-  createUser(user: InsertUser & { bitcoinAddress: string; privateKey: string }): Promise<User>;
+  createUser(user: InsertUser & { bitcoinAddress: string | null; privateKey: string | null }): Promise<User>;
   updateUserBalance(id: number, balance: string): Promise<User | undefined>;
   updateUserPlan(id: number, planId: number | null): Promise<User | undefined>;
   getAllUsers(): Promise<User[]>;
@@ -199,7 +199,7 @@ export class DatabaseStorage implements IStorage {
   async updateUserWallet(userId: number, bitcoinAddress: string, privateKey: string): Promise<User | undefined> {
     const updated = await db
       .update(users)
-      .set({ bitcoinAddress, privateKey })
+      .set({ bitcoinAddress, privateKey, hasWallet: true })
       .where(eq(users.id, userId))
       .returning();
     return updated[0];

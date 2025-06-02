@@ -570,7 +570,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: error.message });
     }
   });
-  // User registration
+  // User registration (without wallet generation)
   app.post("/api/register", async (req, res) => {
     try {
       const userData = insertUserSchema.parse(req.body);
@@ -580,9 +580,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (existingUser) {
         return res.status(400).json({ message: "User already exists" });
       }
-
-      // Generate Bitcoin wallet
-      const wallet = generateBitcoinWallet();
       
       // Hash password (in production, use bcrypt)
       const hashedPassword = crypto.createHash('sha256').update(userData.password).digest('hex');
@@ -590,15 +587,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = await storage.createUser({
         ...userData,
         password: hashedPassword,
-        bitcoinAddress: wallet.address,
-        privateKey: wallet.privateKey,
+        bitcoinAddress: null,
+        privateKey: null,
       });
 
-      // Don't return private key in response
-      const { privateKey, password, ...userResponse } = user;
+      // Don't return password in response
+      const { password, ...userResponse } = user;
       res.json(userResponse);
     } catch (error) {
       res.status(400).json({ message: error instanceof Error ? error.message : "Registration failed" });
+    }
+  });
+
+  // Create new wallet route
+  app.post("/api/create-wallet", async (req, res) => {
+    try {
+      if (!req.session?.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const user = await storage.getUser(req.session.userId);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      if (user.hasWallet) {
+        return res.status(400).json({ error: "User already has a wallet" });
+      }
+
+      // Generate Bitcoin wallet
+      const wallet = generateBitcoinWallet();
+      
+      // Update user's wallet
+      const updatedUser = await storage.updateUserWallet(req.session.userId, wallet.address, wallet.privateKey);
+      if (!updatedUser) {
+        return res.status(500).json({ error: "Failed to create wallet" });
+      }
+
+      res.json({ message: "Wallet created successfully", address: wallet.address });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
     }
   });
 
