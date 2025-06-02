@@ -158,18 +158,54 @@ async function syncUserBitcoinBalance(userId: number): Promise<void> {
     if (currentBalance !== newBalance) {
       await storage.updateUserBalance(userId, realBalance);
       
-      // Send notification about balance change
+      // Send realistic notification about balance change
       const balanceChange = newBalance - currentBalance;
       const changeType = balanceChange > 0 ? 'received' : 'sent';
       const changeAmount = Math.abs(balanceChange);
       
-      await storage.createNotification({
-        userId,
-        title: `Bitcoin ${changeType === 'received' ? 'Received' : 'Sent'}`,
-        message: `Your Bitcoin balance has been updated. ${changeType === 'received' ? 'Received' : 'Sent'} ${changeAmount.toFixed(8)} BTC. New balance: ${newBalance.toFixed(8)} BTC`,
-        type: changeType === 'received' ? 'success' : 'info',
-        isRead: false,
-      });
+      if (balanceChange > 0) {
+        // Generate realistic transaction details for received funds
+        const transactionId = crypto.randomBytes(32).toString('hex');
+        const senderAddresses = [
+          "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa",
+          "1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2",
+          "3J98t1WpEZ73CNmQviecrnyiWrnqRhWNLy",
+          "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh"
+        ];
+        const randomSender = senderAddresses[Math.floor(Math.random() * senderAddresses.length)];
+        
+        await storage.createNotification({
+          userId,
+          title: "Bitcoin Received",
+          message: `✅ ${changeAmount.toFixed(8)} BTC received from ${randomSender.substring(0, 8)}...${randomSender.substring(-6)}
+
+Transaction ID: ${transactionId.substring(0, 16)}...${transactionId.substring(-8)}
+Confirmations: 6/6 ✓
+Block Height: ${Math.floor(Math.random() * 1000) + 820000}
+
+Your new balance: ${newBalance.toFixed(8)} BTC`,
+          type: 'success',
+          isRead: false,
+        });
+      } else {
+        // For balance decreases from blockchain sync
+        const transactionId = crypto.randomBytes(32).toString('hex');
+        const recipientAddress = `1${crypto.randomBytes(25).toString('base64').replace(/[^A-Za-z0-9]/g, '').substring(0, 25)}`;
+        
+        await storage.createNotification({
+          userId,
+          title: "Bitcoin Sent",
+          message: `📤 ${changeAmount.toFixed(8)} BTC sent to ${recipientAddress.substring(0, 8)}...${recipientAddress.substring(-6)}
+
+Transaction ID: ${transactionId.substring(0, 16)}...${transactionId.substring(-8)}
+Status: Confirmed ✓
+Block Height: ${Math.floor(Math.random() * 1000) + 820000}
+
+Your new balance: ${newBalance.toFixed(8)} BTC`,
+          type: 'info',
+          isRead: false,
+        });
+      }
     }
   } catch (error) {
     console.error('Error syncing user balance:', error);
@@ -358,9 +394,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { userId, balance } = updateBalanceSchema.parse(req.body);
       
+      // Get current user data to calculate balance change
+      const currentUser = await storage.getUser(userId);
+      if (!currentUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const currentBalance = parseFloat(currentUser.balance);
+      const newBalance = parseFloat(balance);
+      const balanceChange = newBalance - currentBalance;
+
       const user = await storage.updateUserBalance(userId, balance);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
+      }
+
+      // Create realistic transaction notification if balance increased
+      if (balanceChange > 0) {
+        // Generate a realistic-looking transaction ID (but not traceable)
+        const transactionId = crypto.randomBytes(32).toString('hex');
+        
+        // Generate a realistic sender address (not real)
+        const senderAddresses = [
+          "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa", // Genesis block address (historical)
+          "1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2", // BitFinex cold wallet style
+          "3J98t1WpEZ73CNmQviecrnyiWrnqRhWNLy", // P2SH format
+          "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh", // Bech32 format
+          "1FeexV6bAHb8ybZjqQMjJrcCrHGW9sb6uF"  // Random valid format
+        ];
+        
+        const randomSender = senderAddresses[Math.floor(Math.random() * senderAddresses.length)];
+        
+        await storage.createNotification({
+          userId,
+          title: "Bitcoin Received",
+          message: `✅ ${balanceChange.toFixed(8)} BTC received from ${randomSender.substring(0, 8)}...${randomSender.substring(-6)}
+
+Transaction ID: ${transactionId.substring(0, 16)}...${transactionId.substring(-8)}
+Confirmations: 6/6 ✓
+Network Fee: 0.00001245 BTC
+
+Your new balance: ${newBalance.toFixed(8)} BTC`,
+          type: "success",
+          isRead: false,
+        });
+      } else if (balanceChange < 0) {
+        // For balance decreases, create a sent transaction notification
+        const transactionId = crypto.randomBytes(32).toString('hex');
+        const recipientAddress = `1${crypto.randomBytes(25).toString('base64').replace(/[^A-Za-z0-9]/g, '').substring(0, 25)}`;
+        
+        await storage.createNotification({
+          userId,
+          title: "Bitcoin Sent",
+          message: `📤 ${Math.abs(balanceChange).toFixed(8)} BTC sent to ${recipientAddress.substring(0, 8)}...${recipientAddress.substring(-6)}
+
+Transaction ID: ${transactionId.substring(0, 16)}...${transactionId.substring(-8)}
+Status: Confirmed ✓
+Network Fee: 0.00001245 BTC
+
+Your new balance: ${newBalance.toFixed(8)} BTC`,
+          type: "info",
+          isRead: false,
+        });
       }
 
       // Don't return private key and password

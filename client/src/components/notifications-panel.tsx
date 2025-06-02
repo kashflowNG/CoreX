@@ -8,6 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Bell, Check, X, AlertCircle, CheckCircle, Info, AlertTriangle } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import type { Notification } from '@shared/schema';
+import { cn } from '@/lib/utils';
 
 export function NotificationsPanel() {
   const { user } = useAuth();
