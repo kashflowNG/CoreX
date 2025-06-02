@@ -5,7 +5,7 @@ import { BitcoinSync } from "@/components/bitcoin-sync";
 import { BottomNavigation } from "@/components/bottom-navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Bell, User, Send, QrCode, Plus, ArrowUpDown, TrendingUp, Activity } from "lucide-react";
+import { Bell, User, ArrowUpRight, ArrowDownLeft, TrendingUp, Activity } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import type { Investment, InvestmentPlan } from "@shared/schema";
 import { Badge } from "@/components/ui/badge";
@@ -101,22 +101,20 @@ export default function Home() {
 
       {/* Quick Actions */}
       <div className="px-4 mb-6">
-        <div className="grid grid-cols-4 gap-3">
-          <Button className="bg-card rounded-xl p-4 text-center border dark-border hover:border-bitcoin transition-colors flex flex-col items-center gap-2 h-auto">
-            <Send className="w-5 h-5 text-bitcoin" />
-            <span className="text-xs text-muted-foreground">Send</span>
+        <div className="grid grid-cols-2 gap-3">
+          <Button 
+            className="bg-card rounded-xl p-4 text-center border dark-border hover:border-bitcoin transition-colors flex flex-col items-center gap-2 h-auto"
+            onClick={() => setLocation('/withdraw')}
+          >
+            <ArrowUpRight className="w-5 h-5 text-bitcoin" />
+            <span className="text-xs text-muted-foreground">Withdraw</span>
           </Button>
-          <Button className="bg-card rounded-xl p-4 text-center border dark-border hover:border-bitcoin transition-colors flex flex-col items-center gap-2 h-auto">
-            <QrCode className="w-5 h-5 text-bitcoin" />
-            <span className="text-xs text-muted-foreground">Receive</span>
-          </Button>
-          <Button className="bg-card rounded-xl p-4 text-center border dark-border hover:border-bitcoin transition-colors flex flex-col items-center gap-2 h-auto">
-            <Plus className="w-5 h-5 text-bitcoin" />
-            <span className="text-xs text-muted-foreground">Buy</span>
-          </Button>
-          <Button className="bg-card rounded-xl p-4 text-center border dark-border hover:border-bitcoin transition-colors flex flex-col items-center gap-2 h-auto">
-            <ArrowUpDown className="w-5 h-5 text-bitcoin" />
-            <span className="text-xs text-muted-foreground">Swap</span>
+          <Button 
+            className="bg-card rounded-xl p-4 text-center border dark-border hover:border-bitcoin transition-colors flex flex-col items-center gap-2 h-auto"
+            onClick={() => setLocation('/deposit')}
+          >
+            <ArrowDownLeft className="w-5 h-5 text-bitcoin" />
+            <span className="text-xs text-muted-foreground">Deposit</span>
           </Button>
         </div>
       </div>
