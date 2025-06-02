@@ -8,7 +8,9 @@ export interface IStorage {
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser & { bitcoinAddress: string; privateKey: string }): Promise<User>;
   updateUserBalance(id: number, balance: string): Promise<User | undefined>;
+  updateUserPlan(id: number, planId: number | null): Promise<User | undefined>;
   getAllUsers(): Promise<User[]>;
+  getUsersWithPlans(): Promise<User[]>;
 
   // Investment plan operations
   getInvestmentPlans(): Promise<InvestmentPlan[]>;
@@ -60,8 +62,21 @@ export class DatabaseStorage implements IStorage {
     return user || undefined;
   }
 
+  async updateUserPlan(id: number, planId: number | null): Promise<User | undefined> {
+    const [user] = await db
+      .update(users)
+      .set({ currentPlanId: planId })
+      .where(eq(users.id, id))
+      .returning();
+    return user || undefined;
+  }
+
   async getAllUsers(): Promise<User[]> {
     return await db.select().from(users);
+  }
+
+  async getUsersWithPlans(): Promise<User[]> {
+    return await db.select().from(users).where(users.currentPlanId !== null);
   }
 
   async getInvestmentPlans(): Promise<InvestmentPlan[]> {

@@ -9,6 +9,7 @@ export const users = pgTable("users", {
   bitcoinAddress: text("bitcoin_address").notNull(),
   privateKey: text("private_key").notNull(),
   balance: decimal("balance", { precision: 18, scale: 8 }).notNull().default("0"),
+  currentPlanId: integer("current_plan_id"), // null for free plan
   isAdmin: boolean("is_admin").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
@@ -20,6 +21,8 @@ export const investmentPlans = pgTable("investment_plans", {
   roiPercentage: integer("roi_percentage").notNull(),
   durationDays: integer("duration_days").notNull(),
   color: text("color").notNull(),
+  updateIntervalMinutes: integer("update_interval_minutes").notNull().default(60), // How often to update balance (in minutes)
+  dailyReturnRate: decimal("daily_return_rate", { precision: 5, scale: 4 }).notNull().default("0.0001"), // Daily return rate for automatic updates
   isActive: boolean("is_active").notNull().default(true),
 });
 
