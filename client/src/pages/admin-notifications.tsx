@@ -113,7 +113,7 @@ export default function AdminNotifications() {
                     <SelectValue placeholder="Choose a user" />
                   </SelectTrigger>
                   <SelectContent>
-                    {users?.map((u) => (
+                    {users?.filter(u => u.id && u.id.toString().trim() !== '').map((u) => (
                       <SelectItem key={u.id} value={u.id.toString()}>
                         <div className="flex items-center gap-2">
                           <User className="w-4 h-4" />
