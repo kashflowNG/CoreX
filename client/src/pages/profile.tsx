@@ -112,23 +112,7 @@ export default function Profile() {
                 </div>
               </div>
 
-              {user.seedPhrase && (
-                <div className="space-y-2">
-                  <label className="text-sm font-medium dark-text">Seed Phrase:</label>
-                  <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Shield className="w-4 h-4 text-red-600" />
-                      <span className="text-xs font-semibold text-red-600 dark:text-red-400">SENSITIVE INFORMATION</span>
-                    </div>
-                    <p className="text-xs text-red-700 dark:text-red-300 mb-3">
-                      Keep this seed phrase secure and private. Anyone with access to it can control your wallet.
-                    </p>
-                    <div className="font-mono text-sm bg-white dark:bg-gray-800 p-2 rounded border break-all">
-                      {user.seedPhrase}
-                    </div>
-                  </div>
-                </div>
-              )}
+              
 
               <div>
                 <label className="text-sm font-medium dark-text">Security</label>
