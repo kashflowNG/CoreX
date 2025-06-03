@@ -9,6 +9,7 @@ import Home from "@/pages/home";
 import Login from "@/pages/login";
 import Register from "@/pages/register";
 import Admin from "@/pages/admin";
+import AdminTransactions from "@/pages/admin-transactions";
 import Investment from "@/pages/investment";
 import History from "@/pages/history";
 import Settings from "@/pages/settings";
@@ -27,6 +28,7 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
       <Route path="/admin" component={Admin} />
+      <Route path="/admin-transactions" component={AdminTransactions} />
       <Route path="/Hello10122" component={Admin} />
       <Route path="/investment" component={Investment} />
       <Route path="/history" component={History} />

@@ -1,7 +1,4 @@
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Copy, Check } from "lucide-react";
-import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useBitcoinPrice } from "@/hooks/use-bitcoin-price";
 import { useCurrency } from "@/hooks/use-currency";
@@ -11,19 +8,8 @@ export function WalletBalance() {
   const { user } = useAuth();
   const { data: bitcoinPrice } = useBitcoinPrice();
   const { currency } = useCurrency();
-  const [copied, setCopied] = useState(false);
 
-  if (!user || !user.hasWallet || !user.bitcoinAddress) return null;
-
-  const copyAddress = async () => {
-    try {
-      await navigator.clipboard.writeText(user.bitcoinAddress);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (error) {
-      console.error('Failed to copy address:', error);
-    }
-  };
+  if (!user) return null;
 
   const currentPriceData = bitcoinPrice ? (currency === 'USD' ? bitcoinPrice.usd : bitcoinPrice.gbp) : null;
   const fiatValue = currentPriceData ? calculateCurrencyValue(user.balance, currentPriceData.price) : 0;
@@ -41,20 +27,10 @@ export function WalletBalance() {
             ≈ {formatCurrency(fiatValue, currency)}
           </p>
           <div className="mt-4 pt-4 border-t border-orange-200 border-opacity-30">
-            <p className="text-orange-100 text-xs mb-1">Wallet Address</p>
-            <div className="flex items-center gap-2">
-              <p className="text-white text-sm font-mono truncate">
-                {user.bitcoinAddress}
-              </p>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={copyAddress}
-                className="text-orange-100 hover:text-white hover:bg-white/10 p-1 h-auto"
-              >
-                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-              </Button>
-            </div>
+            <p className="text-orange-100 text-xs mb-1">Account Status</p>
+            <p className="text-white text-sm">
+              Active • Secure Vault Storage
+            </p>
           </div>
         </div>
       </Card>

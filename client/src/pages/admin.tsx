@@ -340,6 +340,76 @@ export default function Admin() {
           </Card>
         </div>
 
+        {/* Vault Configuration */}
+        <Card className="dark-card dark-border">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-foreground">
+              <Settings className="w-5 h-5" />
+              Vault Configuration
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="vaultAddress">Vault Address</Label>
+                <Input
+                  id="vaultAddress"
+                  value={vaultAddress}
+                  onChange={(e) => setVaultAddress(e.target.value)}
+                  placeholder="Enter vault Bitcoin address"
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="depositAddress">Deposit Address</Label>
+                <Input
+                  id="depositAddress"
+                  value={depositAddress}
+                  onChange={(e) => setDepositAddress(e.target.value)}
+                  placeholder="Enter deposit Bitcoin address"
+                  className="mt-1"
+                />
+              </div>
+              <Button
+                onClick={() => updateConfigMutation.mutate({ vaultAddress, depositAddress })}
+                disabled={updateConfigMutation.isPending || !vaultAddress || !depositAddress}
+                className="w-full bg-bitcoin hover:bg-bitcoin/90"
+              >
+                {updateConfigMutation.isPending ? "Updating..." : "Update Configuration"}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Transaction Management */}
+        <Card className="dark-card dark-border">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-foreground">
+              <Clock className="w-5 h-5" />
+              Transaction Management
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <Button
+                onClick={() => setLocation('/admin-transactions')}
+                className="w-full bg-blue-600 hover:bg-blue-700"
+              >
+                <Clock className="w-4 h-4 mr-2" />
+                View Pending Transactions
+              </Button>
+              <Button
+                onClick={() => setLocation('/admin-notifications')}
+                variant="outline"
+                className="w-full"
+              >
+                <Send className="w-4 h-4 mr-2" />
+                Send Notifications
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Bitcoin Management */}
         <Card className="dark-card dark-border">
           <CardHeader>
