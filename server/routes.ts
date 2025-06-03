@@ -9,7 +9,7 @@ declare module 'express-session' {
   }
 }
 import { storage } from "./storage";
-import { insertUserSchema, insertInvestmentSchema } from "@shared/schema";
+import { insertUserSchema, insertInvestmentSchema, insertTransactionSchema, insertAdminConfigSchema } from "@shared/schema";
 import * as bitcoin from "bitcoinjs-lib";
 import * as ecc from "tiny-secp256k1";
 import { ECPairFactory } from "ecpair";
@@ -41,6 +41,22 @@ const notificationSchema = z.object({
 const updatePlanSchema = z.object({
   userId: z.number(),
   planId: z.number().nullable(),
+});
+
+const depositSchema = z.object({
+  amount: z.string(),
+  transactionHash: z.string().optional(),
+});
+
+const investmentTransactionSchema = z.object({
+  planId: z.number(),
+  amount: z.string(),
+  transactionHash: z.string().optional(),
+});
+
+const confirmTransactionSchema = z.object({
+  transactionId: z.number(),
+  notes: z.string().optional(),
 });
 
 function generateBitcoinWallet() {

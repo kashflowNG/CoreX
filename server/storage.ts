@@ -1,4 +1,4 @@
-import { users, investmentPlans, investments, notifications, adminConfig, type User, type InsertUser, type InvestmentPlan, type InsertInvestmentPlan, type Investment, type InsertInvestment, type Notification, type InsertNotification, type AdminConfig, type InsertAdminConfig } from "@shared/schema";
+import { users, investmentPlans, investments, notifications, adminConfig, transactions, type User, type InsertUser, type InvestmentPlan, type InsertInvestmentPlan, type Investment, type InsertInvestment, type Notification, type InsertNotification, type AdminConfig, type InsertAdminConfig, type Transaction, type InsertTransaction } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, isNotNull } from "drizzle-orm";
 
@@ -35,6 +35,14 @@ export interface IStorage {
 
   // Wallet operations
   updateUserWallet(userId: number, bitcoinAddress: string, privateKey: string, seedPhrase?: string): Promise<User | undefined>;
+
+  // Transaction operations
+  createTransaction(transaction: InsertTransaction): Promise<Transaction>;
+  getUserTransactions(userId: number): Promise<Transaction[]>;
+  getPendingTransactions(): Promise<Transaction[]>;
+  confirmTransaction(id: number, adminId: number, notes?: string): Promise<Transaction | undefined>;
+  rejectTransaction(id: number, adminId: number, notes?: string): Promise<Transaction | undefined>;
+  getTransaction(id: number): Promise<Transaction | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -213,6 +221,93 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, userId))
       .returning();
     return updated[0];
+  }
+
+  async createTransaction(transaction: InsertTransaction): Promise<Transaction> {
+    const created = await db.insert(transactions).values(transaction).returning();
+    return created[0];
+  }
+
+  async getUserTransactions(userId: number): Promise<Transaction[]> {
+    return await db
+      .select()
+      .from(transactions)
+      .where(eq(transactions.userId, userId))
+      .orderBy(desc(transactions.createdAt));
+  }
+
+  async getPendingTransactions(): Promise<Transaction[]> {
+    return await db
+      .select()
+      .from(transactions)
+      .where(eq(transactions.status, "pending"))
+      .orderBy(desc(transactions.createdAt));
+  }
+
+  async confirmTransaction(id: number, adminId: number, notes?: string): Promise<Transaction | undefined> {
+    const transaction = await this.getTransaction(id);
+    if (!transaction || transaction.status !== "pending") {
+      return undefined;
+    }
+
+    // Update transaction status
+    const updated = await db
+      .update(transactions)
+      .set({
+        status: "confirmed",
+        confirmedBy: adminId,
+        confirmedAt: new Date(),
+        notes: notes || transaction.notes
+      })
+      .where(eq(transactions.id, id))
+      .returning();
+
+    const confirmedTransaction = updated[0];
+    if (!confirmedTransaction) return undefined;
+
+    // Process the transaction based on type
+    if (confirmedTransaction.type === "deposit") {
+      // Add to user balance
+      const user = await this.getUser(confirmedTransaction.userId);
+      if (user) {
+        const newBalance = (parseFloat(user.balance) + parseFloat(confirmedTransaction.amount)).toString();
+        await this.updateUserBalance(confirmedTransaction.userId, newBalance);
+      }
+    } else if (confirmedTransaction.type === "investment" && confirmedTransaction.planId) {
+      // Create investment
+      const plan = await this.getInvestmentPlan(confirmedTransaction.planId);
+      if (plan) {
+        const endDate = new Date();
+        endDate.setDate(endDate.getDate() + plan.durationDays);
+        
+        await this.createInvestment({
+          userId: confirmedTransaction.userId,
+          planId: confirmedTransaction.planId,
+          amount: confirmedTransaction.amount
+        });
+      }
+    }
+
+    return confirmedTransaction;
+  }
+
+  async rejectTransaction(id: number, adminId: number, notes?: string): Promise<Transaction | undefined> {
+    const updated = await db
+      .update(transactions)
+      .set({
+        status: "rejected",
+        confirmedBy: adminId,
+        confirmedAt: new Date(),
+        notes: notes
+      })
+      .where(eq(transactions.id, id))
+      .returning();
+    return updated[0];
+  }
+
+  async getTransaction(id: number): Promise<Transaction | undefined> {
+    const [transaction] = await db.select().from(transactions).where(eq(transactions.id, id));
+    return transaction || undefined;
   }
 }
 

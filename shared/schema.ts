@@ -56,6 +56,20 @@ export const adminConfig = pgTable("admin_config", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
+export const transactions = pgTable("transactions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  type: text("type").notNull(), // 'deposit', 'investment', 'withdrawal'
+  amount: decimal("amount", { precision: 18, scale: 8 }).notNull(),
+  status: text("status").notNull().default("pending"), // 'pending', 'confirmed', 'rejected'
+  planId: integer("plan_id"), // only for investment transactions
+  transactionHash: text("transaction_hash"), // user-provided transaction hash
+  notes: text("notes"), // admin notes
+  confirmedBy: integer("confirmed_by"), // admin user id who confirmed
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  confirmedAt: timestamp("confirmed_at"),
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   bitcoinAddress: true,
@@ -89,6 +103,14 @@ export const insertAdminConfigSchema = createInsertSchema(adminConfig).omit({
   updatedAt: true,
 });
 
+export const insertTransactionSchema = createInsertSchema(transactions).omit({
+  id: true,
+  status: true,
+  confirmedBy: true,
+  createdAt: true,
+  confirmedAt: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertInvestmentPlan = z.infer<typeof insertInvestmentPlanSchema>;
@@ -99,3 +121,5 @@ export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 export type Notification = typeof notifications.$inferSelect;
 export type InsertAdminConfig = z.infer<typeof insertAdminConfigSchema>;
 export type AdminConfig = typeof adminConfig.$inferSelect;
+export type InsertTransaction = z.infer<typeof insertTransactionSchema>;
+export type Transaction = typeof transactions.$inferSelect;
