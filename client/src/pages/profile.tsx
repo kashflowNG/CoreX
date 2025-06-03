@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { BottomNavigation } from "@/components/bottom-navigation";
-import { Copy, User, Bitcoin, Key, ExternalLink } from "lucide-react";
+import { Copy, User, Bitcoin, Key, ExternalLink, Shield } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useLocation } from "wouter";
 import { useEffect } from "react";
@@ -112,6 +112,24 @@ export default function Profile() {
                 </div>
               </div>
 
+              {user.seedPhrase && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium dark-text">Seed Phrase:</label>
+                  <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Shield className="w-4 h-4 text-red-600" />
+                      <span className="text-xs font-semibold text-red-600 dark:text-red-400">SENSITIVE INFORMATION</span>
+                    </div>
+                    <p className="text-xs text-red-700 dark:text-red-300 mb-3">
+                      Keep this seed phrase secure and private. Anyone with access to it can control your wallet.
+                    </p>
+                    <div className="font-mono text-sm bg-white dark:bg-gray-800 p-2 rounded border break-all">
+                      {user.seedPhrase}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div>
                 <label className="text-sm font-medium dark-text">Security</label>
                 <div className="text-xs text-muted-foreground bg-green-50 dark:bg-green-950 p-2 rounded mt-1">
@@ -133,7 +151,7 @@ export default function Profile() {
               <div className="text-sm text-muted-foreground">
                 <h4 className="font-medium dark-text mb-2">Important Security Notes:</h4>
                 <ul className="space-y-1 list-disc list-inside">
-                  <li>Your private key is securely managed by the system</li>
+                  <li>Your private key is securely managed by our system</li>
                   <li>Always verify your Bitcoin address before receiving funds</li>
                   <li>Only administrators can access private keys for recovery purposes</li>
                   <li>Use the sync feature to update your balance with the blockchain</li>
