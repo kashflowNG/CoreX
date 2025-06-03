@@ -514,6 +514,184 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Transaction routes
+  app.post("/api/deposit", async (req, res) => {
+    try {
+      if (!req.session?.userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      const { amount, transactionHash } = depositSchema.parse(req.body);
+
+      const transaction = await storage.createTransaction({
+        userId: req.session.userId,
+        type: "deposit",
+        amount,
+        transactionHash,
+      });
+
+      // Create notification for user
+      await storage.createNotification({
+        userId: req.session.userId,
+        title: "Deposit Pending",
+        message: `Your deposit of ${amount} BTC is pending confirmation. You will be notified once it's processed.`,
+        type: "info"
+      });
+
+      res.json({ 
+        message: "Deposit submitted successfully and is pending confirmation",
+        transaction 
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/invest", async (req, res) => {
+    try {
+      if (!req.session?.userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      const { planId, amount, transactionHash } = investmentTransactionSchema.parse(req.body);
+
+      // Verify plan exists
+      const plan = await storage.getInvestmentPlan(planId);
+      if (!plan) {
+        return res.status(404).json({ error: "Investment plan not found" });
+      }
+
+      const transaction = await storage.createTransaction({
+        userId: req.session.userId,
+        type: "investment",
+        amount,
+        planId,
+        transactionHash,
+      });
+
+      // Create notification for user
+      await storage.createNotification({
+        userId: req.session.userId,
+        title: "Investment Pending",
+        message: `Your investment of ${amount} BTC in ${plan.name} is pending confirmation. You will be notified once it's processed.`,
+        type: "info"
+      });
+
+      res.json({ 
+        message: "Investment submitted successfully and is pending confirmation",
+        transaction 
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/transactions", async (req, res) => {
+    try {
+      if (!req.session?.userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      const transactions = await storage.getUserTransactions(req.session.userId);
+      res.json(transactions);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Admin transaction management routes
+  app.get("/api/admin/transactions/pending", async (req, res) => {
+    try {
+      if (!req.session?.userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      const user = await storage.getUser(req.session.userId);
+      if (!user || !user.isAdmin) {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      const transactions = await storage.getPendingTransactions();
+      res.json(transactions);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/admin/transactions/confirm", async (req, res) => {
+    try {
+      if (!req.session?.userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      const user = await storage.getUser(req.session.userId);
+      if (!user || !user.isAdmin) {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      const { transactionId, notes } = confirmTransactionSchema.parse(req.body);
+
+      const transaction = await storage.confirmTransaction(transactionId, req.session.userId, notes);
+      if (!transaction) {
+        return res.status(404).json({ error: "Transaction not found or already processed" });
+      }
+
+      // Create notification for user
+      const notificationMessage = transaction.type === "deposit" 
+        ? `Your deposit of ${transaction.amount} BTC has been confirmed and added to your balance.`
+        : `Your investment of ${transaction.amount} BTC has been confirmed and is now active.`;
+
+      await storage.createNotification({
+        userId: transaction.userId,
+        title: `${transaction.type === "deposit" ? "Deposit" : "Investment"} Confirmed`,
+        message: notificationMessage,
+        type: "success"
+      });
+
+      res.json({ 
+        message: "Transaction confirmed successfully",
+        transaction 
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/admin/transactions/reject", async (req, res) => {
+    try {
+      if (!req.session?.userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      const user = await storage.getUser(req.session.userId);
+      if (!user || !user.isAdmin) {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      const { transactionId, notes } = confirmTransactionSchema.parse(req.body);
+
+      const transaction = await storage.rejectTransaction(transactionId, req.session.userId, notes);
+      if (!transaction) {
+        return res.status(404).json({ error: "Transaction not found or already processed" });
+      }
+
+      // Create notification for user
+      await storage.createNotification({
+        userId: transaction.userId,
+        title: `${transaction.type === "deposit" ? "Deposit" : "Investment"} Rejected`,
+        message: `Your ${transaction.type} of ${transaction.amount} BTC has been rejected. ${notes ? `Reason: ${notes}` : ""}`,
+        type: "error"
+      });
+
+      res.json({ 
+        message: "Transaction rejected successfully",
+        transaction 
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Import wallet route
   app.post("/api/import-wallet", async (req, res) => {
     try {

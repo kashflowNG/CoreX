@@ -17,11 +17,10 @@ export function InvestmentPlans() {
 
   const createInvestmentMutation = useMutation({
     mutationFn: async ({ planId, amount }: { planId: number; amount: string }) => {
-      const response = await fetch('/api/investments', {
+      const response = await fetch('/api/invest', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          userId: user?.id,
           planId,
           amount,
         }),
@@ -29,17 +28,17 @@ export function InvestmentPlans() {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message);
+        throw new Error(error.error || 'Investment failed');
       }
 
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/user'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
       queryClient.invalidateQueries({ queryKey: ['/api/investments'] });
       toast({
-        title: "Investment Created",
-        description: "Your investment has been successfully created!",
+        title: "Investment Submitted",
+        description: "Your investment has been submitted and is pending confirmation.",
       });
     },
     onError: (error) => {

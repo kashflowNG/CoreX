@@ -4,11 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { BottomNavigation } from "@/components/bottom-navigation";
-import { ArrowLeft, Copy, Check, QrCode, Wallet } from "lucide-react";
+import { ArrowLeft, Copy, Check, QrCode, Wallet, Send } from "lucide-react";
 import { useLocation } from "wouter";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 interface AdminConfig {
   vaultAddress: string;
@@ -19,12 +20,47 @@ export default function Deposit() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [copied, setCopied] = useState<string | null>(null);
+  const [amount, setAmount] = useState("");
+  const [transactionHash, setTransactionHash] = useState("");
 
   // Fetch admin configuration for deposit addresses
   const { data: adminConfig } = useQuery<AdminConfig>({
     queryKey: ['/api/admin/config'],
     queryFn: () => fetch('/api/admin/config').then(res => res.json()),
+  });
+
+  // Submit deposit transaction
+  const submitDepositMutation = useMutation({
+    mutationFn: async (data: { amount: string; transactionHash?: string }) => {
+      const response = await fetch('/api/deposit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Deposit failed');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Deposit Submitted",
+        description: "Your deposit has been submitted and is pending confirmation.",
+      });
+      setAmount("");
+      setTransactionHash("");
+      queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Deposit Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
   });
 
   const copyToClipboard = async (text: string, type: string) => {
@@ -140,20 +176,49 @@ export default function Deposit() {
           </CardContent>
         </Card>
 
-        {/* Wallet Import */}
+        {/* Submit Deposit */}
         <Card className="dark-card dark-border">
           <CardHeader>
-            <CardTitle>Import Existing Wallet</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Send className="w-5 h-5 text-bitcoin" />
+              Submit Deposit
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <Button 
-              variant="outline" 
-              className="w-full"
-              onClick={() => setLocation('/import-wallet')}
-            >
-              <Wallet className="w-4 h-4 mr-2" />
-              Import Private Key or Seed Phrase
-            </Button>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="amount">Amount (BTC)</Label>
+                <Input
+                  id="amount"
+                  type="number"
+                  step="0.00000001"
+                  placeholder="0.00100000"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="txHash">Transaction Hash (Optional)</Label>
+                <Input
+                  id="txHash"
+                  placeholder="Enter your transaction hash"
+                  value={transactionHash}
+                  onChange={(e) => setTransactionHash(e.target.value)}
+                  className="mt-1"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Provide transaction hash after sending to speed up confirmation
+                </p>
+              </div>
+              <Button 
+                onClick={() => submitDepositMutation.mutate({ amount, transactionHash })}
+                disabled={!amount || submitDepositMutation.isPending}
+                className="w-full bg-bitcoin hover:bg-bitcoin/90"
+              >
+                {submitDepositMutation.isPending ? "Submitting..." : "Submit Deposit"}
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
