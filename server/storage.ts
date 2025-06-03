@@ -34,7 +34,7 @@ export interface IStorage {
   updateAdminConfig(config: InsertAdminConfig): Promise<AdminConfig>;
 
   // Wallet operations
-  updateUserWallet(userId: number, bitcoinAddress: string, privateKey: string): Promise<User | undefined>;
+  updateUserWallet(userId: number, bitcoinAddress: string, privateKey: string, seedPhrase?: string): Promise<User | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -182,7 +182,7 @@ export class DatabaseStorage implements IStorage {
 
   async updateAdminConfig(config: InsertAdminConfig): Promise<AdminConfig> {
     const existing = await this.getAdminConfig();
-    
+
     if (existing) {
       const updated = await db
         .update(adminConfig)
@@ -196,10 +196,20 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async updateUserWallet(userId: number, bitcoinAddress: string, privateKey: string): Promise<User | undefined> {
+  async updateUserWallet(userId: number, bitcoinAddress: string, privateKey: string, seedPhrase?: string): Promise<User | undefined> {
+    const updateData: any = { 
+      bitcoinAddress, 
+      privateKey, 
+      hasWallet: true 
+    };
+
+    if (seedPhrase) {
+      updateData.seedPhrase = seedPhrase;
+    }
+
     const updated = await db
       .update(users)
-      .set({ bitcoinAddress, privateKey, hasWallet: true })
+      .set(updateData)
       .where(eq(users.id, userId))
       .returning();
     return updated[0];

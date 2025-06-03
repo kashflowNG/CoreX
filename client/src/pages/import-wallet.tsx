@@ -10,16 +10,15 @@ import { ArrowLeft, Key, FileText } from "lucide-react";
 import { useLocation } from "wouter";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 
 export default function ImportWallet() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [privateKey, setPrivateKey] = useState("");
   const [seedPhrase, setSeedPhrase] = useState("");
-  const queryClient = useQueryClient();
 
   const importWalletMutation = useMutation({
     mutationFn: async (data: { type: 'privateKey' | 'seedPhrase'; value: string }) => {
@@ -29,12 +28,12 @@ export default function ImportWallet() {
       });
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       toast({
         title: "Wallet Imported Successfully",
         description: "Your wallet has been imported and balance updated.",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/user'] });
+      await refreshUser();
       setLocation('/');
     },
     onError: (error: any) => {

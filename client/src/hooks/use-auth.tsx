@@ -6,6 +6,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string) => Promise<void>;
   logout: () => void;
+  refreshUser: () => Promise<void>;
   isLoading: boolean;
 }
 
@@ -80,13 +81,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('corex_user', JSON.stringify(userData));
   };
 
+  const refreshUser = async () => {
+    if (!user) return;
+    
+    try {
+      const response = await fetch(`/api/user/${user.id}`);
+      if (response.ok) {
+        const updatedUser = await response.json();
+        setUser(updatedUser);
+        localStorage.setItem('corex_user', JSON.stringify(updatedUser));
+      }
+    } catch (error) {
+      console.error('Error refreshing user:', error);
+    }
+  };
+
   const logout = () => {
     setUser(null);
     localStorage.removeItem('corex_user');
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, login, register, logout, refreshUser, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

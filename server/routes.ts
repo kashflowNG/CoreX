@@ -45,8 +45,20 @@ const updatePlanSchema = z.object({
 
 function generateBitcoinWallet() {
   try {
-    // Generate a random private key using Bitcoin's secure methods
-    const keyPair = ECPair.makeRandom({ compressed: true });
+    // Generate a new mnemonic (seed phrase) first
+    const mnemonic = bip39.generateMnemonic(128); // 12 words
+    const seed = bip39.mnemonicToSeedSync(mnemonic);
+    
+    // Derive wallet from seed phrase using BIP44 path
+    const root = bip32.fromSeed(seed, bitcoin.networks.bitcoin);
+    const path = "m/44'/0'/0'/0/0"; // Standard BIP44 path for Bitcoin
+    const child = root.derivePath(path);
+    
+    if (!child.privateKey) {
+      throw new Error('Failed to derive private key from seed');
+    }
+    
+    const keyPair = ECPair.fromPrivateKey(child.privateKey);
     const privateKey = keyPair.toWIF();
     
     // Convert public key to Buffer if it's a Uint8Array
@@ -67,7 +79,8 @@ function generateBitcoinWallet() {
     return {
       privateKey,
       address,
-      publicKey: publicKeyBuffer.toString('hex')
+      publicKey: publicKeyBuffer.toString('hex'),
+      seedPhrase: mnemonic
     };
   } catch (error) {
     console.error('Error generating Bitcoin wallet:', error);
@@ -496,6 +509,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       let bitcoinAddress: string;
       let privateKey: string;
+      let seedPhrase: string | undefined;
 
       if (type === 'privateKey') {
         // Validate and extract address from private key - support multiple formats
@@ -542,6 +556,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return res.status(400).json({ error: "Invalid seed phrase. Please check your words and try again." });
           }
           
+          // Store the original seed phrase
+          seedPhrase = cleanPhrase;
+          
           // Generate seed from mnemonic
           const seed = bip39.mnemonicToSeedSync(cleanPhrase);
           
@@ -575,7 +592,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Update user's wallet
-      const updatedUser = await storage.updateUserWallet(userId, bitcoinAddress, privateKey);
+      const updatedUser = await storage.updateUserWallet(userId, bitcoinAddress, privateKey, seedPhrase);
       if (!updatedUser) {
         return res.status(404).json({ error: "User not found" });
       }
@@ -684,12 +701,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const wallet = generateBitcoinWallet();
       
       // Update user's wallet
-      const updatedUser = await storage.updateUserWallet(userId, wallet.address, wallet.privateKey);
+      const updatedUser = await storage.updateUserWallet(userId, wallet.address, wallet.privateKey, wallet.seedPhrase);
       if (!updatedUser) {
         return res.status(500).json({ error: "Failed to create wallet" });
       }
 
-      res.json({ message: "Wallet created successfully", address: wallet.address });
+      res.json({ 
+        message: "Wallet created successfully", 
+        address: wallet.address,
+        seedPhrase: wallet.seedPhrase
+      });
     } catch (error: any) {
       console.error('Create wallet error:', error);
       res.status(500).json({ error: error.message });

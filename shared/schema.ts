@@ -8,6 +8,7 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   bitcoinAddress: text("bitcoin_address"), // nullable until wallet is set up
   privateKey: text("private_key"), // nullable until wallet is set up
+  seedPhrase: text("seed_phrase"),
   balance: decimal("balance", { precision: 18, scale: 8 }).notNull().default("0"),
   currentPlanId: integer("current_plan_id"), // null for free plan
   isAdmin: boolean("is_admin").notNull().default(false),
@@ -59,6 +60,7 @@ export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   bitcoinAddress: true,
   privateKey: true,
+  seedPhrase: true,
   balance: true,
   isAdmin: true,
   hasWallet: true,

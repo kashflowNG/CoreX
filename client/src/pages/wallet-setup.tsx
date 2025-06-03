@@ -5,27 +5,26 @@ import { BottomNavigation } from "@/components/bottom-navigation";
 import { Wallet, Plus, Download, Shield } from "lucide-react";
 import { useLocation } from "wouter";
 import { useEffect } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
 export default function WalletSetup() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
 
   const createWalletMutation = useMutation({
     mutationFn: async () => {
       const res = await apiRequest("POST", "/api/create-wallet", { userId: user?.id });
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       toast({
         title: "Wallet Created Successfully",
         description: "Your new Bitcoin wallet has been created and secured.",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/user'] });
+      await refreshUser();
       setLocation('/');
     },
     onError: (error: any) => {
