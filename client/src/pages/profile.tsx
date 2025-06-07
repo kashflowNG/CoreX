@@ -69,55 +69,28 @@ export default function Profile() {
             </CardContent>
           </Card>
 
-          {/* Bitcoin Wallet Info */}
+          {/* Account Balance */}
           <Card className="dark-card dark-border">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 dark-text">
                 <Bitcoin className="w-5 h-5 text-orange-500" />
-                Bitcoin Wallet
+                Account Balance
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <label className="text-sm font-medium dark-text">Bitcoin Address</label>
-                <div className="flex items-center gap-2 mt-1">
-                  <code className="text-xs bg-muted p-2 rounded flex-1 break-all font-mono">
-                    {user.bitcoinAddress}
-                  </code>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => copyToClipboard(user.bitcoinAddress, "Bitcoin address")}
-                  >
-                    <Copy className="w-3 h-3" />
-                  </Button>
-                </div>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => openBlockExplorer(user.bitcoinAddress)}
-                  className="mt-2 text-xs"
-                >
-                  <ExternalLink className="w-3 h-3 mr-1" />
-                  View on Block Explorer
-                </Button>
-              </div>
-
-              <div>
                 <label className="text-sm font-medium dark-text">Current Balance</label>
                 <div className="flex items-center gap-2 mt-1">
-                  <Badge variant="secondary" className="font-mono">
+                  <Badge variant="secondary" className="font-mono text-lg">
                     {parseFloat(user.balance).toFixed(8)} BTC
                   </Badge>
                 </div>
               </div>
 
-              
-
               <div>
                 <label className="text-sm font-medium dark-text">Security</label>
                 <div className="text-xs text-muted-foreground bg-green-50 dark:bg-green-950 p-2 rounded mt-1">
-                  <strong>Secure:</strong> Your private key is safely managed by our system. Only your public Bitcoin address is displayed for receiving funds.
+                  <strong>Secure:</strong> Your funds are safely managed by our custodial system. All deposits and withdrawals are processed through our secure infrastructure.
                 </div>
               </div>
             </CardContent>
@@ -127,18 +100,19 @@ export default function Profile() {
           <Card className="dark-card dark-border">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 dark-text">
-                <Key className="w-5 h-5" />
-                Security Information
+                <Shield className="w-5 h-5" />
+                Security & Platform Information
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="text-sm text-muted-foreground">
-                <h4 className="font-medium dark-text mb-2">Important Security Notes:</h4>
+                <h4 className="font-medium dark-text mb-2">How It Works:</h4>
                 <ul className="space-y-1 list-disc list-inside">
-                  <li>Your private key is securely managed by our system</li>
-                  <li>Always verify your Bitcoin address before receiving funds</li>
-                  <li>Only administrators can access private keys for recovery purposes</li>
-                  <li>Use the sync feature to update your balance with the blockchain</li>
+                  <li>All Bitcoin funds are securely managed in our custodial vault</li>
+                  <li>Deposits are made to our official deposit addresses</li>
+                  <li>Withdrawals are processed from our secure vault to your specified address</li>
+                  <li>Your account balance reflects your share in our managed fund</li>
+                  <li>All transactions require admin approval for security</li>
                 </ul>
               </div>
             </CardContent>

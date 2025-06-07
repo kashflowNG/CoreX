@@ -29,7 +29,7 @@ export function WalletBalance() {
           <div className="mt-4 pt-4 border-t border-orange-200 border-opacity-30">
             <p className="text-orange-100 text-xs mb-1">Account Status</p>
             <p className="text-white text-sm">
-              Active • Secure Vault Storage
+              Active • Custodial Vault
             </p>
           </div>
         </div>
