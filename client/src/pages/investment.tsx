@@ -7,6 +7,19 @@ import type { Investment, InvestmentPlan, Transaction } from "@shared/schema";
 import { formatBitcoin, calculateInvestmentProgress, formatDate } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 import { useLocation } from "wouter";
+import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { useCurrency } from "@/hooks/use-currency";
+import { formatBitcoinAmount } from "@/lib/bitcoin";
+import { TrendingUp, Target, Clock, Award, ArrowLeft } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { Link } from "wouter";
 
 export default function Investment() {
   const { user } = useAuth();
@@ -41,21 +54,25 @@ export default function Investment() {
   const rejectedInvestments = transactions?.filter(tx => tx.type === 'investment' && tx.status === 'rejected') || [];
 
   return (
-    <div className="max-w-sm mx-auto bg-background min-h-screen relative">
-      {/* Header */}
-      <header className="px-4 py-6 border-b dark-border">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-bitcoin flex items-center justify-center">
-            <span className="text-black text-sm font-bold">₿</span>
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-foreground">Investment</h1>
-            <p className="text-xs text-muted-foreground">Grow your Bitcoin</p>
+    <div className="min-h-screen dark-bg">
+      {/* Navigation Header */}
+      <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm border-b dark-border">
+        <div className="max-w-4xl mx-auto px-4 py-4">
+          <div className="flex items-center gap-3">
+            <Link href="/">
+              <Button variant="ghost" size="sm" className="h-9 w-9 p-0">
+                <ArrowLeft className="w-4 h-4" />
+              </Button>
+            </Link>
+            <div>
+              <h1 className="text-xl font-bold dark-text">Investment</h1>
+              <p className="text-muted-foreground text-sm">Grow your Bitcoin</p>
+            </div>
           </div>
         </div>
-      </header>
+      </div>
 
-      <div className="pb-20">
+      <div className="max-w-4xl mx-auto p-4 space-y-6 pb-20">
         {/* Investment Plans */}
         <InvestmentPlans />
 

@@ -2,18 +2,18 @@ import { useAuth } from "@/hooks/use-auth";
 import { useCurrency } from "@/hooks/use-currency";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { BottomNavigation } from "@/components/bottom-navigation";
-import { User, Globe, LogOut, Shield } from "lucide-react";
+import { User, Globe, LogOut, Shield, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Link } from "wouter";
 
 export default function Settings() {
   const { user, logout } = useAuth();
   const { currency, toggleCurrency } = useCurrency();
   const { toast } = useToast();
-  
+
 
   const handleLogout = () => {
     logout();
@@ -29,9 +29,26 @@ export default function Settings() {
 
   return (
     <div className="min-h-screen dark-bg">
+      {/* Navigation Header */}
+      <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm border-b dark-border">
+        <div className="max-w-4xl mx-auto px-4 py-4">
+          <div className="flex items-center gap-3">
+            <Link href="/">
+              <Button variant="ghost" size="sm" className="h-9 w-9 p-0">
+                <ArrowLeft className="w-4 h-4" />
+              </Button>
+            </Link>
+            <div>
+              <h1 className="text-xl font-bold dark-text">Settings</h1>
+              <p className="text-muted-foreground text-sm">Manage your preferences</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="max-w-sm mx-auto p-4 pb-20">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold dark-text mb-2">Settings</h1>
+          {/* <h1 className="text-2xl font-bold dark-text mb-2">Settings</h1> */}
           <p className="text-muted-foreground">Manage your account and preferences</p>
         </div>
 
@@ -49,7 +66,7 @@ export default function Settings() {
                 <Label className="text-sm font-medium text-muted-foreground">Email Address</Label>
                 <p className="text-sm dark-text mt-1">{user.email}</p>
               </div>
-              
+
               <Separator />
 
               <div>
@@ -115,9 +132,9 @@ export default function Settings() {
                   })}
                 </p>
               </div>
-              
+
               <Separator />
-              
+
               <div className="pt-2">
                 <Button
                   variant="destructive"

@@ -1,8 +1,14 @@
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
-import { BottomNavigation } from "@/components/bottom-navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { BottomNavigation } from "@/components/bottom-navigation";
+import { useAuth } from "@/hooks/use-auth";
+import { useCurrency } from "@/hooks/use-currency";
+import { formatBitcoinAmount } from "@/lib/bitcoin";
+import { Clock, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownLeft, ArrowLeft } from "lucide-react";
+import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TrendingUp, DollarSign, Clock, ArrowUpRight, ArrowDownLeft } from "lucide-react";
@@ -40,7 +46,24 @@ export default function History() {
 
   return (
     <div className="min-h-screen dark-bg">
-      <div className="max-w-sm mx-auto p-4 pb-20">
+      {/* Navigation Header */}
+      <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm border-b dark-border">
+        <div className="max-w-4xl mx-auto px-4 py-4">
+          <div className="flex items-center gap-3">
+            <Link href="/">
+              <Button variant="ghost" size="sm" className="h-9 w-9 p-0">
+                <ArrowLeft className="w-4 h-4" />
+              </Button>
+            </Link>
+            <div>
+              <h1 className="text-xl font-bold dark-text">History</h1>
+              <p className="text-muted-foreground text-sm">Transaction history</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-4xl mx-auto p-4 space-y-6 pb-20">
         <div className="mb-6">
           <h1 className="text-2xl font-bold dark-text mb-2">Transaction History</h1>
           <p className="text-muted-foreground">Your investment and transaction history</p>

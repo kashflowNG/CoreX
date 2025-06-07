@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from "@/hooks/use-auth";
@@ -116,7 +115,7 @@ export default function Notifications() {
                 <p className="text-muted-foreground text-sm">Stay updated with your activities</p>
               </div>
             </div>
-            
+
             {unreadCount && unreadCount.count > 0 && (
               <Button
                 variant="outline"
