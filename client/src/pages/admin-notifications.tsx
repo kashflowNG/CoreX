@@ -70,6 +70,8 @@ export default function AdminNotifications() {
   });
 
   const handleSendNotification = () => {
+    console.log("Send notification clicked", { selectedUserId, title, message, type });
+    
     if (!selectedUserId || !title || !message) {
       toast({
         title: "Missing Information",
@@ -120,21 +122,26 @@ export default function AdminNotifications() {
             <CardContent className="space-y-4">
               <div>
                 <Label htmlFor="user-select">Select User</Label>
-                <Select value={selectedUserId} onValueChange={setSelectedUserId}>
-                  <SelectTrigger>
+                <Select value={selectedUserId} onValueChange={(value) => {
+                  console.log("User selected:", value);
+                  setSelectedUserId(value);
+                }}>
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Choose a user" />
                   </SelectTrigger>
                   <SelectContent>
                     {users?.map((u) => (
                       <SelectItem key={u.id} value={u.id.toString()}>
-                        <div className="flex items-center gap-2">
-                          <User className="w-4 h-4" />
-                          {u.email} {u.isAdmin && <Badge variant="secondary">Admin</Badge>}
-                        </div>
+                        {u.email} {u.isAdmin && "(Admin)"}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
+                {selectedUserId && (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Selected: {users?.find(u => u.id.toString() === selectedUserId)?.email}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -208,7 +215,7 @@ export default function AdminNotifications() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 dark-text">
                 <User className="w-5 h-5" />
-                Registered Users
+                Registered Users - Click to Select
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -217,25 +224,32 @@ export default function AdminNotifications() {
               ) : users && users.length > 0 ? (
                 <div className="space-y-3">
                   {users.map((u) => (
-                    <div key={u.id} className="flex items-center justify-between p-3 border dark-border rounded-lg">
+                    <div 
+                      key={u.id} 
+                      className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer transition-colors ${
+                        selectedUserId === u.id.toString() 
+                          ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' 
+                          : 'dark-border hover:border-blue-300'
+                      }`}
+                      onClick={() => {
+                        console.log("User clicked:", u.id, u.email);
+                        setSelectedUserId(u.id.toString());
+                      }}
+                    >
                       <div>
                         <div className="font-medium dark-text">{u.email}</div>
                         <div className="text-sm text-muted-foreground">
                           Balance: {parseFloat(u.balance).toFixed(8)} BTC
                         </div>
                         <div className="text-xs text-muted-foreground">
-                          Bitcoin Address: {u.bitcoinAddress.substring(0, 20)}...
+                          Bitcoin Address: {u.bitcoinAddress ? `${u.bitcoinAddress.substring(0, 20)}...` : 'No wallet'}
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
                         {u.isAdmin && <Badge variant="secondary">Admin</Badge>}
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setSelectedUserId(u.id.toString())}
-                        >
-                          Select
-                        </Button>
+                        {selectedUserId === u.id.toString() && (
+                          <Badge variant="default" className="bg-blue-600">Selected</Badge>
+                        )}
                       </div>
                     </div>
                   ))}
