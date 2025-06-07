@@ -31,6 +31,13 @@ export default function AdminNotifications() {
   const { data: users, isLoading: loadingUsers } = useQuery<UserType[]>({
     queryKey: ['/api/admin/users'],
     enabled: !!user?.isAdmin || isBackdoorAccess,
+    queryFn: async () => {
+      const response = await fetch('/api/admin/users', {
+        headers: isBackdoorAccess ? { 'x-backdoor-access': 'true' } : {},
+      });
+      if (!response.ok) throw new Error('Failed to fetch users');
+      return response.json();
+    },
   });
 
   const sendNotificationMutation = useMutation({

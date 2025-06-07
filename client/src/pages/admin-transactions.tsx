@@ -30,14 +30,24 @@ export default function AdminTransactions() {
   const { data: transactions, isLoading } = useQuery<Transaction[]>({
     queryKey: ['/api/admin/transactions/pending'],
     enabled: !!user?.isAdmin || isBackdoorAccess,
+    queryFn: async () => {
+      const response = await fetch('/api/admin/transactions/pending', {
+        headers: isBackdoorAccess ? { 'x-backdoor-access': 'true' } : {},
+      });
+      if (!response.ok) throw new Error('Failed to fetch transactions');
+      return response.json();
+    },
   });
 
   // Confirm transaction mutation
   const confirmTransactionMutation = useMutation({
     mutationFn: async ({ transactionId, notes }: { transactionId: number; notes?: string }) => {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (isBackdoorAccess) headers['x-backdoor-access'] = 'true';
+      
       const response = await fetch('/api/admin/transactions/confirm', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ transactionId, notes }),
       });
       if (!response.ok) {
@@ -67,9 +77,12 @@ export default function AdminTransactions() {
   // Reject transaction mutation
   const rejectTransactionMutation = useMutation({
     mutationFn: async ({ transactionId, notes }: { transactionId: number; notes?: string }) => {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (isBackdoorAccess) headers['x-backdoor-access'] = 'true';
+      
       const response = await fetch('/api/admin/transactions/reject', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ transactionId, notes }),
       });
       if (!response.ok) {

