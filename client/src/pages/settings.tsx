@@ -7,12 +7,10 @@ import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { User, Mail, Calendar, Bitcoin, ArrowLeft, Settings, LogOut, Shield, Crown, TrendingUp, Activity, Award, Star, Zap, Bell, Moon, Sun, Globe, Lock } from "lucide-react";
 import { Link } from "wouter";
 import { BottomNavigation } from "@/components/bottom-navigation";
-import { useAuth } from "@/hooks/use-auth";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 
