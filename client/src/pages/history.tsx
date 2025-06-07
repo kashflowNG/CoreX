@@ -4,11 +4,12 @@ import { BottomNavigation } from "@/components/bottom-navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { TrendingUp, DollarSign, Clock, ArrowUpRight } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { TrendingUp, DollarSign, Clock, ArrowUpRight, ArrowDownLeft } from "lucide-react";
 import { useCurrency } from "@/hooks/use-currency";
 import { useBitcoinPrice } from "@/hooks/use-bitcoin-price";
 import { formatBitcoin, formatCurrency, calculateInvestmentProgress, formatDate } from "@/lib/utils";
-import type { Investment, Transaction } from "@shared/schema";
+import type { Investment, Transaction, Notification } from "@shared/schema";
 import { useLocation } from "wouter";
 
 export default function History() {
@@ -18,6 +19,7 @@ export default function History() {
 
   const { data: investments, isLoading } = useQuery<Investment[]>({
     queryKey: ['/api/investments/user', user?.id],
+    queryFn: () => fetch(`/api/investments/user/${user?.id}`).then(res => res.json()),
     enabled: !!user?.id,
   });
 
