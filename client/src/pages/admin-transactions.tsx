@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { BottomNavigation } from "@/components/bottom-navigation";
-import { ArrowLeft, Check, X, Clock, Bitcoin, TrendingUp } from "lucide-react";
+import { ArrowLeft, Check, X, Clock, Bitcoin, TrendingUp, ArrowUpRight } from "lucide-react";
 import { useLocation } from "wouter";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -124,6 +124,8 @@ export default function AdminTransactions() {
     switch (type) {
       case 'deposit':
         return <Bitcoin className="w-4 h-4" />;
+      case 'withdrawal':
+        return <ArrowUpRight className="w-4 h-4" />;
       case 'investment':
         return <TrendingUp className="w-4 h-4" />;
       default:
@@ -135,6 +137,8 @@ export default function AdminTransactions() {
     switch (type) {
       case 'deposit':
         return 'text-green-500';
+      case 'withdrawal':
+        return 'text-red-500';
       case 'investment':
         return 'text-blue-500';
       default:

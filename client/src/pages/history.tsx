@@ -60,6 +60,115 @@ export default function History() {
           </div>
         ) : (
           <div className="space-y-4">
+            {/* Display all transactions (deposits, withdrawals, investments) */}
+            {transactions && transactions.length > 0 && (
+              <div className="space-y-4">
+                {transactions.map((transaction) => {
+                  const getTransactionIcon = () => {
+                    switch (transaction.type) {
+                      case 'deposit':
+                        return <ArrowDownLeft className="w-5 h-5 text-green-500" />;
+                      case 'withdrawal':
+                        return <ArrowUpRight className="w-5 h-5 text-red-500" />;
+                      case 'investment':
+                        return <TrendingUp className="w-5 h-5 text-blue-500" />;
+                      default:
+                        return <Clock className="w-5 h-5 text-gray-500" />;
+                    }
+                  };
+
+                  const getStatusBadge = () => {
+                    switch (transaction.status) {
+                      case 'confirmed':
+                        return <Badge variant="default" className="bg-green-500 text-white">Confirmed</Badge>;
+                      case 'pending':
+                        return <Badge variant="secondary" className="bg-yellow-500 text-white">Pending</Badge>;
+                      case 'rejected':
+                        return <Badge variant="destructive">Rejected</Badge>;
+                      default:
+                        return <Badge variant="outline">{transaction.status}</Badge>;
+                    }
+                  };
+
+                  const currencyPrice = currency === 'USD' ? bitcoinPrice?.usd.price : bitcoinPrice?.gbp.price;
+                  const fiatValue = currencyPrice ? parseFloat(transaction.amount) * currencyPrice : 0;
+
+                  return (
+                    <Card key={`transaction-${transaction.id}`} className="dark-card dark-border">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            {getTransactionIcon()}
+                            <CardTitle className="text-lg dark-text">
+                              {transaction.type.charAt(0).toUpperCase() + transaction.type.slice(1)}
+                            </CardTitle>
+                          </div>
+                          {getStatusBadge()}
+                        </div>
+                      </CardHeader>
+                      <CardContent className="pt-0">
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-center">
+                            <span className="text-muted-foreground">Amount</span>
+                            <div className="text-right">
+                              <div className="font-semibold dark-text">
+                                {formatBitcoin(transaction.amount)} BTC
+                              </div>
+                              {currencyPrice && (
+                                <div className="text-sm text-muted-foreground">
+                                  {formatCurrency(fiatValue, currency)}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {transaction.type === 'withdrawal' && transaction.transactionHash && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-muted-foreground">Address</span>
+                              <span className="text-sm dark-text font-mono">
+                                {transaction.transactionHash.slice(0, 8)}...{transaction.transactionHash.slice(-8)}
+                              </span>
+                            </div>
+                          )}
+
+                          {transaction.transactionHash && transaction.type !== 'withdrawal' && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-muted-foreground">Transaction Hash</span>
+                              <span className="text-sm dark-text font-mono">
+                                {transaction.transactionHash.slice(0, 8)}...{transaction.transactionHash.slice(-8)}
+                              </span>
+                            </div>
+                          )}
+
+                          <div className="flex justify-between items-center">
+                            <span className="text-muted-foreground">Date</span>
+                            <span className="text-sm dark-text">{formatDate(new Date(transaction.createdAt))}</span>
+                          </div>
+
+                          {transaction.status === 'rejected' && transaction.notes && (
+                            <div className="bg-red-50 dark:bg-red-900/20 p-2 rounded">
+                              <div className="text-sm text-red-600 dark:text-red-400">
+                                <span className="font-medium">Reason: </span>
+                                {transaction.notes}
+                              </div>
+                            </div>
+                          )}
+
+                          {transaction.status === 'pending' && (
+                            <div className="bg-yellow-50 dark:bg-yellow-900/20 p-2 rounded">
+                              <div className="text-sm text-yellow-600 dark:text-yellow-400">
+                                Transaction is pending admin approval
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+
             {/* Bitcoin Transactions from Notifications */}
             {notifications && notifications
               .filter(notif => notif.title.includes("Bitcoin Received") || notif.title.includes("Bitcoin Sent"))
@@ -229,8 +338,9 @@ export default function History() {
               </div>
             ) : null}
 
-            {/* Show empty state only if no transactions or investments */}
+            {/* Show empty state only if no transactions, investments, or notifications */}
             {(!investments || investments.length === 0) && 
+             (!transactions || transactions.length === 0) &&
              (!notifications || notifications.filter(n => n.title.includes("Bitcoin")).length === 0) && (
               <Card className="dark-card dark-border">
                 <CardContent className="p-8 text-center">
