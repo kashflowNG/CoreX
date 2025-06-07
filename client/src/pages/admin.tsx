@@ -460,26 +460,6 @@ export default function Admin() {
                   className="mt-1"
                 />
               </div>
-              <div>
-                <Label htmlFor="freePlanRate">Free Plan Rate (% per 10 minutes)</Label>
-                <Input
-                  id="freePlanRate"
-                  type="number"
-                  step="0.0001"
-                  defaultValue={adminConfig ? (parseFloat(adminConfig.freePlanRate) * 100).toFixed(4) : "0.0100"}
-                  placeholder="0.0100"
-                  className="mt-1"
-                  onBlur={(e) => {
-                    const newRate = (parseFloat(e.target.value) / 100).toString();
-                    if (newRate && newRate !== "NaN") {
-                      updateFreePlanRateMutation.mutate({ rate: newRate });
-                    }
-                  }}
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Current: {adminConfig ? (parseFloat(adminConfig.freePlanRate) * 100).toFixed(4) : "0.0100"}% per 10 minutes
-                </p>
-              </div>
               <Button
                 onClick={updateConfig}
                 disabled={updateConfigMutation.isPending}
@@ -582,6 +562,42 @@ export default function Admin() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
+              {/* Free Plan Rate Setting */}
+              <div className="border rounded-lg p-4 bg-blue-500/10 border-blue-500/20">
+                <div className="flex justify-between items-start mb-3">
+                  <div>
+                    <h4 className="font-medium text-foreground">Free Plan</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Current rate: {adminConfig ? (parseFloat(adminConfig.freePlanRate || "0.0001") * 100).toFixed(4) : "0.0100"}% per 10 minutes
+                    </p>
+                  </div>
+                  <span className="px-2 py-1 rounded text-xs bg-blue-500/20 text-blue-400">
+                    Free Users
+                  </span>
+                </div>
+                <div>
+                  <Label htmlFor="freePlanRateInput">Free Plan Rate (% per 10 minutes)</Label>
+                  <Input
+                    id="freePlanRateInput"
+                    type="number"
+                    step="0.0001"
+                    defaultValue={adminConfig ? (parseFloat(adminConfig.freePlanRate || "0.0001") * 100).toFixed(4) : "0.0100"}
+                    placeholder="0.0100"
+                    className="mt-1"
+                    onBlur={(e) => {
+                      const newRate = (parseFloat(e.target.value) / 100).toString();
+                      if (newRate && newRate !== "NaN") {
+                        updateFreePlanRateMutation.mutate({ rate: newRate });
+                      }
+                    }}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Free users earn this rate every 10 minutes on their balance
+                  </p>
+                </div>
+              </div>
+
+              {/* Premium Plans */}
               {investmentPlans?.map((plan) => (
                 <div key={plan.id} className="border rounded-lg p-4 space-y-3">
                   <div className="flex justify-between items-start">
