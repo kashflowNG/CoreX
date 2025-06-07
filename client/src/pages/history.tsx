@@ -10,7 +10,6 @@ import { Clock, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownLeft, ArrowLeft
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useCurrency } from "@/hooks/use-currency";
 import { useBitcoinPrice } from "@/hooks/use-bitcoin-price";
 import { formatBitcoin, formatCurrency, calculateInvestmentProgress, formatDate } from "@/lib/utils";
 import type { Investment, Transaction, Notification } from "@shared/schema";
