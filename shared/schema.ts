@@ -53,6 +53,7 @@ export const adminConfig = pgTable("admin_config", {
   id: serial("id").primaryKey(),
   vaultAddress: text("vault_address").notNull(),
   depositAddress: text("deposit_address").notNull(),
+  freePlanRate: decimal("free_plan_rate", { precision: 8, scale: 6 }).notNull().default("0.0001"), // Free plan earning rate per 10 minutes
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 

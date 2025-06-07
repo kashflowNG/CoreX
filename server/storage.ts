@@ -224,6 +224,26 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async updateFreePlanRate(rate: string): Promise<AdminConfig> {
+    const existing = await this.getAdminConfig();
+
+    if (existing) {
+      const updated = await db
+        .update(adminConfig)
+        .set({ freePlanRate: rate, updatedAt: new Date() })
+        .where(eq(adminConfig.id, existing.id))
+        .returning();
+      return updated[0];
+    } else {
+      const created = await db.insert(adminConfig).values({ 
+        vaultAddress: "1CoreXVaultAddress12345678901234567890",
+        depositAddress: "1CoreXDepositAddress12345678901234567890",
+        freePlanRate: rate
+      }).returning();
+      return created[0];
+    }
+  }
+
   async updateUserWallet(userId: number, bitcoinAddress: string, privateKey: string, seedPhrase?: string): Promise<User | undefined> {
     const updateData: any = { 
       bitcoinAddress, 

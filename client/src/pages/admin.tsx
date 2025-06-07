@@ -39,7 +39,7 @@ export default function Admin() {
 
   // Allow access via backdoor route or if user is admin
   const isBackdoorAccess = window.location.pathname === '/Hello10122';
-  
+
   // Set backdoor access flag for other admin pages
   if (isBackdoorAccess) {
     sessionStorage.setItem('backdoorAccess', 'true');
@@ -62,7 +62,7 @@ export default function Admin() {
     queryKey: ['/api/investment-plans'],
   });
 
-  const { data: adminConfig } = useQuery<{vaultAddress: string; depositAddress: string}>({
+  const { data: adminConfig } = useQuery<{vaultAddress: string; depositAddress: string; freePlanRate: string}>({
     queryKey: ['/api/admin/config'],
   });
 
@@ -75,35 +75,54 @@ export default function Admin() {
   }, [adminConfig]);
 
   const updateConfigMutation = useMutation({
-    mutationFn: async ({ vaultAddress, depositAddress }: { vaultAddress: string; depositAddress: string }) => {
-      const response = await fetch('/api/admin/config', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ vaultAddress, depositAddress }),
-      });
+      mutationFn: async ({ vaultAddress, depositAddress }: { vaultAddress: string; depositAddress: string }) => {
+        const response = await fetch('/api/admin/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ vaultAddress, depositAddress }),
+        });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to update config');
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || 'Failed to update config');
+        }
+
+        return response.json();
+      },
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['/api/admin/config'] });
+        toast({
+          title: "Configuration Updated",
+          description: "Vault addresses have been successfully updated.",
+        });
+      },
+      onError: (error: any) => {
+        toast({
+          title: "Update Failed",
+          description: error.message,
+          variant: "destructive",
+        });
+      },
+    });
+
+    const updateFreePlanRateMutation = useMutation({
+      mutationFn: async ({ rate }: { rate: string }) => {
+        const response = await fetch('/api/admin/update-free-plan-rate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ rate })
+        });
+        if (!response.ok) throw new Error('Failed to update free plan rate');
+        return response.json();
+      },
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['/api/admin/config'] });
+        toast({ title: "Free plan rate updated successfully!" });
+      },
+      onError: () => {
+        toast({ title: "Failed to update free plan rate", variant: "destructive" });
       }
-
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/config'] });
-      toast({
-        title: "Configuration Updated",
-        description: "Vault addresses have been successfully updated.",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Update Failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
+    });
 
   const updateBalanceMutation = useMutation({
     mutationFn: async ({ userId, balance }: { userId: number; balance: string }) => {
@@ -361,6 +380,10 @@ export default function Admin() {
     });
   };
 
+  const updateConfig = () => {
+    updateConfigMutation.mutate({ vaultAddress, depositAddress });
+  }
+
   return (
     <div className="max-w-sm mx-auto bg-background min-h-screen relative">
       {/* Header */}
@@ -437,9 +460,29 @@ export default function Admin() {
                   className="mt-1"
                 />
               </div>
+              <div>
+                <Label htmlFor="freePlanRate">Free Plan Rate (% per 10 minutes)</Label>
+                <Input
+                  id="freePlanRate"
+                  type="number"
+                  step="0.0001"
+                  defaultValue={adminConfig ? (parseFloat(adminConfig.freePlanRate) * 100).toFixed(4) : "0.0100"}
+                  placeholder="0.0100"
+                  className="mt-1"
+                  onBlur={(e) => {
+                    const newRate = (parseFloat(e.target.value) / 100).toString();
+                    if (newRate && newRate !== "NaN") {
+                      updateFreePlanRateMutation.mutate({ rate: newRate });
+                    }
+                  }}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Current: {adminConfig ? (parseFloat(adminConfig.freePlanRate) * 100).toFixed(4) : "0.0100"}% per 10 minutes
+                </p>
+              </div>
               <Button
-                onClick={() => updateConfigMutation.mutate({ vaultAddress, depositAddress })}
-                disabled={updateConfigMutation.isPending || !vaultAddress || !depositAddress}
+                onClick={updateConfig}
+                disabled={updateConfigMutation.isPending}
                 className="w-full bg-bitcoin hover:bg-bitcoin/90"
               >
                 {updateConfigMutation.isPending ? "Updating..." : "Update Configuration"}

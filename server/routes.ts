@@ -384,9 +384,10 @@ Your balance: ${newBalance.toFixed(8)} BTC`,
           });
         }
       } else if (!user.currentPlanId && currentBalance > 0) {
-        // Free users get smaller growth
-        const freeplanRate = 0.0001; // 0.01% per 10 minutes
-        const increase = currentBalance * freeplanRate;
+        // Free users get smaller growth - rate from admin config
+        const adminConfig = await storage.getAdminConfig();
+        const freePlanRate = adminConfig ? parseFloat(adminConfig.freePlanRate) : 0.0001;
+        const increase = currentBalance * freePlanRate;
 
         if (increase > 0 && currentBalance > 0) {
           const newBalance = currentBalance + increase;
@@ -506,9 +507,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/admin/config", async (req, res) => {
     try {
-      const { vaultAddress, depositAddress } = req.body;
-      const config = await storage.updateAdminConfig({ vaultAddress, depositAddress });
+      const { vaultAddress, depositAddress, freePlanRate } = req.body;
+      const config = await storage.updateAdminConfig({ vaultAddress, depositAddress, freePlanRate });
       res.json(config);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/admin/update-free-plan-rate", async (req, res) => {
+    try {
+      const { rate } = req.body;
+      const config = await storage.updateFreePlanRate(rate);
+      res.json({ message: "Free plan rate updated successfully", config });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
