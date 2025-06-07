@@ -8,6 +8,7 @@ import { BottomNavigation } from "@/components/bottom-navigation";
 import { User, Globe, LogOut, Shield, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
+import { Switch } from "@/components/ui/switch";
 
 export default function Settings() {
   const { user, logout } = useAuth();
