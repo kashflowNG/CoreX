@@ -53,13 +53,15 @@ export default function Home() {
 
   const activeInvestments = investments?.filter(inv => inv.isActive) || [];
 
-  const totalInvestmentValue = investments?.reduce((total, inv) => 
-    total + parseFloat(inv.amount) + parseFloat(inv.currentProfit), 0
+  const totalInvestedAmount = investments?.reduce((total, inv) => 
+    total + parseFloat(inv.amount), 0
   ) || 0;
 
   const totalProfit = investments?.reduce((total, inv) => 
     total + parseFloat(inv.currentProfit), 0
   ) || 0;
+
+  const totalInvestmentValue = totalInvestedAmount + totalProfit;
 
   const currentPlan = user?.currentPlanId 
     ? investmentPlans?.find(plan => plan.id === user.currentPlanId)
@@ -163,7 +165,7 @@ export default function Home() {
               <TrendingUp className="w-4 h-4 text-green-400" />
               <span className="text-xs text-muted-foreground">Total Invested</span>
             </div>
-            <p className="text-lg font-bold text-foreground">{formatBitcoin(totalInvestmentValue.toString())} BTC</p>
+            <p className="text-lg font-bold text-foreground">{formatBitcoin(totalInvestedAmount.toString())} BTC</p>
           </Card>
 
           <Card className="dark-card rounded-xl p-4 dark-border">
