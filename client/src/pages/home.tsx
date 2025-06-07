@@ -1,6 +1,7 @@
 import { useAuth } from "@/hooks/use-auth";
 import { WalletBalance } from "@/components/wallet-balance";
 import { BitcoinPrice } from "@/components/bitcoin-price";
+import { BitcoinSync } from "@/components/bitcoin-sync";
 
 import { BottomNavigation } from "@/components/bottom-navigation";
 import { Button } from "@/components/ui/button";
@@ -38,6 +39,12 @@ export default function Home() {
   useEffect(() => {
     if (!user) {
       setLocation('/login');
+      return;
+    }
+
+    // Redirect to wallet setup if user doesn't have a wallet
+    if (!user.hasWallet) {
+      setLocation('/wallet-setup');
     }
   }, [user, setLocation]);
 
