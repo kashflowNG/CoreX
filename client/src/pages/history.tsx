@@ -1,15 +1,15 @@
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
+import { BottomNavigation } from "@/components/bottom-navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import { BottomNavigation } from "@/components/bottom-navigation";
-import { ArrowUpRight, ArrowDownLeft, TrendingUp, Bitcoin, Bell } from "lucide-react";
-import { formatBitcoin, formatDate, calculateInvestmentProgress } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { TrendingUp, DollarSign, Clock, ArrowUpRight } from "lucide-react";
 import { useCurrency } from "@/hooks/use-currency";
-import { formatCurrency } from "@/lib/utils";
 import { useBitcoinPrice } from "@/hooks/use-bitcoin-price";
-import type { Investment, Notification } from "@shared/schema";
+import { formatBitcoin, formatCurrency, calculateInvestmentProgress, formatDate } from "@/lib/utils";
+import type { Investment, Transaction } from "@shared/schema";
+import { useLocation } from "wouter";
 
 export default function History() {
   const { user } = useAuth();
@@ -59,15 +59,15 @@ export default function History() {
               .map((notification) => {
                 const isReceived = notification.title.includes("Bitcoin Received");
                 const message = notification.message;
-                
+
                 // Extract Bitcoin amount from message
                 const amountMatch = message.match(/(\d+\.?\d*) BTC/);
                 const amount = amountMatch ? amountMatch[1] : "0";
-                
+
                 // Extract transaction ID
                 const txMatch = message.match(/Transaction ID: ([a-zA-Z0-9]+)/);
                 const txId = txMatch ? txMatch[1] : "";
-                
+
                 const currencyPrice = currency === 'USD' ? bitcoinPrice?.usd.price : bitcoinPrice?.gbp.price;
                 const fiatValue = currencyPrice ? parseFloat(amount) * currencyPrice : 0;
 

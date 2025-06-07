@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { InvestmentPlans } from "@/components/investment-plans";
 import { BottomNavigation } from "@/components/bottom-navigation";
-import type { Investment, InvestmentPlan } from "@shared/schema";
+import type { Investment, InvestmentPlan, Transaction } from "@shared/schema";
 import { formatBitcoin, calculateInvestmentProgress, formatDate } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 import { useLocation } from "wouter";
@@ -26,12 +26,19 @@ export default function Investment() {
     queryKey: ['/api/investment-plans'],
   });
 
+  const { data: transactions } = useQuery<any[]>({
+    queryKey: ['/api/transactions'],
+    refetchInterval: 30000, // Refresh every 30 seconds
+  });
+
   const getPlanName = (planId: number) => {
     return plans?.find(plan => plan.id === planId)?.name || `Plan ${planId}`;
   };
 
   const activeInvestments = investments?.filter(inv => inv.isActive) || [];
   const completedInvestments = investments?.filter(inv => !inv.isActive) || [];
+  const pendingInvestments = transactions?.filter(tx => tx.type === 'investment' && tx.status === 'pending') || [];
+  const rejectedInvestments = transactions?.filter(tx => tx.type === 'investment' && tx.status === 'rejected') || [];
 
   return (
     <div className="max-w-sm mx-auto bg-background min-h-screen relative">
@@ -51,6 +58,83 @@ export default function Investment() {
       <div className="pb-20">
         {/* Investment Plans */}
         <InvestmentPlans />
+
+        {/* Pending Investments */}
+        {pendingInvestments.length > 0 && (
+          <div className="px-4 mb-6">
+            <h3 className="text-lg font-semibold mb-4 text-foreground">Pending Investments</h3>
+            <div className="space-y-3">
+              {pendingInvestments.map((transaction) => (
+                <Card key={transaction.id} className="dark-card rounded-xl p-4 dark-border">
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <h4 className="font-semibold text-orange-400">{getPlanName(transaction.planId || 1)}</h4>
+                      <p className="text-muted-foreground text-sm">
+                        Submitted: {formatDate(new Date(transaction.createdAt))}
+                      </p>
+                    </div>
+                    <span className="bg-orange-500 bg-opacity-20 text-orange-400 px-2 py-1 rounded-full text-xs">
+                      Pending
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Amount</span>
+                      <span className="text-foreground">{formatBitcoin(transaction.amount)} BTC</span>
+                    </div>
+                    {transaction.transactionHash && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Transaction Hash</span>
+                        <span className="text-xs text-muted-foreground font-mono">
+                          {transaction.transactionHash.substring(0, 8)}...{transaction.transactionHash.substring(-8)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Your investment is pending admin approval and will be activated once confirmed.
+                  </p>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Rejected Investments */}
+        {rejectedInvestments.length > 0 && (
+          <div className="px-4 mb-6">
+            <h3 className="text-lg font-semibold mb-4 text-foreground">Rejected Investments</h3>
+            <div className="space-y-3">
+              {rejectedInvestments.map((transaction) => (
+                <Card key={transaction.id} className="dark-card rounded-xl p-4 dark-border opacity-75">
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <h4 className="font-semibold text-red-400">{getPlanName(transaction.planId || 1)}</h4>
+                      <p className="text-muted-foreground text-sm">
+                        Rejected: {transaction.confirmedAt ? formatDate(new Date(transaction.confirmedAt)) : 'Recently'}
+                      </p>
+                    </div>
+                    <span className="bg-red-500 bg-opacity-20 text-red-400 px-2 py-1 rounded-full text-xs">
+                      Rejected
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Amount</span>
+                      <span className="text-foreground">{formatBitcoin(transaction.amount)} BTC</span>
+                    </div>
+                    {transaction.notes && (
+                      <div className="bg-red-500 bg-opacity-10 p-2 rounded text-sm">
+                        <span className="text-red-400 font-medium">Reason: </span>
+                        <span className="text-muted-foreground">{transaction.notes}</span>
+                      </div>
+                    )}
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Active Investments */}
         {activeInvestments.length > 0 && (
