@@ -6,27 +6,14 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { BottomNavigation } from "@/components/bottom-navigation";
-import { User, Globe, LogOut, Shield, Copy, Check } from "lucide-react";
-import { useState } from "react";
+import { User, Globe, LogOut, Shield } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Settings() {
   const { user, logout } = useAuth();
   const { currency, toggleCurrency } = useCurrency();
   const { toast } = useToast();
-  const [copiedAddress, setCopiedAddress] = useState(false);
-
-  const handleCopyAddress = async () => {
-    if (user?.bitcoinAddress) {
-      await navigator.clipboard.writeText(user.bitcoinAddress);
-      setCopiedAddress(true);
-      toast({
-        title: "Address Copied",
-        description: "Bitcoin address copied to clipboard",
-      });
-      setTimeout(() => setCopiedAddress(false), 2000);
-    }
-  };
+  
 
   const handleLogout = () => {
     logout();
@@ -63,29 +50,6 @@ export default function Settings() {
                 <p className="text-sm dark-text mt-1">{user.email}</p>
               </div>
               
-              <Separator />
-              
-              <div>
-                <Label className="text-sm font-medium text-muted-foreground">Bitcoin Address</Label>
-                <div className="flex items-center gap-2 mt-1">
-                  <p className="text-sm dark-text font-mono flex-1 truncate">
-                    {user.bitcoinAddress}
-                  </p>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleCopyAddress}
-                    className="h-8 w-8 p-0"
-                  >
-                    {copiedAddress ? (
-                      <Check className="w-4 h-4 text-green-500" />
-                    ) : (
-                      <Copy className="w-4 h-4" />
-                    )}
-                  </Button>
-                </div>
-              </div>
-
               <Separator />
 
               <div>
