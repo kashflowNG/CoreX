@@ -1339,6 +1339,44 @@ You are now on the free plan and will no longer receive automatic profit updates
     }
   });
 
+  // Update investment plan minimum amount
+  app.post("/api/admin/update-plan-amount", async (req, res) => {
+    try {
+      const { planId, minAmount } = z.object({
+        planId: z.number(),
+        minAmount: z.string()
+      }).parse(req.body);
+
+      const updatedPlan = await storage.updateInvestmentPlanAmount(planId, minAmount);
+      if (!updatedPlan) {
+        return res.status(404).json({ message: "Investment plan not found" });
+      }
+
+      res.json({ message: "Plan minimum amount updated successfully", plan: updatedPlan });
+    } catch (error) {
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to update plan amount" });
+    }
+  });
+
+  // Update investment plan daily return rate
+  app.post("/api/admin/update-plan-rate", async (req, res) => {
+    try {
+      const { planId, dailyReturnRate } = z.object({
+        planId: z.number(),
+        dailyReturnRate: z.string()
+      }).parse(req.body);
+
+      const updatedPlan = await storage.updateInvestmentPlanRate(planId, dailyReturnRate);
+      if (!updatedPlan) {
+        return res.status(404).json({ message: "Investment plan not found" });
+      }
+
+      res.json({ message: "Plan daily return rate updated successfully", plan: updatedPlan });
+    } catch (error) {
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to update plan rate" });
+    }
+  });
+
   // Test Bitcoin wallet generation (admin only)
   app.post("/api/admin/test-bitcoin-generation", async (req, res) => {
     try {

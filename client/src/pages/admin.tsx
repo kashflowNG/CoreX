@@ -250,6 +250,68 @@ export default function Admin() {
     },
   });
 
+  const updatePlanAmountMutation = useMutation({
+    mutationFn: async ({ planId, minAmount }: { planId: number; minAmount: string }) => {
+      const response = await fetch('/api/admin/update-plan-amount', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ planId, minAmount }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message);
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/investment-plans'] });
+      toast({
+        title: "Plan Updated",
+        description: "Investment plan minimum amount has been updated.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Update Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updatePlanRateMutation = useMutation({
+    mutationFn: async ({ planId, dailyReturnRate }: { planId: number; dailyReturnRate: string }) => {
+      const response = await fetch('/api/admin/update-plan-rate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ planId, dailyReturnRate }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message);
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/investment-plans'] });
+      toast({
+        title: "Plan Updated",
+        description: "Investment plan daily return rate has been updated.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Update Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleUpdateBalance = (user: User) => {
     setSelectedUser(user);
     setNewBalance(user.balance);
@@ -464,6 +526,80 @@ export default function Admin() {
             <p className="text-xs text-muted-foreground mt-2">
               This will run a test to ensure Bitcoin addresses and private keys can be generated correctly.
             </p>
+          </CardContent>
+        </Card>
+
+        {/* Investment Plan Management */}
+        <Card className="dark-card dark-border">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-foreground">
+              <TrendingUp className="w-5 h-5" />
+              Investment Plan Management
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {investmentPlans?.map((plan) => (
+                <div key={plan.id} className="border rounded-lg p-4 space-y-3">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h4 className="font-medium text-foreground">{plan.name}</h4>
+                      <p className="text-sm text-muted-foreground">
+                        {plan.roiPercentage}% ROI over {plan.durationDays} days
+                      </p>
+                    </div>
+                    <span 
+                      className="px-2 py-1 rounded text-xs"
+                      style={{ backgroundColor: plan.color + '20', color: plan.color }}
+                    >
+                      {plan.isActive ? 'Active' : 'Inactive'}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 gap-3">
+                    <div>
+                      <Label htmlFor={`minAmount-${plan.id}`}>Minimum Amount (BTC)</Label>
+                      <Input
+                        id={`minAmount-${plan.id}`}
+                        type="number"
+                        step="0.00000001"
+                        defaultValue={plan.minAmount}
+                        placeholder="0.00000000"
+                        className="mt-1"
+                        onBlur={(e) => {
+                          const newAmount = e.target.value;
+                          if (newAmount && newAmount !== plan.minAmount) {
+                            updatePlanAmountMutation.mutate({
+                              planId: plan.id,
+                              minAmount: newAmount
+                            });
+                          }
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor={`dailyRate-${plan.id}`}>Daily Return Rate (%)</Label>
+                      <Input
+                        id={`dailyRate-${plan.id}`}
+                        type="number"
+                        step="0.0001"
+                        defaultValue={(parseFloat(plan.dailyReturnRate) * 100).toFixed(4)}
+                        placeholder="0.0000"
+                        className="mt-1"
+                        onBlur={(e) => {
+                          const newRate = (parseFloat(e.target.value) / 100).toString();
+                          if (newRate && newRate !== plan.dailyReturnRate) {
+                            updatePlanRateMutation.mutate({
+                              planId: plan.id,
+                              dailyReturnRate: newRate
+                            });
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
 

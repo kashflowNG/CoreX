@@ -16,6 +16,8 @@ export interface IStorage {
   getInvestmentPlans(): Promise<InvestmentPlan[]>;
   getInvestmentPlan(id: number): Promise<InvestmentPlan | undefined>;
   createInvestmentPlan(plan: InsertInvestmentPlan): Promise<InvestmentPlan>;
+  updateInvestmentPlanAmount(planId: number, minAmount: string): Promise<InvestmentPlan | undefined>;
+  updateInvestmentPlanRate(planId: number, dailyReturnRate: string): Promise<InvestmentPlan | undefined>;
 
   // Investment operations
   getUserInvestments(userId: number): Promise<Investment[]>;
@@ -109,6 +111,24 @@ export class DatabaseStorage implements IStorage {
       .values(insertPlan)
       .returning();
     return plan;
+  }
+
+  async updateInvestmentPlanAmount(planId: number, minAmount: string): Promise<InvestmentPlan | undefined> {
+    const [plan] = await db
+      .update(investmentPlans)
+      .set({ minAmount })
+      .where(eq(investmentPlans.id, planId))
+      .returning();
+    return plan || undefined;
+  }
+
+  async updateInvestmentPlanRate(planId: number, dailyReturnRate: string): Promise<InvestmentPlan | undefined> {
+    const [plan] = await db
+      .update(investmentPlans)
+      .set({ dailyReturnRate })
+      .where(eq(investmentPlans.id, planId))
+      .returning();
+    return plan || undefined;
   }
 
   async getUserInvestments(userId: number): Promise<Investment[]> {
