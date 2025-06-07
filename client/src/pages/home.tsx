@@ -40,7 +40,7 @@ export default function Home() {
       setLocation('/login');
       return;
     }
-    
+
     // Redirect to wallet setup if user doesn't have a wallet
     if (!user.hasWallet) {
       setLocation('/wallet-setup');
