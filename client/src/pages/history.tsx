@@ -29,6 +29,11 @@ export default function History() {
     enabled: !!user?.id,
   });
 
+  const { data: transactions, isLoading: loadingTransactions } = useQuery<Transaction[]>({
+    queryKey: ['/api/transactions'],
+    enabled: !!user?.id,
+  });
+
   if (!user) {
     return <div>Please log in to view your history</div>;
   }
@@ -41,7 +46,7 @@ export default function History() {
           <p className="text-muted-foreground">Your investment and transaction history</p>
         </div>
 
-        {isLoading || loadingNotifications ? (
+        {isLoading || loadingNotifications || loadingTransactions ? (
           <div className="space-y-4">
             {[...Array(3)].map((_, i) => (
               <Card key={i} className="dark-card dark-border">

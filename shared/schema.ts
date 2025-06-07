@@ -106,7 +106,6 @@ export const insertAdminConfigSchema = createInsertSchema(adminConfig).omit({
 
 export const insertTransactionSchema = createInsertSchema(transactions).omit({
   id: true,
-  status: true,
   confirmedBy: true,
   createdAt: true,
   confirmedAt: true,

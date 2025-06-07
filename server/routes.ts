@@ -669,14 +669,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Transaction not found or already processed" });
       }
 
+      // Handle withdrawal confirmation - deduct balance
+      if (transaction.type === "withdrawal") {
+        const user = await storage.getUser(transaction.userId);
+        if (user) {
+          const currentBalance = parseFloat(user.balance);
+          const withdrawAmount = parseFloat(transaction.amount);
+          const newBalance = Math.max(0, currentBalance - withdrawAmount);
+          await storage.updateUserBalance(transaction.userId, newBalance.toFixed(8));
+        }
+      }
+
       // Create notification for user
-      const notificationMessage = transaction.type === "deposit" 
-        ? `Your deposit of ${transaction.amount} BTC has been confirmed and added to your balance.`
-        : `Your investment of ${transaction.amount} BTC has been confirmed and is now active.`;
+      let notificationMessage = "";
+      let notificationTitle = "";
+      
+      switch (transaction.type) {
+        case "deposit":
+          notificationMessage = `Your deposit of ${transaction.amount} BTC has been confirmed and added to your balance.`;
+          notificationTitle = "Deposit Confirmed";
+          break;
+        case "withdrawal":
+          notificationMessage = `Your withdrawal of ${transaction.amount} BTC to ${transaction.transactionHash} has been processed successfully.`;
+          notificationTitle = "Withdrawal Completed";
+          break;
+        case "investment":
+          notificationMessage = `Your investment of ${transaction.amount} BTC has been confirmed and is now active.`;
+          notificationTitle = "Investment Confirmed";
+          break;
+        default:
+          notificationMessage = `Your ${transaction.type} of ${transaction.amount} BTC has been confirmed.`;
+          notificationTitle = `${transaction.type.charAt(0).toUpperCase() + transaction.type.slice(1)} Confirmed`;
+      }
 
       await storage.createNotification({
         userId: transaction.userId,
-        title: `${transaction.type === "deposit" ? "Deposit" : "Investment"} Confirmed`,
+        title: notificationTitle,
         message: notificationMessage,
         type: "success"
       });
@@ -854,6 +882,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { address, amount } = req.body;
+      
+      if (!address || !amount) {
+        return res.status(400).json({ error: "Address and amount are required" });
+      }
+
       const user = await storage.getUser(req.session.userId);
 
       if (!user) {
@@ -863,23 +896,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userBalance = parseFloat(user.balance);
       const withdrawAmount = parseFloat(amount);
 
+      if (withdrawAmount <= 0) {
+        return res.status(400).json({ error: "Amount must be greater than 0" });
+      }
+
       if (withdrawAmount > userBalance) {
         return res.status(400).json({ error: "Insufficient balance" });
       }
 
-      // Deduct amount from user balance
-      const newBalance = (userBalance - withdrawAmount).toString();
-      await storage.updateUserBalance(req.session.userId, newBalance);
+      // Create withdrawal transaction record (pending status)
+      const transaction = await storage.createTransaction({
+        userId: req.session.userId,
+        type: "withdrawal",
+        amount: amount,
+        status: "pending",
+        transactionHash: address, // Store withdrawal address in transactionHash field
+      });
 
-      // Create notification
+      // Create notification about pending withdrawal
       await storage.createNotification({
         userId: req.session.userId,
-        title: "Bitcoin Withdrawal",
-        message: `Withdrew ${amount} BTC to ${address}`,
+        title: "Withdrawal Requested",
+        message: `Your withdrawal request for ${amount} BTC to ${address} is pending admin approval. You will be notified once it's processed.`,
         type: "info"
       });
 
-      res.json({ message: "Withdrawal processed successfully" });
+      res.json({ 
+        message: "Withdrawal request submitted successfully and is pending admin approval",
+        transaction 
+      });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
