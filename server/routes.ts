@@ -495,23 +495,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Return default addresses if no config exists
         res.json({
           vaultAddress: "1CoreXVaultAddress12345678901234567890",
-          depositAddress: "1CoreXDepositAddress12345678901234567890",
-          freePlanRate: "0.0001"
+          depositAddress: "1CoreXDepositAddress12345678901234567890"
         });
       } else {
-        res.json({
-          ...config,
-          freePlanRate: config.freePlanRate || "0.0001"
-        });
+        res.json(config);
       }
     } catch (error: any) {
-      console.error('Admin config error:', error);
-      // Return default config on any error
-      res.json({
-        vaultAddress: "1CoreXVaultAddress12345678901234567890",
-        depositAddress: "1CoreXDepositAddress12345678901234567890",
-        freePlanRate: "0.0001"
-      });
+      res.status(500).json({ error: error.message });
     }
   });
 

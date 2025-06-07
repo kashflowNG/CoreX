@@ -1,35 +1,26 @@
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
-import { users, investmentPlans, investments, notifications, adminConfig, transactions } from "@shared/schema";
+import { drizzle } from 'drizzle-orm/neon-http';
+import { neon } from '@neondatabase/serverless';
 
-const connectionString = process.env.DATABASE_URL || "postgresql://user:password@localhost:5432/database";
-
-const client = postgres(connectionString);
-export const db = drizzle(client);
-
-// Add missing column migration
-async function addMissingColumns() {
-  try {
-    // Check if free_plan_rate column exists and add it if it doesn't
-    await client`
-      ALTER TABLE admin_config 
-      ADD COLUMN IF NOT EXISTS free_plan_rate DECIMAL(8,6) DEFAULT 0.0001;
-    `;
-    console.log("✅ Database schema updated");
-  } catch (error) {
-    console.log("⚠️ Schema update completed or already exists");
-  }
+if (!process.env.DATABASE_URL) {
+  throw new Error('DATABASE_URL environment variable is required');
 }
+
+// Add connection configuration with timeout and retry settings
+const sql = neon(process.env.DATABASE_URL, {
+  connectionTimeoutMillis: 30000,
+  queryTimeoutMillis: 60000,
+});
+
+export const db = drizzle(sql);
 
 // Test database connection
-async function testConnection() {
+export async function testConnection() {
   try {
-    await addMissingColumns();
-    await db.select().from(users).limit(1);
-    console.log("✅ Database connection successful");
+    await sql`SELECT 1`;
+    console.log('✅ Database connection successful');
+    return true;
   } catch (error) {
-    console.error("❌ Database connection failed:", error);
+    console.error('❌ Database connection failed:', error);
+    return false;
   }
 }
-
-testConnection();

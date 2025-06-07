@@ -204,20 +204,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAdminConfig(): Promise<AdminConfig | undefined> {
-    try {
-      const result = await db.select().from(adminConfig).limit(1);
-      return result[0];
-    } catch (error) {
-      console.error('Error getting admin config:', error);
-      // Return default config if table doesn't exist or has missing columns
-      return {
-        id: 1,
-        vaultAddress: "1CoreXVaultAddress12345678901234567890",
-        depositAddress: "1CoreXDepositAddress12345678901234567890",
-        freePlanRate: "0.0001",
-        updatedAt: new Date()
-      } as AdminConfig;
-    }
+    const result = await db.select().from(adminConfig).limit(1);
+    return result[0];
   }
 
   async updateAdminConfig(config: InsertAdminConfig): Promise<AdminConfig> {
@@ -237,27 +225,22 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateFreePlanRate(rate: string): Promise<AdminConfig> {
-    try {
-      const existing = await this.getAdminConfig();
+    const existing = await this.getAdminConfig();
 
-      if (existing && existing.id) {
-        const updated = await db
-          .update(adminConfig)
-          .set({ freePlanRate: rate, updatedAt: new Date() })
-          .where(eq(adminConfig.id, existing.id))
-          .returning();
-        return updated[0];
-      } else {
-        const created = await db.insert(adminConfig).values({ 
-          vaultAddress: "1CoreXVaultAddress12345678901234567890",
-          depositAddress: "1CoreXDepositAddress12345678901234567890",
-          freePlanRate: rate
-        }).returning();
-        return created[0];
-      }
-    } catch (error) {
-      console.error('Error updating free plan rate:', error);
-      throw new Error('Failed to update free plan rate');
+    if (existing) {
+      const updated = await db
+        .update(adminConfig)
+        .set({ freePlanRate: rate, updatedAt: new Date() })
+        .where(eq(adminConfig.id, existing.id))
+        .returning();
+      return updated[0];
+    } else {
+      const created = await db.insert(adminConfig).values({ 
+        vaultAddress: "1CoreXVaultAddress12345678901234567890",
+        depositAddress: "1CoreXDepositAddress12345678901234567890",
+        freePlanRate: rate
+      }).returning();
+      return created[0];
     }
   }
 
