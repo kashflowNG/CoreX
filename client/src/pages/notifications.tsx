@@ -211,7 +211,7 @@ export default function Notifications() {
                             </div>
                           </div>
 
-                          <p className="text-muted-foreground mb-4 leading-relaxed whitespace-pre-line">
+                          <p className="text-muted-foreground mb-4 leading-relaxed whitespace-pre-line break-words overflow-wrap-anywhere">
                             {notification.message}
                           </p>
 

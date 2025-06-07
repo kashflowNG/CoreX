@@ -1206,6 +1206,24 @@ Your new balance: ${newBalance.toFixed(8)} BTC`,
     }
   });
 
+  app.patch("/api/notifications/:userId/mark-all-read", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const notifications = await storage.getUserNotifications(userId);
+      
+      // Mark all unread notifications as read
+      const markPromises = notifications
+        .filter(n => !n.isRead)
+        .map(n => storage.markNotificationAsRead(n.id));
+      
+      await Promise.all(markPromises);
+      
+      res.json({ message: "All notifications marked as read" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to mark all notifications as read" });
+    }
+  });
+
   app.get("/api/notifications/:userId/unread-count", async (req, res) => {
     try {
       const userId = parseInt(req.params.userId);
