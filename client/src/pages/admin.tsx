@@ -814,7 +814,7 @@ export default function Admin() {
                   <SelectValue placeholder="Select a plan" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="0">Free Plan (No automatic updates)</SelectItem>
+                  <SelectItem value="0">Free Plan (3.67% every 10 minutes)</SelectItem>
                   {investmentPlans?.filter(plan => plan.id && plan.id.toString().trim() !== '').map((plan) => (
                     <SelectItem key={plan.id} value={plan.id.toString()}>
                       {plan.name} - {(parseFloat(plan.dailyReturnRate) * 100).toFixed(2)}% daily
