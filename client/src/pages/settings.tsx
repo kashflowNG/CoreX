@@ -1,14 +1,17 @@
 import { useAuth } from "@/hooks/use-auth";
 import { useCurrency } from "@/hooks/use-currency";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
-import { BottomNavigation } from "@/components/bottom-navigation";
-import { User, Globe, LogOut, Shield, ArrowLeft } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { Link } from "wouter";
+import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { ArrowLeft, Bell, Shield, Palette, Globe, User, Lock } from "lucide-react";
+import { Link } from "wouter";
+import { BottomNavigation } from "@/components/bottom-navigation";
+import { useAuth } from "@/hooks/use-auth";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Settings() {
   const { user, logout } = useAuth();

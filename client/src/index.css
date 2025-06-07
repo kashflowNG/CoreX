@@ -101,4 +101,61 @@
   .border-bitcoin {
     border-color: hsl(var(--bitcoin));
   }
+
+  .glassmorphism {
+    backdrop-filter: blur(20px);
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
+  .neon-glow {
+    box-shadow: 0 0 20px hsl(var(--bitcoin)), 0 0 40px hsl(var(--bitcoin)), 0 0 60px hsl(var(--bitcoin));
+  }
+
+  .card-hover {
+    transition: all 0.3s ease;
+  }
+
+  .card-hover:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  }
+
+  .floating-animation {
+    animation: floating 3s ease-in-out infinite;
+  }
+
+  @keyframes floating {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+  }
+
+  .pulse-border {
+    border: 2px solid transparent;
+    background: linear-gradient(90deg, transparent, hsl(var(--bitcoin)), transparent) border-box;
+    animation: pulse-border 2s infinite;
+  }
+
+  @keyframes pulse-border {
+    0%, 100% { background-position: -200% center; }
+    50% { background-position: 200% center; }
+  }
+
+  .gradient-text {
+    background: linear-gradient(135deg, hsl(var(--bitcoin)), hsl(var(--gold)));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .shimmer {
+    background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.2) 50%, transparent 100%);
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
+  }
+
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
 }
