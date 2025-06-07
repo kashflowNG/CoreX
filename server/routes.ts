@@ -518,9 +518,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/update-free-plan-rate", async (req, res) => {
     try {
       const { rate } = req.body;
+      
+      // Validate rate
+      const rateNum = parseFloat(rate);
+      if (isNaN(rateNum) || rateNum < 0) {
+        return res.status(400).json({ error: "Invalid rate. Rate must be a positive number." });
+      }
+      
       const config = await storage.updateFreePlanRate(rate);
       res.json({ message: "Free plan rate updated successfully", config });
     } catch (error: any) {
+      console.error('Error updating free plan rate:', error);
       res.status(500).json({ error: error.message });
     }
   });

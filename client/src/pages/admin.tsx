@@ -462,20 +462,54 @@ export default function Admin() {
               </div>
               <div>
                 <Label htmlFor="freePlanRate">Free Plan Rate (% per 10 minutes)</Label>
-                <Input
-                  id="freePlanRate"
-                  type="number"
-                  step="0.0001"
-                  defaultValue={adminConfig ? (parseFloat(adminConfig.freePlanRate) * 100).toFixed(4) : "0.0100"}
-                  placeholder="0.0100"
-                  className="mt-1"
-                  onBlur={(e) => {
-                    const newRate = (parseFloat(e.target.value) / 100).toString();
-                    if (newRate && newRate !== "NaN") {
-                      updateFreePlanRateMutation.mutate({ rate: newRate });
-                    }
-                  }}
-                />
+                <div className="flex gap-2">
+                  <Input
+                    id="freePlanRate"
+                    type="number"
+                    step="0.0001"
+                    defaultValue={adminConfig ? (parseFloat(adminConfig.freePlanRate) * 100).toFixed(4) : "0.0100"}
+                    placeholder="0.0100"
+                    className="mt-1 flex-1"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        const target = e.target as HTMLInputElement;
+                        const newRate = parseFloat(target.value) / 100;
+                        if (!isNaN(newRate) && newRate >= 0) {
+                          updateFreePlanRateMutation.mutate({ rate: newRate.toString() });
+                        } else {
+                          toast({
+                            title: "Invalid Rate",
+                            description: "Please enter a valid percentage rate",
+                            variant: "destructive",
+                          });
+                        }
+                      }
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="mt-1"
+                    onClick={(e) => {
+                      const input = document.getElementById('freePlanRate') as HTMLInputElement;
+                      if (input) {
+                        const newRate = parseFloat(input.value) / 100;
+                        if (!isNaN(newRate) && newRate >= 0) {
+                          updateFreePlanRateMutation.mutate({ rate: newRate.toString() });
+                        } else {
+                          toast({
+                            title: "Invalid Rate",
+                            description: "Please enter a valid percentage rate",
+                            variant: "destructive",
+                          });
+                        }
+                      }
+                    }}
+                    disabled={updateFreePlanRateMutation.isPending}
+                  >
+                    {updateFreePlanRateMutation.isPending ? "Updating..." : "Update"}
+                  </Button>
+                </div>
                 <p className="text-xs text-muted-foreground mt-1">
                   Current: {adminConfig ? (parseFloat(adminConfig.freePlanRate) * 100).toFixed(4) : "0.0100"}% per 10 minutes
                 </p>
