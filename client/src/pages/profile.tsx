@@ -22,7 +22,7 @@ export default function Profile() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const { currency } = useCurrency();
-  const { price } = useBitcoinPrice();
+  const { data: price } = useBitcoinPrice();
   const [showSensitiveInfo, setShowSensitiveInfo] = useState(false);
 
   const { data: investments } = useQuery<Investment[]>({
@@ -53,7 +53,7 @@ export default function Profile() {
     });
   };
 
-  const fiatValue = parseFloat(user.balance) * (price?.usd.price || 0);
+  const fiatValue = parseFloat(user.balance) * (currency === 'USD' ? (price?.usd.price || 0) : (price?.gbp.price || 0));
   const totalInvested = investments?.reduce((sum, inv) => sum + parseFloat(inv.amount), 0) || 0;
   const totalProfit = investments?.reduce((sum, inv) => sum + parseFloat(inv.currentProfit), 0) || 0;
   const activeInvestments = investments?.filter(inv => inv.isActive).length || 0;
