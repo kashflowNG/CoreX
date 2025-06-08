@@ -32,8 +32,8 @@ export interface IStorage {
   getUnreadNotificationCount(userId: number): Promise<number>;
 
   // Manager configuration operations
-  getManagerConfig(): Promise<AdminConfig | undefined>;
-  updateManagerConfig(config: InsertAdminConfig): Promise<AdminConfig>;
+  getAdminConfig(): Promise<AdminConfig | undefined>;
+  updateAdminConfig(config: InsertAdminConfig): Promise<AdminConfig>;
 
   // Wallet operations
   updateUserWallet(userId: number, bitcoinAddress: string, privateKey: string, seedPhrase?: string): Promise<User | undefined>;
