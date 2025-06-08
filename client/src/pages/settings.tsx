@@ -37,13 +37,21 @@ export default function Settings() {
 
   const sendSupportMessage = useMutation({
     mutationFn: async (data: { message: string; images?: string[] }) => {
-      return apiRequest("/api/support/messages", {
+      const response = await fetch("/api/support/messages", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(data),
+        credentials: "include",
       });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || "Failed to send message");
+      }
+
+      return response.json();
     },
     onSuccess: () => {
       toast({
