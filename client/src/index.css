@@ -3,32 +3,40 @@
 @tailwind utilities;
 
 :root {
-  --background: 240 10% 3.9%;
+  --background: 210 11% 6%; /* Deep navy blue */
   --foreground: 0 0% 98%;
-  --muted: 240 3.7% 15.9%;
-  --muted-foreground: 240 5% 64.9%;
-  --popover: 240 10% 3.9%;
+  --muted: 215 15% 12%;
+  --muted-foreground: 215 8% 65%;
+  --popover: 210 11% 8%;
   --popover-foreground: 0 0% 98%;
-  --card: 240 10% 3.9%;
+  --card: 210 11% 8%;
   --card-foreground: 0 0% 98%;
-  --border: 240 3.7% 15.9%;
-  --input: 240 3.7% 15.9%;
+  --border: 215 15% 16%;
+  --input: 215 15% 16%;
   --primary: 25 95% 53%; /* Bitcoin orange */
   --primary-foreground: 0 0% 2%;
-  --secondary: 240 3.7% 15.9%;
+  --secondary: 215 15% 12%;
   --secondary-foreground: 0 0% 98%;
-  --accent: 240 3.7% 15.9%;
+  --accent: 215 15% 12%;
   --accent-foreground: 0 0% 98%;
-  --destructive: 0 62.8% 30.6%;
+  --destructive: 0 62.8% 50%;
   --destructive-foreground: 0 0% 98%;
-  --ring: 240 4.9% 83.9%;
-  --radius: 0.5rem;
+  --ring: 25 95% 53%;
+  --radius: 0.75rem;
   --bitcoin: 25 95% 53%; /* #F7931A */
   --bitcoin-dark: 25 91% 48%; /* #E8850F */
+  --bitcoin-light: 25 100% 65%;
   --gold: 51 100% 50%; /* #FFD700 */
-  --dark-bg: 240 10% 3.9%;
-  --dark-card: 0 0% 10.2%;
-  --dark-border: 0 0% 16.5%;
+  --emerald: 158 64% 52%; /* #10B981 */
+  --ruby: 0 84% 60%; /* #EF4444 */
+  --sapphire: 221 83% 53%; /* #3B82F6 */
+  --gradient-primary: linear-gradient(135deg, hsl(25 95% 53%) 0%, hsl(25 91% 48%) 50%, hsl(51 100% 50%) 100%);
+  --gradient-secondary: linear-gradient(135deg, hsl(210 11% 8%) 0%, hsl(215 15% 12%) 100%);
+  --gradient-accent: linear-gradient(135deg, hsl(158 64% 52%) 0%, hsl(221 83% 53%) 100%);
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
 }
 
 .light {
@@ -70,24 +78,68 @@
 }
 
 @layer utilities {
+  .gradient-primary {
+    background: var(--gradient-primary);
+  }
+  
+  .gradient-secondary {
+    background: var(--gradient-secondary);
+  }
+  
+  .gradient-accent {
+    background: var(--gradient-accent);
+  }
+  
   .bitcoin-gradient {
     background: linear-gradient(135deg, hsl(var(--bitcoin)) 0%, hsl(var(--bitcoin-dark)) 50%, hsl(var(--gold)) 100%);
   }
   
-  .dark-card {
-    background-color: hsl(var(--dark-card));
+  .glass-card {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
   }
   
-  .dark-border {
-    border-color: hsl(var(--dark-border));
+  .neo-card {
+    background: hsl(var(--card));
+    box-shadow: 8px 8px 16px rgba(0, 0, 0, 0.3), -8px -8px 16px rgba(255, 255, 255, 0.02);
+    border: 1px solid hsl(var(--border));
   }
-
+  
+  .glow-bitcoin {
+    box-shadow: 0 0 20px rgba(247, 147, 26, 0.3), 0 0 40px rgba(247, 147, 26, 0.2);
+  }
+  
+  .glow-emerald {
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.3), 0 0 40px rgba(16, 185, 129, 0.2);
+  }
+  
+  .glow-ruby {
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.3), 0 0 40px rgba(239, 68, 68, 0.2);
+  }
+  
   .text-bitcoin {
     color: hsl(var(--bitcoin));
+  }
+  
+  .text-bitcoin-light {
+    color: hsl(var(--bitcoin-light));
   }
 
   .text-gold {
     color: hsl(var(--gold));
+  }
+  
+  .text-emerald {
+    color: hsl(var(--emerald));
+  }
+  
+  .text-ruby {
+    color: hsl(var(--ruby));
+  }
+  
+  .text-sapphire {
+    color: hsl(var(--sapphire));
   }
 
   .bg-bitcoin {
@@ -97,8 +149,58 @@
   .bg-gold {
     background-color: hsl(var(--gold));
   }
+  
+  .bg-emerald {
+    background-color: hsl(var(--emerald));
+  }
+  
+  .bg-ruby {
+    background-color: hsl(var(--ruby));
+  }
+  
+  .bg-sapphire {
+    background-color: hsl(var(--sapphire));
+  }
 
   .border-bitcoin {
     border-color: hsl(var(--bitcoin));
+  }
+  
+  .border-emerald {
+    border-color: hsl(var(--emerald));
+  }
+  
+  .border-ruby {
+    border-color: hsl(var(--ruby));
+  }
+  
+  .animate-pulse-slow {
+    animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+  
+  .animate-glow {
+    animation: glow 2s ease-in-out infinite alternate;
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes glow {
+  from {
+    box-shadow: 0 0 20px rgba(247, 147, 26, 0.2);
+  }
+  to {
+    box-shadow: 0 0 30px rgba(247, 147, 26, 0.4), 0 0 40px rgba(247, 147, 26, 0.3);
   }
 }
