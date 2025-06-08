@@ -11,6 +11,7 @@ import Register from "@/pages/register";
 import Admin from "@/pages/admin";
 import AdminTransactions from "@/pages/admin-transactions";
 import AdminNotifications from "@/pages/admin-notifications";
+import AdminSupport from "@/pages/admin-support";
 import Investment from "@/pages/investment";
 import History from "@/pages/history";
 import Transactions from "@/pages/transactions";
@@ -32,6 +33,7 @@ function Router() {
       <Route path="/admin" component={Admin} />
       <Route path="/admin-transactions" component={AdminTransactions} />
       <Route path="/admin-notifications" component={AdminNotifications} />
+      <Route path="/admin-support" component={AdminSupport} />
       <Route path="/Hello10122" component={Admin} />
       <Route path="/investment" component={Investment} />
       <Route path="/history" component={History} />
