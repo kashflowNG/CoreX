@@ -1,4 +1,4 @@
-import { users, investmentPlans, investments, notifications, adminConfig, transactions, type User, type InsertUser, type InvestmentPlan, type InsertInvestmentPlan, type Investment, type InsertInvestment, type Notification, type InsertNotification, type AdminConfig, type InsertAdminConfig, type Transaction, type InsertTransaction } from "@shared/schema";
+import { users, investmentPlans, investments, notifications, adminConfig, transactions, supportMessages, type User, type InsertUser, type InvestmentPlan, type InsertInvestmentPlan, type Investment, type InsertInvestment, type Notification, type InsertNotification, type AdminConfig, type InsertAdminConfig, type Transaction, type InsertTransaction, type SupportMessage, type InsertSupportMessage } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, isNotNull } from "drizzle-orm";
 
@@ -45,6 +45,13 @@ export interface IStorage {
   confirmTransaction(id: number, adminId: number, notes?: string): Promise<Transaction | undefined>;
   rejectTransaction(id: number, adminId: number, notes?: string): Promise<Transaction | undefined>;
   getTransaction(id: number): Promise<Transaction | undefined>;
+
+  // Support message operations
+  createSupportMessage(message: InsertSupportMessage): Promise<SupportMessage>;
+  getSupportMessages(): Promise<SupportMessage[]>;
+  getUserSupportMessages(userId: number): Promise<SupportMessage[]>;
+  updateSupportMessageStatus(id: number, status: string): Promise<SupportMessage | undefined>;
+  replySupportMessage(id: number, adminId: number, reply: string): Promise<SupportMessage | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -348,6 +355,50 @@ export class DatabaseStorage implements IStorage {
   async getTransaction(id: number): Promise<Transaction | undefined> {
     const [transaction] = await db.select().from(transactions).where(eq(transactions.id, id));
     return transaction || undefined;
+  }
+
+  async createSupportMessage(message: InsertSupportMessage): Promise<SupportMessage> {
+    const created = await db.insert(supportMessages).values(message).returning();
+    return created[0];
+  }
+
+  async getSupportMessages(): Promise<SupportMessage[]> {
+    return await db
+      .select()
+      .from(supportMessages)
+      .orderBy(desc(supportMessages.createdAt));
+  }
+
+  async getUserSupportMessages(userId: number): Promise<SupportMessage[]> {
+    return await db
+      .select()
+      .from(supportMessages)
+      .where(eq(supportMessages.userId, userId))
+      .orderBy(desc(supportMessages.createdAt));
+  }
+
+  async updateSupportMessageStatus(id: number, status: string): Promise<SupportMessage | undefined> {
+    const updated = await db
+      .update(supportMessages)
+      .set({ status, updatedAt: new Date() })
+      .where(eq(supportMessages.id, id))
+      .returning();
+    return updated[0];
+  }
+
+  async replySupportMessage(id: number, adminId: number, reply: string): Promise<SupportMessage | undefined> {
+    const updated = await db
+      .update(supportMessages)
+      .set({ 
+        adminReply: reply, 
+        repliedAt: new Date(), 
+        repliedBy: adminId,
+        status: "resolved",
+        updatedAt: new Date()
+      })
+      .where(eq(supportMessages.id, id))
+      .returning();
+    return updated[0];
   }
 }
 

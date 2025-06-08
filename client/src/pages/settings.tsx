@@ -5,14 +5,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
 import { BottomNavigation } from "@/components/bottom-navigation";
 import { SecurityFeatures } from "@/components/security-features";
-import { User, Globe, LogOut, Shield, ArrowLeft, Settings as SettingsIcon, Bell, Lock, Smartphone, Palette, HelpCircle, ChevronRight } from "lucide-react";
+import { User, Globe, LogOut, Shield, ArrowLeft, Settings as SettingsIcon, Bell, Lock, Smartphone, Palette, HelpCircle, ChevronRight, Send, Upload, FileImage } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
 import { Switch } from "@/components/ui/switch";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function Settings() {
   const { user, logout } = useAuth();
@@ -22,6 +25,8 @@ export default function Settings() {
   const [notifications, setNotifications] = useState(true);
   const [biometric, setBiometric] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
+  const [supportMessage, setSupportMessage] = useState("");
+  const [supportImages, setSupportImages] = useState<File[]>([]);
 
   const handleLogout = () => {
     logout();
@@ -30,6 +35,30 @@ export default function Settings() {
       description: "You have been signed out successfully",
     });
   };
+
+  const sendSupportMessage = useMutation({
+    mutationFn: async (data: { message: string; images?: string[] }) => {
+      return apiRequest("/api/support/messages", {
+        method: "POST",
+        body: data,
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Message Sent",
+        description: "Your support request has been submitted. We'll get back to you soon!",
+      });
+      setSupportMessage("");
+      setSupportImages([]);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send message",
+        variant: "destructive",
+      });
+    },
+  });
 
   if (!user) {
     return <div>Please log in to access settings</div>;
@@ -49,10 +78,10 @@ export default function Settings() {
       description: "Privacy and security settings"
     },
     {
-      id: "preferences",
-      label: "Preferences",
-      icon: SettingsIcon,
-      description: "App preferences and customization"
+      id: "support",
+      label: "Support",
+      icon: HelpCircle,
+      description: "Chat with our support team"
     },
     {
       id: "notifications",
@@ -197,45 +226,94 @@ export default function Settings() {
             <SecurityFeatures userEmail={user.email} />
           )}
 
-          {activeTab === "preferences" && (
+          {activeTab === "support" && (
             <Card className="border-0 shadow-lg">
               <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
-                    <SettingsIcon className="w-4 h-4 text-purple-500" />
+                  <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                    <HelpCircle className="w-4 h-4 text-blue-500" />
                   </div>
-                  App Preferences
+                  Contact Support
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 rounded-xl bg-muted/50">
-                    <div className="flex items-center gap-3">
-                      <Smartphone className="w-5 h-5 text-muted-foreground" />
-                      <div>
-                        <p className="font-medium text-foreground">Biometric Authentication</p>
-                        <p className="text-sm text-muted-foreground">Use fingerprint or face ID</p>
-                      </div>
-                    </div>
-                    <Switch 
-                      checked={biometric} 
-                      onCheckedChange={setBiometric}
+                  <div className="p-4 rounded-xl bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-950/20 dark:to-blue-900/20 border border-blue-200 dark:border-blue-800">
+                    <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-2">How can we help you?</h4>
+                    <p className="text-sm text-blue-700 dark:text-blue-300">
+                      Send us a message and our support team will get back to you as soon as possible. You can also attach images to help us better understand your issue.
+                    </p>
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label htmlFor="support-message">Your Message</Label>
+                    <textarea
+                      id="support-message"
+                      placeholder="Describe your issue or question in detail..."
+                      value={supportMessage}
+                      onChange={(e) => setSupportMessage(e.target.value)}
+                      className="w-full h-32 px-3 py-2 border border-border rounded-lg bg-background text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                     />
                   </div>
-                  
-                  <div className="flex items-center justify-between p-4 rounded-xl bg-muted/50">
-                    <div className="flex items-center gap-3">
-                      <Palette className="w-5 h-5 text-muted-foreground" />
-                      <div>
-                        <p className="font-medium text-foreground">Dark Mode</p>
-                        <p className="text-sm text-muted-foreground">Toggle app appearance</p>
-                      </div>
+
+                  <div className="space-y-3">
+                    <Label>Attachments (Optional)</Label>
+                    <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
+                      <input
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        onChange={(e) => {
+                          if (e.target.files) {
+                            setSupportImages(Array.from(e.target.files));
+                          }
+                        }}
+                        className="hidden"
+                        id="image-upload"
+                      />
+                      <label htmlFor="image-upload" className="cursor-pointer">
+                        <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                        <p className="text-sm text-muted-foreground mb-1">Click to upload images</p>
+                        <p className="text-xs text-muted-foreground">PNG, JPG, GIF up to 10MB</p>
+                      </label>
                     </div>
-                    <Switch 
-                      checked={darkMode} 
-                      onCheckedChange={setDarkMode}
-                    />
+                    
+                    {supportImages.length > 0 && (
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium">Selected files:</p>
+                        {supportImages.map((file, index) => (
+                          <div key={index} className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg">
+                            <FileImage className="w-4 h-4 text-muted-foreground" />
+                            <span className="text-sm text-foreground flex-1">{file.name}</span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setSupportImages(prev => prev.filter((_, i) => i !== index));
+                              }}
+                              className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
+                            >
+                              ×
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
+
+                  <Button 
+                    className="w-full h-12 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-lg transition-all duration-300 group"
+                    disabled={!supportMessage.trim() || sendSupportMessage.isPending}
+                    onClick={() => {
+                      sendSupportMessage.mutate({
+                        message: supportMessage,
+                        images: [] // For now, we'll implement image upload later
+                      });
+                    }}
+                  >
+                    <Send className="w-5 h-5 mr-2 group-hover:translate-x-1 transition-transform" />
+                    Send Message
+                  </Button>
                 </div>
               </CardContent>
             </Card>
