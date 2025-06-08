@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { BottomNavigation } from "@/components/bottom-navigation";
-import { SecurityFeatures } from "@/components/security-features";
-import { User, Globe, LogOut, Shield, ArrowLeft, Settings as SettingsIcon, Bell, Lock, Smartphone, Palette, HelpCircle, ChevronRight } from "lucide-react";
+
+import { User, Globe, LogOut, ArrowLeft, Bell, HelpCircle, ChevronRight, Crown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
 import { Switch } from "@/components/ui/switch";
@@ -20,8 +20,6 @@ export default function Settings() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("account");
   const [notifications, setNotifications] = useState(true);
-  const [biometric, setBiometric] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -41,18 +39,6 @@ export default function Settings() {
       label: "Account",
       icon: User,
       description: "Profile and personal information"
-    },
-    {
-      id: "security",
-      label: "Security",
-      icon: Shield,
-      description: "Privacy and security settings"
-    },
-    {
-      id: "preferences",
-      label: "Preferences",
-      icon: SettingsIcon,
-      description: "App preferences and customization"
     },
     {
       id: "notifications",
@@ -95,8 +81,8 @@ export default function Settings() {
                 <div className="flex items-center gap-2 mt-2">
                   {user.isAdmin ? (
                     <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0">
-                      <Shield className="w-3 h-3 mr-1" />
-                      Admin
+                      <Crown className="w-3 h-3 mr-1" />
+                      Manager
                     </Badge>
                   ) : (
                     <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
@@ -193,53 +179,7 @@ export default function Settings() {
             </Card>
           )}
 
-          {activeTab === "security" && (
-            <SecurityFeatures userEmail={user.email} />
-          )}
 
-          {activeTab === "preferences" && (
-            <Card className="border-0 shadow-lg">
-              <CardHeader className="pb-4">
-                <CardTitle className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
-                    <SettingsIcon className="w-4 h-4 text-purple-500" />
-                  </div>
-                  App Preferences
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 rounded-xl bg-muted/50">
-                    <div className="flex items-center gap-3">
-                      <Smartphone className="w-5 h-5 text-muted-foreground" />
-                      <div>
-                        <p className="font-medium text-foreground">Biometric Authentication</p>
-                        <p className="text-sm text-muted-foreground">Use fingerprint or face ID</p>
-                      </div>
-                    </div>
-                    <Switch 
-                      checked={biometric} 
-                      onCheckedChange={setBiometric}
-                    />
-                  </div>
-                  
-                  <div className="flex items-center justify-between p-4 rounded-xl bg-muted/50">
-                    <div className="flex items-center gap-3">
-                      <Palette className="w-5 h-5 text-muted-foreground" />
-                      <div>
-                        <p className="font-medium text-foreground">Dark Mode</p>
-                        <p className="text-sm text-muted-foreground">Toggle app appearance</p>
-                      </div>
-                    </div>
-                    <Switch 
-                      checked={darkMode} 
-                      onCheckedChange={setDarkMode}
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
 
           {activeTab === "notifications" && (
             <Card className="border-0 shadow-lg">

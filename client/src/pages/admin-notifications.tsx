@@ -14,7 +14,7 @@ import { Bell, Send, User, AlertCircle, CheckCircle, Info, AlertTriangle } from 
 import { apiRequest } from "@/lib/queryClient";
 import type { User as UserType, Notification } from "@shared/schema";
 
-export default function AdminNotifications() {
+export default function ManagementNotifications() {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();

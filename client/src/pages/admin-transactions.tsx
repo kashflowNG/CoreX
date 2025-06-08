@@ -13,7 +13,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { formatBitcoin, formatDate } from "@/lib/utils";
 import type { Transaction } from "@shared/schema";
 
-export default function AdminTransactions() {
+export default function ManagementTransactions() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();

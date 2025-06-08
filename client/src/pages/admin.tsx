@@ -23,7 +23,7 @@ interface AdminStats {
   activeInvestments: number;
 }
 
-export default function Admin() {
+export default function Management() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
