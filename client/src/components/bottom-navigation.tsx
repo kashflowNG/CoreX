@@ -18,23 +18,27 @@ export function BottomNavigation() {
   }
 
   return (
-    <nav className="fixed bottom-0 left-1/2 transform -translate-x-1/2 w-full max-w-sm dark-card border-t dark-border">
-      <div className="flex justify-around py-2">
-        {navItems.map((item) => {
-          const isActive = location === item.path;
-          const Icon = item.icon;
-          
-          return (
-            <Link key={item.path} href={item.path}>
-              <div className={`flex flex-col items-center py-2 px-4 transition-colors ${
-                isActive ? 'text-bitcoin' : 'text-muted-foreground hover:text-bitcoin'
-              }`}>
-                <Icon className="w-5 h-5 mb-1" />
-                <span className="text-xs">{item.label}</span>
-              </div>
-            </Link>
-          );
-        })}
+    <nav className="fixed bottom-0 left-1/2 transform -translate-x-1/2 w-full max-w-sm">
+      <div className="glass-card backdrop-blur-xl border-t border-border rounded-t-3xl mx-4 mb-4">
+        <div className="flex justify-around py-4 px-2">
+          {navItems.map((item) => {
+            const isActive = location === item.path;
+            const Icon = item.icon;
+            
+            return (
+              <Link key={item.path} href={item.path}>
+                <div className={`flex flex-col items-center py-3 px-4 rounded-2xl transition-all duration-300 transform hover:scale-105 ${
+                  isActive 
+                    ? 'text-bitcoin bg-bitcoin bg-opacity-10 glow-bitcoin' 
+                    : 'text-muted-foreground hover:text-bitcoin hover:bg-bitcoin hover:bg-opacity-5'
+                }`}>
+                  <Icon className="w-6 h-6 mb-1" />
+                  <span className="text-xs font-medium">{item.label}</span>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
       </div>
     </nav>
   );

@@ -1,11 +1,13 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import type { InvestmentPlan } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { formatBitcoin } from "@/lib/utils";
+import { TrendingUp, Clock, Target, Shield, Star, Zap } from "lucide-react";
 
 export function InvestmentPlans() {
   const { user } = useAuth();
