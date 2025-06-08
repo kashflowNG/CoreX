@@ -135,7 +135,7 @@ export default function Profile() {
               <div>
                 <p className="text-sm text-muted-foreground">Current Balance</p>
                 <p className="text-2xl font-bold dark-text">{formatBitcoin(user.balance)} BTC</p>
-                <p className="text-sm text-muted-foreground">≈ {formatCurrency(fiatValue, currency)}</p>
+                <p className="text-sm text-muted-foreground">≈ {price ? formatCurrency(fiatValue, currency) : 'Loading...'}</p>
               </div>
               <div className="text-right">
                 <Button
