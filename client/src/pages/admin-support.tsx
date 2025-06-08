@@ -24,6 +24,7 @@ export default function AdminSupport() {
   const queryClient = useQueryClient();
   const [selectedMessage, setSelectedMessage] = useState<SupportMessageWithUser | null>(null);
   const [replyText, setReplyText] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
 
   // Fetch support messages
   const { data: messages, isLoading } = useQuery({
@@ -94,16 +95,87 @@ export default function AdminSupport() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2">Support Dashboard</h1>
           <p className="text-muted-foreground">Manage user support requests and messages</p>
+          
+          {/* Support Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
+            <Card className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-red-100 dark:bg-red-900/20 rounded-lg flex items-center justify-center">
+                  <AlertCircle className="w-5 h-5 text-red-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Open</p>
+                  <p className="text-2xl font-bold text-red-600">
+                    {messages?.filter(m => m.status === 'open').length || 0}
+                  </p>
+                </div>
+              </div>
+            </Card>
+            
+            <Card className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-yellow-100 dark:bg-yellow-900/20 rounded-lg flex items-center justify-center">
+                  <Clock className="w-5 h-5 text-yellow-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">In Progress</p>
+                  <p className="text-2xl font-bold text-yellow-600">
+                    {messages?.filter(m => m.status === 'in_progress').length || 0}
+                  </p>
+                </div>
+              </div>
+            </Card>
+            
+            <Card className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-green-100 dark:bg-green-900/20 rounded-lg flex items-center justify-center">
+                  <CheckCircle className="w-5 h-5 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Resolved</p>
+                  <p className="text-2xl font-bold text-green-600">
+                    {messages?.filter(m => m.status === 'resolved').length || 0}
+                  </p>
+                </div>
+              </div>
+            </Card>
+            
+            <Card className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center">
+                  <MessageSquare className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Total</p>
+                  <p className="text-2xl font-bold text-blue-600">
+                    {messages?.length || 0}
+                  </p>
+                </div>
+              </div>
+            </Card>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Messages List */}
           <Card className="h-[600px] flex flex-col">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MessageSquare className="w-5 h-5" />
-                Support Messages ({messages?.length || 0})
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <MessageSquare className="w-5 h-5" />
+                  Support Messages ({messages?.filter(m => statusFilter === "all" || m.status === statusFilter).length || 0})
+                </CardTitle>
+                <select 
+                  value={statusFilter} 
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="px-3 py-1 rounded border bg-background text-foreground"
+                >
+                  <option value="all">All Messages</option>
+                  <option value="open">Open</option>
+                  <option value="in_progress">In Progress</option>
+                  <option value="resolved">Resolved</option>
+                </select>
+              </div>
             </CardHeader>
             <CardContent className="flex-1 overflow-hidden">
               <div className="h-full overflow-y-auto space-y-3">
@@ -115,7 +187,7 @@ export default function AdminSupport() {
                     No support messages yet
                   </div>
                 ) : (
-                  messages?.map((message: SupportMessageWithUser) => (
+                  messages?.filter(m => statusFilter === "all" || m.status === statusFilter).map((message: SupportMessageWithUser) => (
                     <div
                       key={message.id}
                       className={`p-4 rounded-lg border cursor-pointer transition-all ${
@@ -125,13 +197,18 @@ export default function AdminSupport() {
                       }`}
                       onClick={() => setSelectedMessage(message)}
                     >
-                      <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-start justify-between mb-3">
                         <div className="flex items-center gap-2">
-                          <User className="w-4 h-4 text-muted-foreground" />
-                          <span className="font-medium text-sm">{message.userEmail}</span>
+                          <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+                            <User className="w-4 h-4 text-primary" />
+                          </div>
+                          <div>
+                            <span className="font-medium text-sm">{message.userEmail}</span>
+                            <p className="text-xs text-muted-foreground">Message #{message.id}</p>
+                          </div>
                         </div>
                         <Badge className={getStatusColor(message.status)}>
-                          {message.status.replace("_", " ")}
+                          {message.status.replace("_", " ").toUpperCase()}
                         </Badge>
                       </div>
                       
