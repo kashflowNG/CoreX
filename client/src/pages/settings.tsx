@@ -1,4 +1,3 @@
-
 import { useAuth } from "@/hooks/use-auth";
 import { useCurrency } from "@/hooks/use-currency";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -40,7 +39,10 @@ export default function Settings() {
     mutationFn: async (data: { message: string; images?: string[] }) => {
       return apiRequest("/api/support/messages", {
         method: "POST",
-        body: data,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
       });
     },
     onSuccess: () => {
@@ -143,7 +145,7 @@ export default function Settings() {
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
-            
+
             return (
               <Card 
                 key={item.id}
@@ -198,9 +200,9 @@ export default function Settings() {
                       Verified
                     </Badge>
                   </div>
-                  
+
                   <Separator />
-                  
+
                   <div className="flex items-center justify-between p-4 rounded-xl bg-muted/50">
                     <div className="flex items-center gap-3">
                       <Globe className="w-5 h-5 text-muted-foreground" />
@@ -277,7 +279,7 @@ export default function Settings() {
                         <p className="text-xs text-muted-foreground">PNG, JPG, GIF up to 10MB</p>
                       </label>
                     </div>
-                    
+
                     {supportImages.length > 0 && (
                       <div className="space-y-2">
                         <p className="text-sm font-medium">Selected files:</p>
@@ -341,7 +343,7 @@ export default function Settings() {
                       onCheckedChange={setNotifications}
                     />
                   </div>
-                  
+
                   <div className="flex items-center justify-between p-4 rounded-xl bg-muted/50">
                     <div>
                       <p className="font-medium text-foreground">Price Alerts</p>
@@ -349,7 +351,7 @@ export default function Settings() {
                     </div>
                     <Switch defaultChecked />
                   </div>
-                  
+
                   <div className="flex items-center justify-between p-4 rounded-xl bg-muted/50">
                     <div>
                       <p className="font-medium text-foreground">Investment Updates</p>
@@ -357,7 +359,7 @@ export default function Settings() {
                     </div>
                     <Switch defaultChecked />
                   </div>
-                  
+
                   <div className="flex items-center justify-between p-4 rounded-xl bg-muted/50">
                     <div>
                       <p className="font-medium text-foreground">Security Alerts</p>
@@ -365,7 +367,7 @@ export default function Settings() {
                     </div>
                     <Switch defaultChecked />
                   </div>
-                  
+
                   <div className="flex items-center justify-between p-4 rounded-xl bg-muted/50">
                     <div>
                       <p className="font-medium text-foreground">Marketing</p>
