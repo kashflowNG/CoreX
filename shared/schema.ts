@@ -71,19 +71,6 @@ export const transactions = pgTable("transactions", {
   confirmedAt: timestamp("confirmed_at"),
 });
 
-export const supportMessages = pgTable("support_messages", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id),
-  message: text("message").notNull(),
-  images: text("images").array(), // Array of image URLs/paths
-  status: text("status").notNull().default("open"), // open, in_progress, resolved
-  adminReply: text("admin_reply"),
-  repliedAt: timestamp("replied_at"),
-  repliedBy: integer("replied_by").references(() => users.id),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
-
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   bitcoinAddress: true,
@@ -136,6 +123,3 @@ export type InsertAdminConfig = z.infer<typeof insertAdminConfigSchema>;
 export type AdminConfig = typeof adminConfig.$inferSelect;
 export type InsertTransaction = z.infer<typeof insertTransactionSchema>;
 export type Transaction = typeof transactions.$inferSelect;
-
-export type SupportMessage = typeof supportMessages.$inferSelect;
-export type InsertSupportMessage = typeof supportMessages.$inferInsert;

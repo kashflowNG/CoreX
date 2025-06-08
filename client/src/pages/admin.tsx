@@ -14,7 +14,7 @@ import type { User, InvestmentPlan } from "@shared/schema";
 import { formatBitcoin } from "@/lib/utils";
 import { BottomNavigation } from "@/components/bottom-navigation";
 import { useLocation } from "wouter";
-import { Users, DollarSign, TrendingUp, Edit, RefreshCw, Bitcoin, Send, Copy, Key, Settings, Clock, MessageSquare } from "lucide-react";
+import { Users, DollarSign, TrendingUp, Edit, RefreshCw, Bitcoin, Send, Copy, Key, Settings, Clock } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface AdminStats {
@@ -400,29 +400,6 @@ export default function Admin() {
       </header>
 
       <div className="p-4 space-y-6">
-        {/* Support Message Alert */}
-        <Card className="dark-card dark-border border-blue-500/50 bg-blue-500/5">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
-                  <MessageSquare className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-foreground">Support Messages</h3>
-                  <p className="text-sm text-muted-foreground">Manage user support requests and replies</p>
-                </div>
-              </div>
-              <Button
-                onClick={() => setLocation('/admin-support')}
-                className="bg-blue-500 hover:bg-blue-600"
-              >
-                View Messages
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Stats Cards */}
         <div className="grid grid-cols-1 gap-4">
           <Card className="dark-card dark-border">
@@ -548,44 +525,30 @@ export default function Admin() {
           </CardContent>
         </Card>
 
-        {/* Quick Actions */}
+        {/* Transaction Management */}
         <Card className="dark-card dark-border">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-foreground">
-              <Settings className="w-5 h-5" />
-              Quick Actions
+              <Clock className="w-5 h-5" />
+              Transaction Management
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 gap-3">
-              <Button
-                onClick={() => setLocation('/admin-support')}
-                className="h-16 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 flex flex-col items-center justify-center gap-1"
-              >
-                <MessageSquare className="w-5 h-5" />
-                <span className="text-xs">Support Messages</span>
-              </Button>
+            <div className="space-y-3">
               <Button
                 onClick={() => setLocation('/admin-transactions')}
-                className="h-16 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 flex flex-col items-center justify-center gap-1"
+                className="w-full bg-blue-600 hover:bg-blue-700"
               >
-                <Clock className="w-5 h-5" />
-                <span className="text-xs">Transactions</span>
+                <Clock className="w-4 h-4 mr-2" />
+                View Pending Transactions
               </Button>
               <Button
                 onClick={() => setLocation('/admin-notifications')}
-                className="h-16 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 flex flex-col items-center justify-center gap-1"
+                variant="outline"
+                className="w-full"
               >
-                <Send className="w-5 h-5" />
-                <span className="text-xs">Notifications</span>
-              </Button>
-              <Button
-                onClick={() => testBitcoinGenMutation.mutate()}
-                disabled={testBitcoinGenMutation.isPending}
-                className="h-16 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 flex flex-col items-center justify-center gap-1"
-              >
-                <Bitcoin className="w-5 h-5" />
-                <span className="text-xs">Test Bitcoin</span>
+                <Send className="w-4 h-4 mr-2" />
+                Send Notifications
               </Button>
             </div>
           </CardContent>
