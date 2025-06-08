@@ -5,16 +5,19 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { BottomNavigation } from "@/components/bottom-navigation";
-import { User, Globe, LogOut, Shield, ArrowLeft } from "lucide-react";
+import { SecurityFeatures } from "@/components/security-features";
+import { User, Globe, LogOut, Shield, ArrowLeft, Settings as SettingsIcon, Palette, Bell } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
 import { Switch } from "@/components/ui/switch";
+import { useState } from "react";
 
 export default function Settings() {
   const { user, logout } = useAuth();
   const { currency, toggleCurrency } = useCurrency();
   const { toast } = useToast();
-
+  const [activeTab, setActiveTab] = useState("general");
+  const [notifications, setNotifications] = useState(true);
 
   const handleLogout = () => {
     logout();
@@ -28,141 +31,194 @@ export default function Settings() {
     return <div>Please log in to access settings</div>;
   }
 
+  const tabs = [
+    { id: "general", label: "General", icon: SettingsIcon },
+    { id: "security", label: "Security", icon: Shield },
+    { id: "notifications", label: "Notifications", icon: Bell },
+  ];
+
   return (
-    <div className="min-h-screen dark-bg">
+    <div className="min-h-screen bg-background relative overflow-hidden">
+      {/* Background Elements */}
+      <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-background opacity-50"></div>
+      <div className="absolute top-0 right-0 w-64 h-64 bg-bitcoin opacity-5 rounded-full blur-3xl animate-pulse-slow"></div>
+      <div className="absolute bottom-0 left-0 w-48 h-48 bg-emerald opacity-5 rounded-full blur-3xl animate-float"></div>
+
       {/* Navigation Header */}
-      <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm border-b dark-border">
-        <div className="max-w-4xl mx-auto px-4 py-4">
-          <div className="flex items-center gap-3">
+      <div className="sticky top-0 z-10 glass-card backdrop-blur-xl border-b border-border">
+        <div className="max-w-sm mx-auto px-6 py-4">
+          <div className="flex items-center gap-4">
             <Link href="/">
-              <Button variant="ghost" size="sm" className="h-9 w-9 p-0">
-                <ArrowLeft className="w-4 h-4" />
+              <Button variant="ghost" size="icon" className="rounded-2xl hover:glow-bitcoin transition-all duration-300">
+                <ArrowLeft className="w-5 h-5" />
               </Button>
             </Link>
             <div>
-              <h1 className="text-xl font-bold dark-text">Settings</h1>
-              <p className="text-muted-foreground text-sm">Manage your preferences</p>
+              <h1 className="text-2xl font-bold text-foreground">Settings</h1>
+              <p className="text-sm text-muted-foreground">Manage your account preferences</p>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-sm mx-auto p-4 pb-20">
-        <div className="mb-6">
-          {/* <h1 className="text-2xl font-bold dark-text mb-2">Settings</h1> */}
-          <p className="text-muted-foreground">Manage your account and preferences</p>
+      <div className="max-w-sm mx-auto p-6 pb-24 relative z-10">
+        {/* Tab Navigation */}
+        <div className="flex gap-2 mb-8">
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            return (
+              <Button
+                key={tab.id}
+                variant={activeTab === tab.id ? "default" : "outline"}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex-1 rounded-2xl h-12 transition-all duration-300 ${
+                  activeTab === tab.id 
+                    ? 'gradient-primary text-black glow-bitcoin' 
+                    : 'glass-card hover:border-bitcoin'
+                }`}
+              >
+                <Icon className="w-5 h-5 mr-2" />
+                <span className="font-medium">{tab.label}</span>
+              </Button>
+            );
+          })}
         </div>
 
-        <div className="space-y-4">
-          {/* Profile Section */}
-          <Card className="dark-card dark-border">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 dark-text">
-                <User className="w-5 h-5" />
-                Profile Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label className="text-sm font-medium text-muted-foreground">Email Address</Label>
-                <p className="text-sm dark-text mt-1">{user.email}</p>
-              </div>
-
-              <Separator />
-
-              <div>
-                <Label className="text-sm font-medium text-muted-foreground">Account Type</Label>
-                <div className="flex items-center gap-2 mt-1">
-                  {user.isAdmin && <Shield className="w-4 h-4 text-bitcoin" />}
-                  <p className="text-sm dark-text">
-                    {user.isAdmin ? "Administrator" : "Standard User"}
-                  </p>
+        {/* Tab Content */}
+        {activeTab === "general" && (
+          <div className="space-y-6">
+            {/* Profile Section */}
+            <Card className="neo-card rounded-2xl p-6">
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-16 h-16 rounded-2xl gradient-primary flex items-center justify-center">
+                  <User className="w-8 h-8 text-black" />
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Preferences Section */}
-          <Card className="dark-card dark-border">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 dark-text">
-                <Globe className="w-5 h-5" />
-                Preferences
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
                 <div>
-                  <Label className="text-sm font-medium dark-text">Currency Display</Label>
-                  <p className="text-xs text-muted-foreground">
-                    Choose your preferred currency for displaying values
-                  </p>
+                  <h3 className="text-lg font-bold text-foreground">{user.email}</h3>
+                  <p className="text-sm text-muted-foreground">Account Holder</p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className={`text-sm ${currency === 'USD' ? 'dark-text font-medium' : 'text-muted-foreground'}`}>
-                    USD
-                  </span>
-                  <Switch
-                    checked={currency === 'GBP'}
-                    onCheckedChange={toggleCurrency}
+              </div>
+              
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Globe className="w-5 h-5 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm font-medium text-foreground">Currency</p>
+                      <p className="text-xs text-muted-foreground">Display currency preference</p>
+                    </div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={toggleCurrency}
+                    className="rounded-xl border-bitcoin text-bitcoin hover:bg-bitcoin hover:text-black transition-all duration-300"
+                  >
+                    {currency}
+                  </Button>
+                </div>
+              </div>
+            </Card>
+
+            {/* App Preferences */}
+            <Card className="neo-card rounded-2xl p-6">
+              <h3 className="text-lg font-bold text-foreground mb-4">App Preferences</h3>
+              
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Push Notifications</p>
+                    <p className="text-xs text-muted-foreground">Receive alerts and updates</p>
+                  </div>
+                  <Switch 
+                    checked={notifications} 
+                    onCheckedChange={setNotifications}
                   />
-                  <span className={`text-sm ${currency === 'GBP' ? 'dark-text font-medium' : 'text-muted-foreground'}`}>
-                    GBP
-                  </span>
+                </div>
+                
+                <Separator />
+                
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Biometric Login</p>
+                    <p className="text-xs text-muted-foreground">Use fingerprint or face ID</p>
+                  </div>
+                  <Switch defaultChecked />
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </Card>
+          </div>
+        )}
 
-          {/* Security Section */}
-          <Card className="dark-card dark-border">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 dark-text">
-                <Shield className="w-5 h-5" />
-                Security
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label className="text-sm font-medium text-muted-foreground">Account Created</Label>
-                <p className="text-sm dark-text mt-1">
-                  {new Date(user.createdAt).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                  })}
-                </p>
+        {activeTab === "security" && (
+          <SecurityFeatures userEmail={user.email} />
+        )}
+
+        {activeTab === "notifications" && (
+          <div className="space-y-6">
+            <Card className="neo-card rounded-2xl p-6">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-12 h-12 rounded-xl bg-sapphire bg-opacity-20 flex items-center justify-center">
+                  <Bell className="w-6 h-6 text-sapphire" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-foreground">Notification Settings</h3>
+                  <p className="text-sm text-muted-foreground">Configure your alerts</p>
+                </div>
               </div>
-
-              <Separator />
-
-              <div className="pt-2">
-                <Button
-                  variant="destructive"
-                  onClick={handleLogout}
-                  className="w-full flex items-center gap-2"
-                >
-                  <LogOut className="w-4 h-4" />
-                  Sign Out
-                </Button>
+              
+              <div className="space-y-6">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-foreground">Price Alerts</p>
+                      <p className="text-xs text-muted-foreground">Bitcoin price changes</p>
+                    </div>
+                    <Switch defaultChecked />
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-foreground">Investment Updates</p>
+                      <p className="text-xs text-muted-foreground">Portfolio performance</p>
+                    </div>
+                    <Switch defaultChecked />
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-foreground">Security Alerts</p>
+                      <p className="text-xs text-muted-foreground">Login and security events</p>
+                    </div>
+                    <Switch defaultChecked />
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-foreground">Marketing</p>
+                      <p className="text-xs text-muted-foreground">Product updates and offers</p>
+                    </div>
+                    <Switch />
+                  </div>
+                </div>
               </div>
-            </CardContent>
-          </Card>
+            </Card>
+          </div>
+        )}
 
-          {/* App Info */}
-          <Card className="dark-card dark-border">
-            <CardContent className="p-4">
-              <div className="text-center">
-                <h3 className="font-semibold dark-text mb-1">CoreX Wallet</h3>
-                <p className="text-xs text-muted-foreground">
-                  Version 1.0.0 • Secure Bitcoin Investment Platform
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        {/* Logout Section */}
+        <Card className="neo-card rounded-2xl p-6 mt-8">
+          <Button 
+            onClick={handleLogout}
+            variant="destructive"
+            className="w-full h-12 rounded-xl bg-ruby hover:bg-ruby/90 transition-all duration-300 group"
+          >
+            <LogOut className="w-5 h-5 mr-2 group-hover:translate-x-1 transition-transform" />
+            Sign Out
+          </Button>
+        </Card>
       </div>
 
+      {/* Bottom Navigation */}
       <BottomNavigation />
     </div>
   );
