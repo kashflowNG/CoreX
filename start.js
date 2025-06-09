@@ -1,39 +1,29 @@
 #!/usr/bin/env node
 
-// Simple production starter script
-const { spawn } = require('child_process');
+// Production starter for CoreX Bitcoin Investment Platform
+const { existsSync } = require('fs');
 const path = require('path');
 
 const distPath = path.join(__dirname, 'dist', 'index.js');
 
 console.log('Starting CoreX Bitcoin Investment Platform...');
 console.log('Environment:', process.env.NODE_ENV || 'production');
+console.log('Port:', process.env.PORT || 5000);
 
-const server = spawn('node', [distPath], {
-  stdio: 'inherit',
-  env: {
-    ...process.env,
-    NODE_ENV: process.env.NODE_ENV || 'production'
-  }
-});
-
-server.on('error', (err) => {
-  console.error('Failed to start server:', err);
+// Check if build exists
+if (!existsSync(distPath)) {
+  console.error('Build not found at:', distPath);
+  console.error('Please run the build process first');
   process.exit(1);
-});
+}
 
-server.on('close', (code) => {
-  console.log(`Server exited with code ${code}`);
-  process.exit(code);
-});
+// Set production environment
+process.env.NODE_ENV = process.env.NODE_ENV || 'production';
 
-// Handle process termination
-process.on('SIGTERM', () => {
-  console.log('Received SIGTERM, shutting down gracefully...');
-  server.kill('SIGTERM');
-});
-
-process.on('SIGINT', () => {
-  console.log('Received SIGINT, shutting down gracefully...');
-  server.kill('SIGINT');
-});
+// Import and start the server
+try {
+  require(distPath);
+} catch (error) {
+  console.error('Failed to start server:', error);
+  process.exit(1);
+}
