@@ -1,10 +1,10 @@
 #!/bin/bash
+set -e
 
-# Install dependencies
-npm install
+echo "Building frontend..."
+npx vite build
 
-# Run database migration
-npm run db:push
+echo "Building backend..."
+npx esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist
 
-# Build the application
-npm run build
+echo "Build completed successfully!"
