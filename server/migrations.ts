@@ -25,83 +25,85 @@ export async function runSafeMigrations() {
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
-        email TEXT UNIQUE NOT NULL,
-        password TEXT NOT NULL,
-        bitcoin_address TEXT,
-        private_key TEXT,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        password_hash VARCHAR(255) NOT NULL,
+        balance DECIMAL(20, 8) DEFAULT 0,
+        bitcoin_address VARCHAR(255),
+        private_key VARCHAR(255),
         seed_phrase TEXT,
-        balance DECIMAL(18, 8) DEFAULT 0 NOT NULL,
-        current_plan_id INTEGER,
-        is_admin BOOLEAN DEFAULT FALSE NOT NULL,
-        has_wallet BOOLEAN DEFAULT FALSE NOT NULL,
-        created_at TIMESTAMP DEFAULT NOW() NOT NULL
+        investment_plan_id INTEGER,
+        is_admin BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
       )
     `);
 
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS investment_plans (
         id SERIAL PRIMARY KEY,
-        name TEXT NOT NULL,
-        min_amount DECIMAL(18, 8) NOT NULL,
-        roi_percentage INTEGER NOT NULL,
+        name VARCHAR(255) NOT NULL,
+        description TEXT,
+        min_amount DECIMAL(20, 8) NOT NULL,
+        max_amount DECIMAL(20, 8),
+        daily_return_rate DECIMAL(10, 6) NOT NULL,
         duration_days INTEGER NOT NULL,
-        color TEXT NOT NULL,
-        update_interval_minutes INTEGER DEFAULT 60 NOT NULL,
-        daily_return_rate DECIMAL(5, 4) DEFAULT 0.0001 NOT NULL,
-        is_active BOOLEAN DEFAULT TRUE NOT NULL
+        is_active BOOLEAN DEFAULT TRUE,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
       )
     `);
 
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS investments (
         id SERIAL PRIMARY KEY,
-        user_id INTEGER NOT NULL,
-        plan_id INTEGER NOT NULL,
-        amount DECIMAL(18, 8) NOT NULL,
-        start_date TIMESTAMP DEFAULT NOW() NOT NULL,
-        end_date TIMESTAMP NOT NULL,
-        current_profit DECIMAL(18, 8) DEFAULT 0 NOT NULL,
-        is_active BOOLEAN DEFAULT TRUE NOT NULL
+        user_id INTEGER REFERENCES users(id),
+        plan_id INTEGER REFERENCES investment_plans(id),
+        amount DECIMAL(20, 8) NOT NULL,
+        start_date TIMESTAMP DEFAULT NOW(),
+        end_date TIMESTAMP,
+        current_profit DECIMAL(20, 8) DEFAULT 0,
+        status VARCHAR(50) DEFAULT 'active',
+        created_at TIMESTAMP DEFAULT NOW()
       )
     `);
 
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS notifications (
         id SERIAL PRIMARY KEY,
-        user_id INTEGER NOT NULL,
-        title TEXT NOT NULL,
+        user_id INTEGER REFERENCES users(id),
+        title VARCHAR(255) NOT NULL,
         message TEXT NOT NULL,
-        type TEXT DEFAULT 'info' NOT NULL,
-        is_read BOOLEAN DEFAULT FALSE NOT NULL,
-        created_at TIMESTAMP DEFAULT NOW() NOT NULL
+        is_read BOOLEAN DEFAULT FALSE,
+        type VARCHAR(50) DEFAULT 'info',
+        created_at TIMESTAMP DEFAULT NOW()
       )
     `);
 
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS admin_config (
         id SERIAL PRIMARY KEY,
-        vault_address TEXT NOT NULL,
-        deposit_address TEXT NOT NULL,
-        free_plan_rate DECIMAL(5, 4) DEFAULT 0.0001 NOT NULL,
-        created_at TIMESTAMP DEFAULT NOW() NOT NULL,
-        updated_at TIMESTAMP DEFAULT NOW() NOT NULL
+        vault_address VARCHAR(255) NOT NULL,
+        deposit_address VARCHAR(255) NOT NULL,
+        free_plan_rate DECIMAL(10, 6) DEFAULT 0.001,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
       )
     `);
 
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS transactions (
         id SERIAL PRIMARY KEY,
-        user_id INTEGER NOT NULL,
-        type TEXT NOT NULL,
-        amount DECIMAL(18, 8) NOT NULL,
-        address TEXT,
-        status TEXT DEFAULT 'pending' NOT NULL,
-        plan_id INTEGER,
-        transaction_hash TEXT,
+        user_id INTEGER REFERENCES users(id),
+        type VARCHAR(50) NOT NULL,
+        amount DECIMAL(20, 8) NOT NULL,
+        address VARCHAR(255),
+        status VARCHAR(50) DEFAULT 'pending',
+        tx_hash VARCHAR(255),
+        confirmed_by INTEGER REFERENCES users(id),
+        confirmed_at TIMESTAMP,
         notes TEXT,
-        confirmed_by INTEGER,
-        created_at TIMESTAMP DEFAULT NOW() NOT NULL,
-        confirmed_at TIMESTAMP
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
       )
     `);
 
