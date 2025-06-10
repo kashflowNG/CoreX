@@ -1,4 +1,3 @@
-
 import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,11 +15,11 @@ import { formatBitcoin, formatCurrency } from "@/lib/utils";
 import { useBitcoinPrice } from "@/hooks/use-bitcoin-price";
 import { useQuery } from "@tanstack/react-query";
 import type { Investment, Transaction } from "@shared/schema";
+import { ProtectedRoute } from "@/components/protected-route";
 
-export default function Profile() {
+function ProfileContent() {
   const { user, logout } = useAuth();
   const { toast } = useToast();
-  const [, setLocation] = useLocation();
   const { currency } = useCurrency();
   const { data: price } = useBitcoinPrice();
   const [showSensitiveInfo, setShowSensitiveInfo] = useState(false);
@@ -35,24 +34,6 @@ export default function Profile() {
     enabled: !!user,
   });
 
-  useEffect(() => {
-    if (!user) {
-      setLocation('/login');
-    }
-  }, [user, setLocation]);
-
-  if (!user) {
-    return <div>Redirecting to login...</div>;
-  }
-
-  const copyToClipboard = (text: string, label: string) => {
-    navigator.clipboard.writeText(text);
-    toast({
-      title: "Copied",
-      description: `${label} copied to clipboard`,
-    });
-  };
-
   const fiatValue = parseFloat(user.balance) * (currency === 'USD' ? (price?.usd.price || 0) : (price?.gbp.price || 0));
   const totalInvested = investments?.reduce((sum, inv) => sum + parseFloat(inv.amount), 0) || 0;
   const totalProfit = investments?.reduce((sum, inv) => sum + parseFloat(inv.currentProfit), 0) || 0;
@@ -61,6 +42,14 @@ export default function Profile() {
   const userTransactions = transactions?.filter(tx => tx.userId === user.id).length || 0;
 
   const accountAge = Math.floor((Date.now() - new Date(user.createdAt).getTime()) / (1000 * 60 * 60 * 24));
+
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    toast({
+      title: "Copied",
+      description: `${label} copied to clipboard`,
+    });
+  };
 
   return (
     <div className="min-h-screen dark-bg">
@@ -107,7 +96,7 @@ export default function Profile() {
                   </div>
                 </div>
               </div>
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-orange-100 text-xs">Account Age</p>
@@ -307,5 +296,13 @@ export default function Profile() {
 
       <BottomNavigation />
     </div>
+  );
+}
+
+export default function Profile() {
+  return (
+    <ProtectedRoute>
+      <ProfileContent />
+    </ProtectedRoute>
   );
 }

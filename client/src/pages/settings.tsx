@@ -1,25 +1,42 @@
-
 import { useAuth } from "@/hooks/use-auth";
-import { useCurrency } from "@/hooks/use-currency";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 import { BottomNavigation } from "@/components/bottom-navigation";
-
-import { User, Globe, LogOut, ArrowLeft, Bell, HelpCircle, ChevronRight, Crown } from "lucide-react";
+import { ProtectedRoute } from "@/components/protected-route";
+import { 
+  Settings as SettingsIcon, 
+  Bell, 
+  Shield, 
+  Moon, 
+  Sun, 
+  Globe, 
+  HelpCircle, 
+  LogOut,
+  ChevronRight,
+  User,
+  Smartphone,
+  Lock,
+  CreditCard,
+  Palette
+} from "lucide-react";
+import { useState } from "react";
+import { useLocation } from "wouter";
+import { useCurrency } from "@/hooks/use-currency";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
-import { Switch } from "@/components/ui/switch";
-import { useState } from "react";
-import { Badge } from "@/components/ui/badge";
+import { ArrowLeft, Crown } from "lucide-react";
 
-export default function Settings() {
+function SettingsContent() {
   const { user, logout } = useAuth();
+  const [, setLocation] = useLocation();
   const { currency, toggleCurrency } = useCurrency();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("account");
   const [notifications, setNotifications] = useState(true);
+  
 
   const handleLogout = () => {
     logout();
@@ -28,10 +45,6 @@ export default function Settings() {
       description: "You have been signed out successfully",
     });
   };
-
-  if (!user) {
-    return <div>Please log in to access settings</div>;
-  }
 
   const menuItems = [
     {
@@ -100,7 +113,7 @@ export default function Settings() {
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
-            
+
             return (
               <Card 
                 key={item.id}
@@ -155,9 +168,9 @@ export default function Settings() {
                       Verified
                     </Badge>
                   </div>
-                  
+
                   <Separator />
-                  
+
                   <div className="flex items-center justify-between p-4 rounded-xl bg-muted/50">
                     <div className="flex items-center gap-3">
                       <Globe className="w-5 h-5 text-muted-foreground" />
@@ -203,7 +216,7 @@ export default function Settings() {
                       onCheckedChange={setNotifications}
                     />
                   </div>
-                  
+
                   <div className="flex items-center justify-between p-4 rounded-xl bg-muted/50">
                     <div>
                       <p className="font-medium text-foreground">Price Alerts</p>
@@ -211,7 +224,7 @@ export default function Settings() {
                     </div>
                     <Switch defaultChecked />
                   </div>
-                  
+
                   <div className="flex items-center justify-between p-4 rounded-xl bg-muted/50">
                     <div>
                       <p className="font-medium text-foreground">Investment Updates</p>
@@ -219,7 +232,7 @@ export default function Settings() {
                     </div>
                     <Switch defaultChecked />
                   </div>
-                  
+
                   <div className="flex items-center justify-between p-4 rounded-xl bg-muted/50">
                     <div>
                       <p className="font-medium text-foreground">Security Alerts</p>
@@ -227,7 +240,7 @@ export default function Settings() {
                     </div>
                     <Switch defaultChecked />
                   </div>
-                  
+
                   <div className="flex items-center justify-between p-4 rounded-xl bg-muted/50">
                     <div>
                       <p className="font-medium text-foreground">Marketing</p>
@@ -268,5 +281,13 @@ export default function Settings() {
 
       <BottomNavigation />
     </div>
+  );
+}
+
+export default function Settings() {
+  return (
+    <ProtectedRoute>
+      <SettingsContent />
+    </ProtectedRoute>
   );
 }
