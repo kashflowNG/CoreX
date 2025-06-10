@@ -26,26 +26,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.log('Restoring user from localStorage:', userData.email);
         setUser(userData);
         
-        // Verify the user session is still valid
-        fetch(`/api/user/${userData.id}`)
-          .then(response => {
-            if (!response.ok) {
-              throw new Error('Session expired');
-            }
-            return response.json();
-          })
-          .then(refreshedUser => {
-            setUser(refreshedUser);
-            localStorage.setItem('corex_user', JSON.stringify(refreshedUser));
-          })
-          .catch(error => {
-            console.error('Session validation failed:', error);
-            localStorage.removeItem('corex_user');
-            setUser(null);
-          });
+        // Only validate session if user has been inactive for more than 5 minutes
+        const lastActivity = localStorage.getItem('corex_last_activity');
+        const now = Date.now();
+        const fiveMinutes = 5 * 60 * 1000;
+        
+        if (!lastActivity || (now - parseInt(lastActivity)) > fiveMinutes) {
+          // Verify the user session is still valid
+          fetch(`/api/user/${userData.id}`)
+            .then(response => {
+              if (!response.ok) {
+                throw new Error('Session expired');
+              }
+              return response.json();
+            })
+            .then(refreshedUser => {
+              setUser(refreshedUser);
+              localStorage.setItem('corex_user', JSON.stringify(refreshedUser));
+              localStorage.setItem('corex_last_activity', now.toString());
+            })
+            .catch(error => {
+              console.error('Session validation failed:', error);
+              // Only clear session if it's a 401/403 error, not network errors
+              if (error.message === 'Session expired') {
+                localStorage.removeItem('corex_user');
+                localStorage.removeItem('corex_last_activity');
+                setUser(null);
+              }
+            });
+        } else {
+          // Session is recent, just update last activity
+          localStorage.setItem('corex_last_activity', now.toString());
+        }
       } catch (error) {
         console.error('Error parsing stored user data:', error);
         localStorage.removeItem('corex_user');
+        localStorage.removeItem('corex_last_activity');
       }
     }
     setIsLoading(false);
@@ -71,8 +87,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const userData = await response.json();
     console.log('Login successful for user:', userData.email);
 
-    // Store in localStorage first
+    // Store in localStorage with activity timestamp
     localStorage.setItem('corex_user', JSON.stringify(userData));
+    localStorage.setItem('corex_last_activity', Date.now().toString());
     // Then update state synchronously
     setUser(userData);
 
@@ -108,10 +125,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const updatedUser = await response.json();
         setUser(updatedUser);
         localStorage.setItem('corex_user', JSON.stringify(updatedUser));
+        localStorage.setItem('corex_last_activity', Date.now().toString());
       } else {
-        // If user fetch fails, clear the session
-        console.error('Failed to refresh user, clearing session');
-        logout();
+        // Only clear session if it's an authentication error
+        if (response.status === 401 || response.status === 403) {
+          console.error('Authentication failed, clearing session');
+          logout();
+        }
       }
     } catch (error) {
       console.error('Error refreshing user:', error);
@@ -122,6 +142,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = () => {
     setUser(null);
     localStorage.removeItem('corex_user');
+    localStorage.removeItem('corex_last_activity');
   };
 
   return (

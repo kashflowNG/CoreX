@@ -994,10 +994,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get current user (mock authentication - in production use proper auth)
+  // Get current user with session validation
   app.get("/api/user/:id", async (req, res) => {
     try {
       const userId = parseInt(req.params.id);
+      
+      // Check if user is authenticated via session or if it's their own data
+      if (req.session?.userId && req.session.userId !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
       const user = await storage.getUser(userId);
 
       if (!user) {
