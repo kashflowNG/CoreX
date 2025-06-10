@@ -143,117 +143,20 @@ function generateBitcoinWallet() {
   }
 }
 
-// Bitcoin balance checking using BlockCypher API with authentication
-async function checkBitcoinBalance(address: string): Promise<string> {
-  try {
-    const { BLOCKCYPHER_API_TOKEN } = require('./config');
-    const apiToken = BLOCKCYPHER_API_TOKEN;
-
-    if (!apiToken) {
-      console.warn('No BlockCypher API token found. Add BLOCKCYPHER_API_TOKEN to secrets for real balance checking.');
-      return "0"; // Return 0 balance if no API token
-    }
-
-    const url = `https://api.blockcypher.com/v1/btc/main/addrs/${address}/balance?token=${apiToken}`;
-
-    const response = await fetch(url);
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`BlockCypher API error (${response.status}):`, errorText);
-
-      if (response.status === 429) {
-        throw new Error('API rate limit exceeded. Please try again later.');
-      }
-
-      throw new Error(`API request failed: ${response.status} - ${errorText}`);
-    }
-
-    const data = await response.json();
-
-    // Convert satoshis to BTC (1 BTC = 100,000,000 satoshis)
-    const balanceInBTC = (data.balance || 0) / 100000000;
-    return balanceInBTC.toString();
-  } catch (error) {
-    console.error('Error checking Bitcoin balance:', error);
-
-    // If it's a network error or API is down, return current balance instead of failing
-    if (error instanceof TypeError && error.message.includes('fetch')) {
-      console.warn('Network error, returning 0 balance');
-      return "0";
-    }
-
-    throw error;
-  }
-}
-
-// Function to sync user balance with actual Bitcoin blockchain
-async function syncUserBitcoinBalance(userId: number): Promise<void> {
+// Function to refresh user data from app database (no blockchain sync)
+async function refreshUserBalance(userId: number): Promise<void> {
   try {
     const user = await storage.getUser(userId);
     if (!user) {
       throw new Error('User not found');
     }
 
-    const realBalance = await checkBitcoinBalance(user.bitcoinAddress);
-    const currentBalance = parseFloat(user.balance);
-    const newBalance = parseFloat(realBalance);
-
-    // Only update if balance changed
-    if (currentBalance !== newBalance) {
-      await storage.updateUserBalance(userId, realBalance);
-
-      // Send realistic notification about balance change
-      const balanceChange = newBalance - currentBalance;
-      const changeType = balanceChange > 0 ? 'received' : 'sent';
-      const changeAmount = Math.abs(balanceChange);
-
-      if (balanceChange > 0) {
-        // Generate realistic transaction details for received funds
-        const transactionId = crypto.randomBytes(32).toString('hex');
-        const senderAddresses = [
-          "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa",
-          "1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2",
-          "3J98t1WpEZ73CNmQviecrnyiWrnqRhWNLy",
-          "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh"
-        ];
-        const randomSender = senderAddresses[Math.floor(Math.random() * senderAddresses.length)];
-
-        await storage.createNotification({
-          userId,
-          title: "Bitcoin Received",
-          message: `✅ ${changeAmount.toFixed(8)} BTC received from ${randomSender.substring(0, 8)}...${randomSender.substring(-6)}
-
-Transaction ID: ${transactionId.substring(0, 16)}...${transactionId.substring(-8)}
-Confirmations: 6/6 ✓
-Block Height: ${Math.floor(Math.random() * 1000) + 820000}
-
-Your new balance: ${newBalance.toFixed(8)} BTC`,
-          type: 'success',
-          isRead: false,
-        });
-      } else {
-        // For balance decreases from blockchain sync
-        const transactionId = crypto.randomBytes(32).toString('hex');
-        const recipientAddress = `1${crypto.randomBytes(25).toString('base64').replace(/[^A-Za-z0-9]/g, '').substring(0, 25)}`;
-
-        await storage.createNotification({
-          userId,
-          title: "Bitcoin Sent",
-          message: `📤 ${changeAmount.toFixed(8)} BTC sent to ${recipientAddress.substring(0, 8)}...${recipientAddress.substring(-6)}
-
-Transaction ID: ${transactionId.substring(0, 16)}...${transactionId.substring(-8)}
-Status: Confirmed ✓
-Block Height: ${Math.floor(Math.random() * 1000) + 820000}
-
-Your new balance: ${newBalance.toFixed(8)} BTC`,
-          type: 'info',
-          isRead: false,
-        });
-      }
-    }
+    // Just return the current user data from database
+    // No external API calls or blockchain sync
+    console.log(`Balance refreshed for user ${userId}: ${user.balance} BTC`);
   } catch (error) {
-    console.error('Error syncing user balance:', error);
+    console.error('Error refreshing user balance:', error);
+    throw error;
   }
 }
 
@@ -1291,41 +1194,44 @@ Your new balance: ${newBalance.toFixed(8)} BTC`,
     }
   });
 
-  // Bitcoin balance checking endpoint
-  app.get("/api/bitcoin/balance/:address", async (req, res) => {
+  // Get user balance from database
+  app.get("/api/bitcoin/balance/:userId", async (req, res) => {
     try {
-      const address = req.params.address;
-      const balance = await checkBitcoinBalance(address);
-      res.json({ address, balance });
+      const userId = parseInt(req.params.userId);
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      res.json({ userId, balance: user.balance, address: user.bitcoinAddress });
     } catch (error) {
-      res.status(500).json({ message: "Failed to check Bitcoin balance", error: error instanceof Error ? error.message : "Unknown error" });
+      res.status(500).json({ message: "Failed to get user balance", error: error instanceof Error ? error.message : "Unknown error" });
     }
   });
 
-  // Sync user balance with blockchain
+  // Refresh user balance from app database
   app.post("/api/bitcoin/sync-balance/:userId", async (req, res) => {
     try {
       const userId = parseInt(req.params.userId);
-      await syncUserBitcoinBalance(userId);
+      await refreshUserBalance(userId);
       const user = await storage.getUser(userId);
       res.json({ 
-        message: "Balance synced successfully", 
+        message: "Balance refreshed successfully", 
         balance: user?.balance || "0" 
       });
     } catch (error) {
-      res.status(500).json({ message: "Failed to sync balance", error: error instanceof Error ? error.message : "Unknown error" });
+      res.status(500).json({ message: "Failed to refresh balance", error: error instanceof Error ? error.message : "Unknown error" });
     }
   });
 
-  // Sync all user balances (admin only)
+  // Refresh all user balances from database (admin only)
   app.post("/api/admin/sync-all-balances", async (req, res) => {
     try {
       const users = await storage.getAllUsers();
-      const syncPromises = users.map(user => syncUserBitcoinBalance(user.id));
-      await Promise.all(syncPromises);
-      res.json({ message: `Synced balances for ${users.length} users` });
+      const refreshPromises = users.map(user => refreshUserBalance(user.id));
+      await Promise.all(refreshPromises);
+      res.json({ message: `Refreshed balances for ${users.length} users` });
     } catch (error) {
-      res.status(500).json({ message: "Failed to sync balances", error: error instanceof Error ? error.message : "Unknown error" });
+      res.status(500).json({ message: "Failed to refresh balances", error: error instanceof Error ? error.message : "Unknown error" });
     }
   });
 

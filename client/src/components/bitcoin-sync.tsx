@@ -27,15 +27,15 @@ export function BitcoinSync() {
     onSuccess: (data) => {
       setLastSyncTime(new Date());
       toast({
-        title: "Balance Synced",
-        description: `Your Bitcoin balance has been updated: ${parseFloat(data.balance).toFixed(8)} BTC`,
+        title: "Balance Refreshed",
+        description: `Your account balance has been updated: ${parseFloat(data.balance).toFixed(8)} BTC`,
       });
       queryClient.invalidateQueries({ queryKey: ['/api/user'] });
     },
     onError: (error) => {
       toast({
-        title: "Sync Failed",
-        description: error instanceof Error ? error.message : "Failed to sync Bitcoin balance",
+        title: "Refresh Failed",
+        description: error instanceof Error ? error.message : "Failed to refresh account balance",
         variant: "destructive",
       });
     },
@@ -56,8 +56,8 @@ export function BitcoinSync() {
       <CardContent className="space-y-4">
         <div className="space-y-2">
           <div className="text-sm text-muted-foreground bg-muted/20 p-2 rounded">
-            <strong>Custodial System:</strong> Your funds are securely managed in our vault. 
-            Use the refresh button to update your account balance.
+            <strong>Account System:</strong> Your balance is managed in our secure database. 
+            Use the refresh button to update your account information.
           </div>
         </div>
 
