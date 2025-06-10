@@ -217,11 +217,16 @@ async function refreshUserBalance(userId: number): Promise<void> {
 
     // Check actual blockchain balance
     const blockchainBalance = await checkBitcoinBalance(user.bitcoinAddress);
+    const currentDatabaseBalance = parseFloat(user.balance);
+    const onChainBalance = parseFloat(blockchainBalance);
     
-    // Update database with blockchain balance
-    await storage.updateUserBalance(userId, blockchainBalance);
+    // Combine database balance with on-chain balance
+    const combinedBalance = currentDatabaseBalance + onChainBalance;
     
-    console.log(`Balance synced for user ${userId}: ${blockchainBalance} BTC (address: ${user.bitcoinAddress})`);
+    // Update database with combined balance
+    await storage.updateUserBalance(userId, combinedBalance.toFixed(8));
+    
+    console.log(`Balance synced for user ${userId}: Database: ${currentDatabaseBalance.toFixed(8)} BTC + On-chain: ${onChainBalance.toFixed(8)} BTC = Total: ${combinedBalance.toFixed(8)} BTC (address: ${user.bitcoinAddress})`);
   } catch (error) {
     console.error('Error refreshing user balance:', error);
     throw error;

@@ -28,7 +28,7 @@ export function BitcoinSync() {
       setLastSyncTime(new Date());
       toast({
         title: "Blockchain Sync Complete",
-        description: `Balance synchronized from blockchain: ${parseFloat(data.balance).toFixed(8)} BTC`,
+        description: `Combined balance updated: ${parseFloat(data.balance).toFixed(8)} BTC`,
       });
       queryClient.invalidateQueries({ queryKey: ['/api/user'] });
     },
@@ -57,7 +57,7 @@ export function BitcoinSync() {
         <div className="space-y-2">
           <div className="text-sm text-muted-foreground bg-muted/20 p-2 rounded">
             <strong>Blockchain Sync:</strong> This will check your Bitcoin address on the blockchain 
-            and update your balance with real on-chain data.
+            and add any on-chain balance to your current app balance.
           </div>
           {user.bitcoinAddress && (
             <div className="text-xs font-mono bg-muted/10 p-2 rounded border">
@@ -95,7 +95,7 @@ export function BitcoinSync() {
 
         <div className="text-xs text-muted-foreground bg-muted/20 p-2 rounded">
           <strong>Note:</strong> This checks your Bitcoin address on the blockchain using multiple APIs 
-          (BlockCypher, Blockstream, Blockchair) to ensure accurate balance data.
+          (BlockCypher, Blockstream, Blockchair) and adds any on-chain balance to your app balance.
         </div>
       </CardContent>
     </Card>
