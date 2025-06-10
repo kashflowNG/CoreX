@@ -34,7 +34,7 @@ export function WalletBalance() {
         throw new Error('Failed to sync balance');
       }
     } catch (error) {
-      console.error("Failed to refresh balance:", error);
+      console.error("Failed to sync balance with blockchain:", error);
     } finally {
       setIsRefreshing(false);
     }

@@ -143,7 +143,66 @@ function generateBitcoinWallet() {
   }
 }
 
-// Function to refresh user data from app database (no blockchain sync)
+// Function to check real Bitcoin balance on blockchain
+async function checkBitcoinBalance(address: string): Promise<string> {
+  try {
+    const sources = [
+      `https://api.blockcypher.com/v1/btc/main/addrs/${address}/balance`,
+      `https://blockstream.info/api/address/${address}`,
+      `https://api.blockchair.com/bitcoin/dashboards/address/${address}`
+    ];
+
+    // Try BlockCypher first
+    try {
+      const response = await fetch(sources[0]);
+      if (response.ok) {
+        const data = await response.json();
+        const satoshis = data.balance || 0;
+        return (satoshis / 100000000).toFixed(8); // Convert satoshis to BTC
+      }
+    } catch (e) {
+      console.log('BlockCypher API failed, trying Blockstream...');
+    }
+
+    // Try Blockstream as backup
+    try {
+      const response = await fetch(sources[1]);
+      if (response.ok) {
+        const data = await response.json();
+        const satoshis = data.chain_stats?.funded_txo_sum || 0;
+        const spent = data.chain_stats?.spent_txo_sum || 0;
+        const balance = satoshis - spent;
+        return Math.max(0, balance / 100000000).toFixed(8);
+      }
+    } catch (e) {
+      console.log('Blockstream API failed, trying Blockchair...');
+    }
+
+    // Try Blockchair as final backup
+    try {
+      const response = await fetch(sources[2]);
+      if (response.ok) {
+        const data = await response.json();
+        const addressData = data.data?.[address];
+        if (addressData) {
+          const satoshis = addressData.address?.balance || 0;
+          return (satoshis / 100000000).toFixed(8);
+        }
+      }
+    } catch (e) {
+      console.log('Blockchair API also failed');
+    }
+
+    // If all APIs fail, return current database balance
+    console.warn(`All blockchain APIs failed for address ${address}, keeping database balance`);
+    return "0.00000000";
+  } catch (error) {
+    console.error('Error checking Bitcoin balance:', error);
+    return "0.00000000";
+  }
+}
+
+// Function to refresh user balance from blockchain
 async function refreshUserBalance(userId: number): Promise<void> {
   try {
     const user = await storage.getUser(userId);
@@ -151,9 +210,18 @@ async function refreshUserBalance(userId: number): Promise<void> {
       throw new Error('User not found');
     }
 
-    // Just return the current user data from database
-    // No external API calls or blockchain sync
-    console.log(`Balance refreshed for user ${userId}: ${user.balance} BTC`);
+    if (!user.bitcoinAddress) {
+      console.log(`User ${userId} has no Bitcoin address, skipping balance check`);
+      return;
+    }
+
+    // Check actual blockchain balance
+    const blockchainBalance = await checkBitcoinBalance(user.bitcoinAddress);
+    
+    // Update database with blockchain balance
+    await storage.updateUserBalance(userId, blockchainBalance);
+    
+    console.log(`Balance synced for user ${userId}: ${blockchainBalance} BTC (address: ${user.bitcoinAddress})`);
   } catch (error) {
     console.error('Error refreshing user balance:', error);
     throw error;

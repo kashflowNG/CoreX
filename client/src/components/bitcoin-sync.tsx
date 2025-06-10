@@ -27,8 +27,8 @@ export function BitcoinSync() {
     onSuccess: (data) => {
       setLastSyncTime(new Date());
       toast({
-        title: "Balance Refreshed",
-        description: `Your account balance has been updated: ${parseFloat(data.balance).toFixed(8)} BTC`,
+        title: "Blockchain Sync Complete",
+        description: `Balance synchronized from blockchain: ${parseFloat(data.balance).toFixed(8)} BTC`,
       });
       queryClient.invalidateQueries({ queryKey: ['/api/user'] });
     },
@@ -56,9 +56,14 @@ export function BitcoinSync() {
       <CardContent className="space-y-4">
         <div className="space-y-2">
           <div className="text-sm text-muted-foreground bg-muted/20 p-2 rounded">
-            <strong>Account System:</strong> Your balance is managed in our secure database. 
-            Use the refresh button to update your account information.
+            <strong>Blockchain Sync:</strong> This will check your Bitcoin address on the blockchain 
+            and update your balance with real on-chain data.
           </div>
+          {user.bitcoinAddress && (
+            <div className="text-xs font-mono bg-muted/10 p-2 rounded border">
+              <strong>Address:</strong> {user.bitcoinAddress.slice(0, 8)}...{user.bitcoinAddress.slice(-8)}
+            </div>
+          )}
         </div>
 
         <div className="space-y-2">
@@ -77,7 +82,7 @@ export function BitcoinSync() {
 
         <Button
           onClick={() => syncBalanceMutation.mutate()}
-          disabled={syncBalanceMutation.isPending}
+          disabled={syncBalanceMutation.isPending || !user.bitcoinAddress}
           className="w-full"
         >
           {syncBalanceMutation.isPending ? (
@@ -85,11 +90,12 @@ export function BitcoinSync() {
           ) : (
             <RefreshCw className="w-4 h-4 mr-2" />
           )}
-          Refresh Account Balance
+          {user.bitcoinAddress ? 'Sync with Blockchain' : 'No Wallet Address'}
         </Button>
 
         <div className="text-xs text-muted-foreground bg-muted/20 p-2 rounded">
-          <strong>Note:</strong> This will update your account balance with the latest information from our secure vault system.
+          <strong>Note:</strong> This checks your Bitcoin address on the blockchain using multiple APIs 
+          (BlockCypher, Blockstream, Blockchair) to ensure accurate balance data.
         </div>
       </CardContent>
     </Card>
