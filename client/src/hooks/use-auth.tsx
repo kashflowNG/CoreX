@@ -25,6 +25,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const userData = JSON.parse(storedUser);
         console.log('Restoring user from localStorage:', userData.email);
         setUser(userData);
+        
+        // Verify the user session is still valid
+        fetch(`/api/user/${userData.id}`)
+          .then(response => {
+            if (!response.ok) {
+              throw new Error('Session expired');
+            }
+            return response.json();
+          })
+          .then(refreshedUser => {
+            setUser(refreshedUser);
+            localStorage.setItem('corex_user', JSON.stringify(refreshedUser));
+          })
+          .catch(error => {
+            console.error('Session validation failed:', error);
+            localStorage.removeItem('corex_user');
+            setUser(null);
+          });
       } catch (error) {
         console.error('Error parsing stored user data:', error);
         localStorage.removeItem('corex_user');
@@ -90,9 +108,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const updatedUser = await response.json();
         setUser(updatedUser);
         localStorage.setItem('corex_user', JSON.stringify(updatedUser));
+      } else {
+        // If user fetch fails, clear the session
+        console.error('Failed to refresh user, clearing session');
+        logout();
       }
     } catch (error) {
       console.error('Error refreshing user:', error);
+      // On network error, don't clear session
     }
   };
 

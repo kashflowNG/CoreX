@@ -13,11 +13,15 @@ import { Badge } from "@/components/ui/badge";
 import { formatBitcoin, calculateInvestmentProgress, formatDate } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 import { useLocation } from "wouter";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { RefreshCw } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Home() {
-  const { user, logout } = useAuth();
+  const { user, logout, refreshUser } = useAuth();
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const { data: investments } = useQuery<Investment[]>({
     queryKey: ['/api/investments/user', user?.id],
@@ -68,6 +72,37 @@ export default function Home() {
     ? investmentPlans?.find(plan => plan.id === user.currentPlanId)
     : null;
 
+  const handleRefreshBalance = async () => {
+    if (!user) return;
+
+    setIsRefreshing(true);
+    try {
+      // Sync balance with blockchain
+      const response = await fetch(`/api/bitcoin/sync-balance/${user.id}`, {
+        method: 'POST'
+      });
+
+      if (response.ok) {
+        await refreshUser();
+        toast({
+          title: "Balance Updated",
+          description: "Your balance has been synced with the blockchain",
+        });
+      } else {
+        throw new Error('Failed to sync balance');
+      }
+    } catch (error) {
+      console.error('Balance refresh error:', error);
+      toast({
+        title: "Sync Failed", 
+        description: "Could not sync balance. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   return (
     <div className="max-w-sm mx-auto bg-background min-h-screen relative overflow-hidden">
       {/* Background Elements */}
@@ -114,7 +149,21 @@ export default function Home() {
       </header>
 
       {/* Wallet Balance */}
-      <WalletBalance />
+      <div className="relative px-6 mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-foreground">Wallet Balance</h3>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleRefreshBalance}
+              disabled={isRefreshing}
+              className="rounded-2xl relative glass-card hover:glow-bitcoin transition-all duration-300"
+            >
+              <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            </Button>
+          </div>
+          <WalletBalance />
+      </div>
 
       {/* Bitcoin Price */}
       <BitcoinPrice />
