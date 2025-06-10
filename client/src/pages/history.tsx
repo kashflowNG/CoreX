@@ -177,7 +177,7 @@ export default function History() {
                           {transaction.status === 'pending' && (
                             <div className="bg-yellow-50 dark:bg-yellow-900/20 p-2 rounded">
                               <div className="text-sm text-yellow-600 dark:text-yellow-400">
-                                Transaction is pending admin approval
+                                Transaction is under review and will be processed shortly
                               </div>
                             </div>
                           )}

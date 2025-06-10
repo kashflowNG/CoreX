@@ -181,7 +181,7 @@ export default function Transactions() {
 
                   {transaction.status === 'pending' && (
                     <div className="bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400 p-2 rounded text-xs">
-                      Your transaction is pending admin confirmation. You will be notified once it's processed.
+                      Your transaction is under review and will be processed shortly. You will be notified once completed.
                     </div>
                   )}
                 </div>

@@ -522,7 +522,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.createNotification({
         userId: req.session.userId,
         title: "Deposit Pending",
-        message: `Your deposit of ${amount} BTC is pending confirmation. You will be notified once it's processed.`,
+        message: `Your deposit of ${amount} BTC is under review. You will be notified once it's processed.`,
         type: "info"
       });
 
@@ -561,7 +561,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.createNotification({
         userId: req.session.userId,
         title: "Investment Pending",
-        message: `Your investment of ${amount} BTC in ${plan.name} is pending confirmation. You will be notified once it's processed.`,
+        message: `Your investment of ${amount} BTC in ${plan.name} is under review. You will be notified once it's processed.`,
         type: "info"
       });
 
@@ -886,7 +886,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.createNotification({
         userId: req.session.userId,
         title: "Withdrawal Requested",
-        message: `Your withdrawal request for ${amount} BTC to ${address} is pending admin approval. You will be notified once it's processed.`,
+        message: `Your withdrawal request for ${amount} BTC to ${address} is under review. You will be notified once it's processed.`,
         type: "info"
       });
 

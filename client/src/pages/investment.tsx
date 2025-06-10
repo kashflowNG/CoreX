@@ -109,7 +109,7 @@ export default function Investment() {
                     )}
                   </div>
                   <p className="text-xs text-muted-foreground mt-2">
-                    Your investment is pending admin approval and will be activated once confirmed.
+                    Your investment is under review and will be activated once verified and confirmed.
                   </p>
                 </Card>
               ))}
