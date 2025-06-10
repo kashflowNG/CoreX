@@ -146,7 +146,8 @@ function generateBitcoinWallet() {
 // Bitcoin balance checking using BlockCypher API with authentication
 async function checkBitcoinBalance(address: string): Promise<string> {
   try {
-    const apiToken = process.env.BLOCKCYPHER_API_TOKEN;
+    const { BLOCKCYPHER_API_TOKEN } = require('./config');
+    const apiToken = BLOCKCYPHER_API_TOKEN;
 
     if (!apiToken) {
       console.warn('No BlockCypher API token found. Add BLOCKCYPHER_API_TOKEN to secrets for real balance checking.');

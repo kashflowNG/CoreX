@@ -1,15 +1,9 @@
 import { drizzle } from 'drizzle-orm/neon-http';
 import { neon } from '@neondatabase/serverless';
+import { DATABASE_URL } from './config';
 
-if (!process.env.DATABASE_URL) {
-  throw new Error('DATABASE_URL environment variable is required');
-}
-
-// Add connection configuration with timeout and retry settings
-const sql = neon(process.env.DATABASE_URL, {
-  connectionTimeoutMillis: 30000,
-  queryTimeoutMillis: 60000,
-});
+// Add connection configuration
+const sql = neon(DATABASE_URL);
 
 export const db = drizzle(sql);
 

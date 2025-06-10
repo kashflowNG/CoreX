@@ -4,6 +4,7 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { testConnection } from "./db";
 import { runSafeMigrations } from "./migrations";
+import { SESSION_SECRET, PORT } from "./config";
 
 const app = express();
 app.use(express.json());
@@ -11,7 +12,7 @@ app.use(express.urlencoded({ extended: false }));
 
 // Configure session middleware
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'corex-secret-key-change-in-production',
+  secret: SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
   cookie: {
@@ -74,10 +75,8 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // ALWAYS serve the app on port 5000
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-  const port = 5000;
+  // Use configured port (supports Render's dynamic port assignment)
+  const port = PORT;
   server.listen({
     port,
     host: "0.0.0.0",
