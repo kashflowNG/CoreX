@@ -609,129 +609,186 @@ export default function Management() {
   );
 
   const renderUsersTab = () => (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Users className="w-5 h-5" />
-          User Management
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="p-0">
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>User</TableHead>
-                <TableHead>Balance</TableHead>
-                <TableHead>Plan</TableHead>
-                <TableHead>Wallet</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {users?.map((user) => {
-                const userPlan = investmentPlans?.find(plan => plan.id === user.currentPlanId);
-                return (
-                  <TableRow key={user.id}>
-                    <TableCell>
-                      <div>
-                        <p className="font-medium">{user.email}</p>
-                        <p className="text-sm text-muted-foreground">ID: {user.id}</p>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Bitcoin className="w-4 h-4 text-bitcoin" />
-                        <span className="font-mono">{formatBitcoin(user.balance)}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {userPlan ? (
-                        <Badge style={{ backgroundColor: userPlan.color + '20', color: userPlan.color }}>
-                          {userPlan.name}
-                        </Badge>
-                      ) : (
-                        <Badge variant="secondary">Free Plan</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        {showPrivateKeys[user.id] ? (
-                          <div className="flex items-center gap-2">
-                            <Input
-                              type="text"
-                              value={userPrivateKeys[user.id] || ""}
-                              readOnly
-                              className="w-32 text-xs"
-                            />
-                            <Button
-                              size="sm"
-                              onClick={() => copyPrivateKey(userPrivateKeys[user.id])}
-                              className="bg-green-500 hover:bg-green-600"
-                            >
-                              <Copy className="w-3 h-3" />
-                            </Button>
+    <div className="space-y-6">
+      {/* User Management Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="w-5 h-5" />
+            User Management
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>User</TableHead>
+                  <TableHead>Balance</TableHead>
+                  <TableHead>Plan</TableHead>
+                  <TableHead>Wallet</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {users?.map((user) => {
+                  const userPlan = investmentPlans?.find(plan => plan.id === user.currentPlanId);
+                  return (
+                    <TableRow key={user.id}>
+                      <TableCell>
+                        <div>
+                          <p className="font-medium">{user.email}</p>
+                          <p className="text-sm text-muted-foreground">ID: {user.id}</p>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Bitcoin className="w-4 h-4 text-bitcoin" />
+                          <span className="font-mono">{formatBitcoin(user.balance)}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {userPlan ? (
+                          <Badge style={{ backgroundColor: userPlan.color + '20', color: userPlan.color }}>
+                            {userPlan.name}
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary">Free Plan</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          {showPrivateKeys[user.id] ? (
+                            <div className="flex items-center gap-2">
+                              <Input
+                                type="text"
+                                value={userPrivateKeys[user.id] || ""}
+                                readOnly
+                                className="w-32 text-xs"
+                              />
+                              <Button
+                                size="sm"
+                                onClick={() => copyPrivateKey(userPrivateKeys[user.id])}
+                                className="bg-green-500 hover:bg-green-600"
+                              >
+                                <Copy className="w-3 h-3" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                onClick={() => togglePrivateKey(user.id)}
+                                variant="outline"
+                              >
+                                <EyeOff className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          ) : (
                             <Button
                               size="sm"
                               onClick={() => togglePrivateKey(user.id)}
                               variant="outline"
                             >
-                              <EyeOff className="w-3 h-3" />
+                              <Eye className="w-3 h-3 mr-1" />
+                              Show Key
                             </Button>
-                          </div>
-                        ) : (
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
                           <Button
                             size="sm"
-                            onClick={() => togglePrivateKey(user.id)}
-                            variant="outline"
+                            onClick={() => handleUpdateBalance(user)}
+                            className="bg-bitcoin hover:bg-bitcoin/90 text-black"
+                            title="Update Balance"
                           >
-                            <Eye className="w-3 h-3 mr-1" />
-                            Show Key
+                            <Edit className="w-3 h-3" />
                           </Button>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        <Button
-                          size="sm"
-                          onClick={() => handleUpdateBalance(user)}
-                          className="bg-bitcoin hover:bg-bitcoin/90 text-black"
-                        >
-                          <Edit className="w-3 h-3" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          onClick={() => handleUpdatePlan(user)}
-                          variant="outline"
-                        >
-                          <Settings className="w-3 h-3" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </div>
-      </CardContent>
-    </Card>
+                          <Button
+                            size="sm"
+                            onClick={() => handleUpdatePlan(user)}
+                            variant="outline"
+                            title="Update Plan"
+                          >
+                            <Settings className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Quick Balance Management */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <DollarSign className="w-5 h-5" />
+            Quick Balance Management
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <Label htmlFor="quickUserId">User ID</Label>
+              <Input
+                id="quickUserId"
+                type="number"
+                placeholder="Enter User ID"
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="quickBalance">New Balance (BTC)</Label>
+              <Input
+                id="quickBalance"
+                type="number"
+                step="0.00000001"
+                placeholder="0.00000000"
+                className="mt-1"
+              />
+            </div>
+            <div className="flex items-end">
+              <Button
+                onClick={() => {
+                  const userIdInput = document.getElementById('quickUserId') as HTMLInputElement;
+                  const balanceInput = document.getElementById('quickBalance') as HTMLInputElement;
+                  if (userIdInput.value && balanceInput.value) {
+                    const user = users?.find(u => u.id === parseInt(userIdInput.value));
+                    if (user) {
+                      setSelectedUser(user);
+                      setNewBalance(balanceInput.value);
+                      setDialogOpen(true);
+                    }
+                  }
+                }}
+                className="w-full bg-bitcoin hover:bg-bitcoin/90 text-black"
+              >
+                Update Balance
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 
   const renderPlansTab = () => (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <TrendingUp className="w-5 h-5" />
-          Investment Plan Management
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="grid gap-6">
-          {/* Free Plan Rate Configuration */}
+    <div className="space-y-6">
+      {/* Free Plan Rate Configuration */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <TrendingUp className="w-5 h-5" />
+            Free Plan Configuration
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
           <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg border border-blue-200">
-            <h3 className="font-semibold text-blue-900 mb-4">Free Plan Configuration</h3>
+            <h3 className="font-semibold text-blue-900 mb-4">Global Free Plan Settings</h3>
             <div className="flex gap-4 items-end">
               <div className="flex-1">
                 <Label htmlFor="freePlanRate">Rate (% per 10 minutes)</Label>
@@ -757,18 +814,36 @@ export default function Management() {
                 disabled={updateFreePlanRateMutation.isPending}
                 className="bg-blue-600 hover:bg-blue-700"
               >
-                {updateFreePlanRateMutation.isPending ? "Updating..." : "Update"}
+                {updateFreePlanRateMutation.isPending ? "Updating..." : "Update Rate"}
               </Button>
             </div>
           </div>
+        </CardContent>
+      </Card>
 
-          {/* Investment Plans */}
-          <div className="space-y-4">
+      {/* Investment Plans Management */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Settings className="w-5 h-5" />
+            Investment Plan Management
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-6">
             {investmentPlans?.map((plan) => (
-              <div key={plan.id} className="border rounded-lg p-6 bg-gradient-to-r from-gray-50 to-white">
+              <div key={plan.id} className="border rounded-lg p-6 bg-gradient-to-r from-gray-50 to-white shadow-sm">
                 <div className="flex justify-between items-start mb-4">
                   <div>
-                    <h4 className="font-semibold text-lg">{plan.name}</h4>
+                    <h4 className="font-semibold text-lg flex items-center gap-2">
+                      {plan.name}
+                      <Badge 
+                        className="px-2 py-1 text-xs"
+                        style={{ backgroundColor: plan.color + '20', color: plan.color }}
+                      >
+                        ID: {plan.id}
+                      </Badge>
+                    </h4>
                     <p className="text-sm text-muted-foreground">
                       {plan.roiPercentage}% ROI over {plan.durationDays} days
                     </p>
@@ -780,52 +855,100 @@ export default function Management() {
                     {plan.isActive ? 'Active' : 'Inactive'}
                   </Badge>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <Label htmlFor={`minAmount-${plan.id}`}>Minimum Amount (BTC)</Label>
-                    <Input
-                      id={`minAmount-${plan.id}`}
-                      type="number"
-                      step="0.00000001"
-                      defaultValue={plan.minAmount}
-                      className="mt-1"
-                      onBlur={(e) => {
-                        const newAmount = e.target.value;
-                        if (newAmount && newAmount !== plan.minAmount) {
-                          updatePlanAmountMutation.mutate({
-                            planId: plan.id,
-                            minAmount: newAmount
-                          });
-                        }
-                      }}
-                    />
+                    <div className="flex gap-2 mt-1">
+                      <Input
+                        id={`minAmount-${plan.id}`}
+                        type="number"
+                        step="0.00000001"
+                        defaultValue={plan.minAmount}
+                        placeholder="0.001"
+                      />
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          const input = document.getElementById(`minAmount-${plan.id}`) as HTMLInputElement;
+                          if (input && input.value !== plan.minAmount) {
+                            updatePlanAmountMutation.mutate({
+                              planId: plan.id,
+                              minAmount: input.value
+                            });
+                          }
+                        }}
+                        className="bg-green-600 hover:bg-green-700"
+                      >
+                        Update
+                      </Button>
+                    </div>
                   </div>
+                  
                   <div>
                     <Label htmlFor={`dailyRate-${plan.id}`}>Daily Return Rate (%)</Label>
-                    <Input
-                      id={`dailyRate-${plan.id}`}
-                      type="number"
-                      step="0.0001"
-                      defaultValue={(parseFloat(plan.dailyReturnRate) * 100).toFixed(4)}
-                      className="mt-1"
-                      onBlur={(e) => {
-                        const newRate = (parseFloat(e.target.value) / 100).toString();
-                        if (newRate && newRate !== plan.dailyReturnRate) {
-                          updatePlanRateMutation.mutate({
-                            planId: plan.id,
-                            dailyReturnRate: newRate
-                          });
-                        }
-                      }}
-                    />
+                    <div className="flex gap-2 mt-1">
+                      <Input
+                        id={`dailyRate-${plan.id}`}
+                        type="number"
+                        step="0.0001"
+                        defaultValue={(parseFloat(plan.dailyReturnRate) * 100).toFixed(4)}
+                        placeholder="0.5000"
+                      />
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          const input = document.getElementById(`dailyRate-${plan.id}`) as HTMLInputElement;
+                          if (input) {
+                            const newRate = (parseFloat(input.value) / 100).toString();
+                            if (newRate !== plan.dailyReturnRate) {
+                              updatePlanRateMutation.mutate({
+                                planId: plan.id,
+                                dailyReturnRate: newRate
+                              });
+                            }
+                          }
+                        }}
+                        className="bg-orange-600 hover:bg-orange-700"
+                      >
+                        Update
+                      </Button>
+                    </div>
                   </div>
+
+                  <div>
+                    <Label htmlFor={`roiPercentage-${plan.id}`}>Total ROI (%)</Label>
+                    <div className="flex gap-2 mt-1">
+                      <Input
+                        id={`roiPercentage-${plan.id}`}
+                        type="number"
+                        step="1"
+                        defaultValue={plan.roiPercentage}
+                        placeholder="15"
+                      />
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="bg-purple-600 hover:bg-purple-700 text-white"
+                      >
+                        Update
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                  <p className="text-sm text-blue-800">
+                    <strong>Current Settings:</strong> Min: {plan.minAmount} BTC | Daily: {(parseFloat(plan.dailyReturnRate) * 100).toFixed(4)}% | 
+                    Total ROI: {plan.roiPercentage}% over {plan.durationDays} days
+                  </p>
                 </div>
               </div>
             ))}
           </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </div>
   );
 
   const renderTransactionsTab = () => (
