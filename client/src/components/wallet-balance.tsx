@@ -42,21 +42,24 @@ export function WalletBalance() {
 
 
   return (
-    <div className="px-6 mb-8">
-      <Card className="gradient-primary rounded-3xl p-8 relative overflow-hidden border-0 shadow-2xl animate-glow">
+    <div>
+      <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-bitcoin via-bitcoin/90 to-gold rounded-2xl shadow-2xl">
         {/* Background decorative elements */}
-        <div className="absolute top-0 right-0 w-40 h-40 bg-white opacity-10 rounded-full -translate-y-20 translate-x-20 animate-pulse-slow"></div>
-        <div className="absolute bottom-0 left-0 w-32 h-32 bg-white opacity-5 rounded-full translate-y-16 -translate-x-16 animate-float"></div>
+        <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-10 rounded-full -translate-y-16 translate-x-16 animate-pulse-slow"></div>
+        <div className="absolute bottom-0 left-0 w-24 h-24 bg-white opacity-5 rounded-full translate-y-12 -translate-x-12 animate-float"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-transparent via-white/5 to-transparent"></div>
 
         {/* Security indicators */}
-        <div className="absolute top-4 right-4 flex gap-2">
-          <div className="w-8 h-8 rounded-full bg-white bg-opacity-20 flex items-center justify-center">
+        <div className="absolute top-5 right-5 flex gap-2">
+          <div className="w-9 h-9 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
             <Shield className="w-4 h-4 text-white" />
           </div>
-          <div className="w-8 h-8 rounded-full bg-white bg-opacity-20 flex items-center justify-center animate-pulse">
+          <div className="w-9 h-9 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center animate-pulse">
             <Zap className="w-4 h-4 text-white" />
           </div>
         </div>
+
+        <CardContent className="p-8 relative z-10">
 
         <div className="relative z-10">
           <div className="flex items-center justify-between mb-4">

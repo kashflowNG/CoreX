@@ -47,28 +47,26 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-6 relative overflow-hidden">
-      {/* Background Elements */}
-      <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-background opacity-50"></div>
-      <div className="absolute top-20 right-20 w-96 h-96 bg-bitcoin opacity-5 rounded-full blur-3xl animate-pulse-slow"></div>
-      <div className="absolute bottom-20 left-20 w-64 h-64 bg-emerald opacity-5 rounded-full blur-3xl animate-float"></div>
-      
-      <Card className="w-full max-w-md relative z-10 neo-card border-0 shadow-2xl">
-        <CardHeader className="text-center pb-8">
-          <div className="w-20 h-20 mx-auto mb-6 rounded-3xl gradient-primary flex items-center justify-center animate-glow">
-            <span className="text-3xl font-bold text-black">₿</span>
-          </div>
-          <CardTitle className="text-3xl font-bold bg-gradient-to-r from-bitcoin to-gold bg-clip-text text-transparent mb-2">
-            Welcome to CoreX
-          </CardTitle>
-          <CardDescription className="text-lg text-muted-foreground">
-            Secure access to your Bitcoin investment platform
-          </CardDescription>
-          
-          {/* Security indicators */}
-          <div className="flex items-center justify-center gap-4 mt-4">
-            <div className="flex items-center gap-2 glass-card px-3 py-1 rounded-xl">
-              <Shield className="w-4 h-4 text-emerald" />
+    <div className="min-h-screen bg-gradient-to-br from-background via-background/98 to-background flex items-center justify-center p-6">
+      <div className="w-full max-w-md">
+        <Card className="border border-border/50 shadow-2xl backdrop-blur-sm bg-card/95">
+          <CardHeader className="text-center space-y-6 pb-8">
+            <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-bitcoin to-gold flex items-center justify-center shadow-lg">
+              <span className="text-2xl font-bold text-black">₿</span>
+            </div>
+            <div className="space-y-2">
+              <CardTitle className="text-2xl font-bold bg-gradient-to-r from-bitcoin to-gold bg-clip-text text-transparent">
+                Welcome to CoreX
+              </CardTitle>
+              <CardDescription className="text-base text-muted-foreground">
+                Sign in to your Bitcoin investment account
+              </CardDescription>
+            </div>
+            
+            {/* Security indicators */}
+            <div className="flex items-center justify-center gap-6 pt-2">
+              <div className="flex items-center gap-2">
+                <Shield className="w-4 h-4 text-emerald" />
               <span className="text-xs text-emerald font-medium">Bank-Level Security</span>
             </div>
             <div className="flex items-center gap-2 glass-card px-3 py-1 rounded-xl">

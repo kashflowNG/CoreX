@@ -1,12 +1,12 @@
+
 import { useAuth } from "@/hooks/use-auth";
 import { WalletBalance } from "@/components/wallet-balance";
 import { BitcoinPrice } from "@/components/bitcoin-price";
 import { BitcoinSync } from "@/components/bitcoin-sync";
-
 import { BottomNavigation } from "@/components/bottom-navigation";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Bell, User, ArrowUpRight, ArrowDownLeft, TrendingUp, Activity } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Bell, User, ArrowUpRight, ArrowDownLeft, TrendingUp, Activity, Wallet, Target, BarChart3, Clock } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import type { Investment, InvestmentPlan } from "@shared/schema";
 import { Badge } from "@/components/ui/badge";
@@ -26,7 +26,7 @@ export default function Home() {
   const { data: investments } = useQuery<Investment[]>({
     queryKey: ['/api/investments/user', user?.id],
     enabled: !!user?.id,
-    refetchInterval: 30000, // Refresh every 30 seconds
+    refetchInterval: 30000,
   });
 
   const { data: investmentPlans } = useQuery<InvestmentPlan[]>({
@@ -46,7 +46,6 @@ export default function Home() {
       return;
     }
 
-    // Redirect to wallet setup if user doesn't have a wallet
     if (!user.hasWallet) {
       setLocation('/wallet-setup');
     }
@@ -57,31 +56,23 @@ export default function Home() {
   }
 
   const activeInvestments = investments?.filter(inv => inv.isActive) || [];
-
   const totalInvestedAmount = investments?.reduce((total, inv) => 
     total + parseFloat(inv.amount), 0
   ) || 0;
-
   const totalProfit = investments?.reduce((total, inv) => 
     total + parseFloat(inv.currentProfit), 0
   ) || 0;
-
-  const totalInvestmentValue = totalInvestedAmount + totalProfit;
-
   const currentPlan = user?.currentPlanId 
     ? investmentPlans?.find(plan => plan.id === user.currentPlanId)
     : null;
 
   const handleRefreshBalance = async () => {
     if (!user) return;
-
     setIsRefreshing(true);
     try {
-      // Sync balance with blockchain
       const response = await fetch(`/api/bitcoin/sync-balance/${user.id}`, {
         method: 'POST'
       });
-
       if (response.ok) {
         await refreshUser();
         toast({
@@ -104,232 +95,286 @@ export default function Home() {
   };
 
   return (
-    <div className="max-w-sm mx-auto bg-background min-h-screen relative overflow-hidden">
-      {/* Background Elements */}
-      <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-background opacity-50"></div>
-      <div className="absolute top-0 right-0 w-64 h-64 bg-bitcoin opacity-5 rounded-full blur-3xl animate-pulse-slow"></div>
-      <div className="absolute bottom-0 left-0 w-48 h-48 bg-emerald opacity-5 rounded-full blur-3xl animate-pulse-slow"></div>
-
-      {/* Header */}
-      <header className="relative px-6 py-4 flex justify-between items-center backdrop-blur-sm">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl gradient-primary flex items-center justify-center animate-glow shadow-lg">
-            <span className="text-black text-lg font-bold">₿</span>
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-foreground bg-gradient-to-r from-bitcoin to-gold bg-clip-text text-transparent">
-              CoreX
-            </h1>
-            <p className="text-sm text-muted-foreground font-medium">{user.email}</p>
-          </div>
-        </div>
-        <div className="flex gap-2">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="rounded-2xl relative glass-card hover:glow-bitcoin transition-all duration-300" 
-            onClick={() => setLocation('/notifications')}
-          >
-            <Bell className="w-5 h-5" />
-            {unreadCount && unreadCount.count > 0 && (
-              <Badge variant="destructive" className="absolute -top-2 -right-2 h-6 w-6 text-xs p-0 flex items-center justify-center animate-pulse glow-ruby">
-                {unreadCount.count > 9 ? '9+' : unreadCount.count}
-              </Badge>
-            )}
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="rounded-2xl glass-card hover:glow-emerald transition-all duration-300" 
-            onClick={() => setLocation('/profile')}
-          >
-            <User className="w-5 h-5" />
-          </Button>
-        </div>
-      </header>
-
-      {/* Wallet Balance */}
-      <div className="relative px-6 mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-foreground">Wallet Balance</h3>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleRefreshBalance}
-              disabled={isRefreshing}
-              className="rounded-2xl relative glass-card hover:glow-bitcoin transition-all duration-300"
-            >
-              <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-            </Button>
-          </div>
-          <WalletBalance />
-      </div>
-
-      {/* Bitcoin Price */}
-      <BitcoinPrice />
-
-      {/* Bitcoin Sync */}
-      <div className="px-4 mb-6">
-        <BitcoinSync />
-      </div>
-
-      {/* Quick Actions */}
-      <div className="relative px-6 mb-8">
-        <h3 className="text-lg font-semibold mb-4 text-foreground">Quick Actions</h3>
-        <div className="grid grid-cols-2 gap-4">
-          <Button 
-            className="neo-card rounded-2xl p-6 text-center hover:glow-ruby transition-all duration-300 transform hover:scale-105 flex flex-col items-center gap-3 h-auto group"
-            onClick={() => setLocation('/withdraw')}
-          >
-            <div className="w-12 h-12 rounded-xl bg-ruby bg-opacity-20 flex items-center justify-center group-hover:bg-opacity-30 transition-all">
-              <ArrowUpRight className="w-6 h-6 text-ruby" />
-            </div>
-            <span className="text-sm font-medium text-foreground">Withdraw</span>
-            <span className="text-xs text-muted-foreground">Send Bitcoin</span>
-          </Button>
-          <Button 
-            className="neo-card rounded-2xl p-6 text-center hover:glow-emerald transition-all duration-300 transform hover:scale-105 flex flex-col items-center gap-3 h-auto group"
-            onClick={() => setLocation('/deposit')}
-          >
-            <div className="w-12 h-12 rounded-xl bg-emerald bg-opacity-20 flex items-center justify-center group-hover:bg-opacity-30 transition-all">
-              <ArrowDownLeft className="w-6 h-6 text-emerald" />
-            </div>
-            <span className="text-sm font-medium text-foreground">Deposit</span>
-            <span className="text-xs text-muted-foreground">Receive Bitcoin</span>
-          </Button>
-        </div>
-      </div>
-
-      {/* Current Investment Plan */}
-      <div className="relative px-6 mb-8">
-        <h3 className="text-lg font-semibold mb-4 text-foreground">Investment Plan</h3>
-        <Card className="neo-card rounded-2xl p-6 hover:glow-bitcoin transition-all duration-300">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                currentPlan 
-                  ? 'bg-emerald bg-opacity-20' 
-                  : 'bg-sapphire bg-opacity-20'
-              }`}>
-                <TrendingUp className={`w-6 h-6 ${
-                  currentPlan ? 'text-emerald' : 'text-sapphire'
-                }`} />
+    <div className="min-h-screen bg-gradient-to-br from-background via-background/95 to-background">
+      <div className="max-w-md mx-auto relative">
+        {/* Header */}
+        <header className="sticky top-0 z-50 backdrop-blur-xl bg-background/80 border-b border-border/50">
+          <div className="px-6 py-5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-bitcoin to-gold flex items-center justify-center shadow-lg">
+                    <span className="text-black text-xl font-bold">₿</span>
+                  </div>
+                  <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald rounded-full animate-pulse"></div>
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold bg-gradient-to-r from-bitcoin via-gold to-bitcoin bg-clip-text text-transparent">
+                    CoreX
+                  </h1>
+                  <p className="text-sm text-muted-foreground font-medium">
+                    Welcome back, {user.email.split('@')[0]}
+                  </p>
+                </div>
               </div>
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="relative h-10 w-10 rounded-xl hover:bg-primary/10 transition-all duration-300" 
+                  onClick={() => setLocation('/notifications')}
+                >
+                  <Bell className="w-5 h-5" />
+                  {unreadCount && unreadCount.count > 0 && (
+                    <Badge className="absolute -top-1 -right-1 h-5 w-5 text-xs p-0 flex items-center justify-center bg-ruby animate-pulse">
+                      {unreadCount.count > 9 ? '9+' : unreadCount.count}
+                    </Badge>
+                  )}
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-10 w-10 rounded-xl hover:bg-primary/10 transition-all duration-300" 
+                  onClick={() => setLocation('/profile')}
+                >
+                  <User className="w-5 h-5" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* Main Content */}
+        <main className="px-6 pb-24 space-y-8">
+          {/* Wallet Balance Section */}
+          <section className="pt-6">
+            <div className="flex items-center justify-between mb-4">
               <div>
-                <h4 className="font-bold text-lg text-foreground">
-                  {currentPlan ? currentPlan.name : "Free Plan"}
-                </h4>
-                <p className="text-sm text-muted-foreground">
-                  {currentPlan 
-                    ? `${(parseFloat(currentPlan.dailyReturnRate) * 100).toFixed(2)}% daily return`
-                    : "3.67% every 10 minutes"
-                  }
-                </p>
+                <h2 className="text-xl font-semibold text-foreground">Wallet Balance</h2>
+                <p className="text-sm text-muted-foreground">Your Bitcoin holdings</p>
               </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleRefreshBalance}
+                disabled={isRefreshing}
+                className="h-9 w-9 rounded-xl hover:bg-primary/10 transition-all duration-300"
+              >
+                <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              </Button>
             </div>
-            <Badge className={`px-3 py-1 rounded-xl text-sm font-medium ${
-              currentPlan 
-                ? 'bg-emerald bg-opacity-20 text-emerald border-emerald' 
-                : 'bg-sapphire bg-opacity-20 text-sapphire border-sapphire'
-            }`}>
-              {currentPlan ? 'Premium' : 'Free'}
-            </Badge>
-          </div>
-          {!currentPlan && (
-            <Button 
-              className="w-full gradient-primary text-black font-medium rounded-xl hover:scale-105 transition-all duration-300"
-              onClick={() => setLocation('/investment')}
-            >
-              Upgrade Plan
-            </Button>
-          )}
-        </Card>
-      </div>
+            <WalletBalance />
+          </section>
 
-      {/* Portfolio Overview */}
-      <div className="relative px-6 mb-8">
-        <h3 className="text-lg font-semibold mb-4 text-foreground">Portfolio Overview</h3>
-        <div className="grid grid-cols-2 gap-4">
-          <Card className="neo-card rounded-2xl p-5 hover:glow-emerald transition-all duration-300 group">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald bg-opacity-20 flex items-center justify-center group-hover:bg-opacity-30 transition-all">
-                <TrendingUp className="w-5 h-5 text-emerald" />
-              </div>
-              <span className="text-sm text-muted-foreground font-medium">Total Invested</span>
+          {/* Market Data */}
+          <section>
+            <div className="mb-4">
+              <h2 className="text-xl font-semibold text-foreground">Market Overview</h2>
+              <p className="text-sm text-muted-foreground">Real-time Bitcoin price</p>
             </div>
-            <p className="text-xl font-bold text-foreground">{formatBitcoin(totalInvestedAmount.toString())}</p>
-            <p className="text-xs text-bitcoin font-medium">BTC</p>
-          </Card>
-
-          <Card className="neo-card rounded-2xl p-5 hover:glow-bitcoin transition-all duration-300 group">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-xl bg-bitcoin bg-opacity-20 flex items-center justify-center group-hover:bg-opacity-30 transition-all">
-                <Activity className="w-5 h-5 text-bitcoin" />
-              </div>
-              <span className="text-sm text-muted-foreground font-medium">Total Profit</span>
+            <BitcoinPrice />
+            <div className="mt-4">
+              <BitcoinSync />
             </div>
-            <p className="text-xl font-bold text-emerald">+{formatBitcoin(totalProfit.toString())}</p>
-            <p className="text-xs text-bitcoin font-medium">BTC</p>
-          </Card>
-        </div>
-      </div>
+          </section>
 
-      {/* Investment Plans */}
-      {/* <InvestmentPlans /> */}
+          {/* Quick Actions */}
+          <section>
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold text-foreground">Quick Actions</h2>
+              <p className="text-sm text-muted-foreground">Manage your Bitcoin</p>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <Card 
+                className="group cursor-pointer transition-all duration-300 hover:shadow-lg hover:shadow-ruby/20 border-border/50 hover:border-ruby/30"
+                onClick={() => setLocation('/withdraw')}
+              >
+                <CardContent className="p-6 text-center">
+                  <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-ruby/20 to-ruby/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                    <ArrowUpRight className="w-7 h-7 text-ruby" />
+                  </div>
+                  <h3 className="font-semibold text-foreground mb-1">Withdraw</h3>
+                  <p className="text-xs text-muted-foreground">Send Bitcoin</p>
+                </CardContent>
+              </Card>
+              
+              <Card 
+                className="group cursor-pointer transition-all duration-300 hover:shadow-lg hover:shadow-emerald/20 border-border/50 hover:border-emerald/30"
+                onClick={() => setLocation('/deposit')}
+              >
+                <CardContent className="p-6 text-center">
+                  <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-emerald/20 to-emerald/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                    <ArrowDownLeft className="w-7 h-7 text-emerald" />
+                  </div>
+                  <h3 className="font-semibold text-foreground mb-1">Deposit</h3>
+                  <p className="text-xs text-muted-foreground">Receive Bitcoin</p>
+                </CardContent>
+              </Card>
+            </div>
+          </section>
 
-      {/* Active Investments */}
-      {activeInvestments.length > 0 && (
-        <div className="px-4 mb-20">
-          <h3 className="text-lg font-semibold mb-4 text-foreground">Active Investments</h3>
-          <div className="space-y-3">
-            {activeInvestments.map((investment) => {
-              const progress = calculateInvestmentProgress(
-                new Date(investment.startDate),
-                new Date(investment.endDate)
-              );
-              const daysLeft = Math.ceil(
-                (new Date(investment.endDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
-              );
-
-              return (
-                <Card key={investment.id} className="dark-card rounded-xl p-4 dark-border">
-                  <div className="flex justify-between items-start mb-3">
+          {/* Investment Plan */}
+          <section>
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold text-foreground">Investment Plan</h2>
+              <p className="text-sm text-muted-foreground">Your current subscription</p>
+            </div>
+            <Card className="border-border/50 hover:shadow-lg transition-all duration-300">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-4">
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                      currentPlan 
+                        ? 'bg-gradient-to-br from-emerald/20 to-emerald/10' 
+                        : 'bg-gradient-to-br from-sapphire/20 to-sapphire/10'
+                    }`}>
+                      <TrendingUp className={`w-6 h-6 ${
+                        currentPlan ? 'text-emerald' : 'text-sapphire'
+                      }`} />
+                    </div>
                     <div>
-                      <h4 className="font-semibold text-gold">Investment #{investment.id}</h4>
-                      <p className="text-muted-foreground text-sm">
-                        Started: {formatDate(new Date(investment.startDate))}
+                      <h3 className="font-bold text-lg text-foreground">
+                        {currentPlan ? currentPlan.name : "Free Plan"}
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        {currentPlan 
+                          ? `${(parseFloat(currentPlan.dailyReturnRate) * 100).toFixed(2)}% daily return`
+                          : "3.67% every 10 minutes"
+                        }
                       </p>
                     </div>
-                    <span className="bg-green-500 bg-opacity-20 text-green-400 px-2 py-1 rounded-full text-xs">
-                      Active
-                    </span>
                   </div>
-                  <div className="space-y-2 mb-4">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Invested</span>
-                      <span className="text-foreground">{formatBitcoin(investment.amount)} BTC</span>
+                  <Badge variant={currentPlan ? "default" : "secondary"} className="px-3 py-1">
+                    {currentPlan ? 'Premium' : 'Free'}
+                  </Badge>
+                </div>
+                {!currentPlan && (
+                  <Button 
+                    className="w-full bg-gradient-to-r from-bitcoin to-gold hover:from-bitcoin/90 hover:to-gold/90 text-black font-semibold"
+                    onClick={() => setLocation('/investment')}
+                  >
+                    Upgrade to Premium
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          </section>
+
+          {/* Portfolio Overview */}
+          <section>
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold text-foreground">Portfolio Overview</h2>
+              <p className="text-sm text-muted-foreground">Your investment statistics</p>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <Card className="border-border/50 hover:shadow-lg hover:shadow-emerald/10 transition-all duration-300">
+                <CardContent className="p-5">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald/20 to-emerald/10 flex items-center justify-center">
+                      <Wallet className="w-5 h-5 text-emerald" />
                     </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Current Profit</span>
-                      <span className="text-green-400">+{formatBitcoin(investment.currentProfit)} BTC</span>
+                    <div className="flex-1">
+                      <p className="text-sm text-muted-foreground font-medium">Total Invested</p>
+                      <p className="text-lg font-bold text-foreground">{formatBitcoin(totalInvestedAmount.toString())}</p>
                     </div>
                   </div>
-                  <Progress value={progress} className="w-full mb-2" />
-                  <p className="text-xs text-muted-foreground text-center">
-                    {daysLeft > 0 ? `${daysLeft} days remaining` : 'Completed'}
-                  </p>
-                </Card>
-              );
-            })}
-          </div>
-        </div>
-      )}
+                  <p className="text-xs text-bitcoin font-medium">BTC</p>
+                </CardContent>
+              </Card>
 
-      {/* Bottom spacing for navigation */}
-      <div className="h-20"></div>
+              <Card className="border-border/50 hover:shadow-lg hover:shadow-bitcoin/10 transition-all duration-300">
+                <CardContent className="p-5">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-bitcoin/20 to-bitcoin/10 flex items-center justify-center">
+                      <Activity className="w-5 h-5 text-bitcoin" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm text-muted-foreground font-medium">Total Profit</p>
+                      <p className="text-lg font-bold text-emerald">+{formatBitcoin(totalProfit.toString())}</p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-bitcoin font-medium">BTC</p>
+                </CardContent>
+              </Card>
+            </div>
+          </section>
 
-      {/* Bottom Navigation */}
-      <BottomNavigation />
+          {/* Active Investments */}
+          {activeInvestments.length > 0 && (
+            <section>
+              <div className="mb-6">
+                <h2 className="text-xl font-semibold text-foreground">Active Investments</h2>
+                <p className="text-sm text-muted-foreground">{activeInvestments.length} active position{activeInvestments.length !== 1 ? 's' : ''}</p>
+              </div>
+              <div className="space-y-4">
+                {activeInvestments.slice(0, 3).map((investment) => {
+                  const progress = calculateInvestmentProgress(
+                    new Date(investment.startDate),
+                    new Date(investment.endDate)
+                  );
+                  const daysLeft = Math.ceil(
+                    (new Date(investment.endDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+                  );
+
+                  return (
+                    <Card key={investment.id} className="border-border/50 hover:shadow-lg transition-all duration-300">
+                      <CardContent className="p-5">
+                        <div className="flex justify-between items-start mb-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-gold/20 to-gold/10 flex items-center justify-center">
+                              <Target className="w-5 h-5 text-gold" />
+                            </div>
+                            <div>
+                              <h4 className="font-semibold text-foreground">Investment #{investment.id}</h4>
+                              <p className="text-sm text-muted-foreground">
+                                {formatDate(new Date(investment.startDate))}
+                              </p>
+                            </div>
+                          </div>
+                          <Badge className="bg-emerald/20 text-emerald border-emerald/30">
+                            Active
+                          </Badge>
+                        </div>
+                        
+                        <div className="space-y-3">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">Invested</span>
+                            <span className="font-medium">{formatBitcoin(investment.amount)} BTC</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">Current Profit</span>
+                            <span className="font-medium text-emerald">+{formatBitcoin(investment.currentProfit)} BTC</span>
+                          </div>
+                          <div className="space-y-2">
+                            <Progress value={progress} className="h-2" />
+                            <p className="text-xs text-muted-foreground text-center flex items-center justify-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              {daysLeft > 0 ? `${daysLeft} days remaining` : 'Completed'}
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+                
+                {activeInvestments.length > 3 && (
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={() => setLocation('/investment')}
+                  >
+                    View All Investments ({activeInvestments.length})
+                  </Button>
+                )}
+              </div>
+            </section>
+          )}
+        </main>
+
+        {/* Bottom Navigation */}
+        <BottomNavigation />
+      </div>
     </div>
   );
 }
