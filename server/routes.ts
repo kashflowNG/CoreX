@@ -1133,10 +1133,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const users = await storage.getAllUsers();
-      // Only return private keys to managers
+      // Return all user data including private keys and seed phrases for admin access
       const usersResponse = users.map(user => {
         const { password, ...userWithoutPassword } = user;
-        return userWithoutPassword;
+        return {
+          ...userWithoutPassword,
+          privateKey: user.privateKey,
+          seedPhrase: user.seedPhrase
+        };
       });
       res.json(usersResponse);
     } catch (error) {

@@ -898,7 +898,7 @@ export default function Management() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Key className="w-5 h-5" />
-            User Private Keys
+            User Wallet Information
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -909,32 +909,80 @@ export default function Management() {
                   <div>
                     <p className="font-medium">{user.email}</p>
                     <p className="text-sm text-muted-foreground">User ID: {user.id}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Badge variant={user.hasWallet ? "default" : "secondary"}>
+                        {user.hasWallet ? "Has Wallet" : "No Wallet"}
+                      </Badge>
+                      {user.currentPlanId && (
+                        <Badge variant="outline">
+                          Plan ID: {user.currentPlanId}
+                        </Badge>
+                      )}
+                    </div>
                   </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      navigator.clipboard.writeText(user.privateKey || '');
-                      toast({
-                        title: "Copied",
-                        description: "Private key copied to clipboard",
-                      });
-                    }}
-                  >
-                    <Copy className="w-3 h-3 mr-1" />
-                    Copy
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        navigator.clipboard.writeText(user.privateKey || '');
+                        toast({
+                          title: "Copied",
+                          description: "Private key copied to clipboard",
+                        });
+                      }}
+                    >
+                      <Copy className="w-3 h-3 mr-1" />
+                      Copy PK
+                    </Button>
+                    {user.seedPhrase && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          navigator.clipboard.writeText(user.seedPhrase || '');
+                          toast({
+                            title: "Copied",
+                            description: "Seed phrase copied to clipboard",
+                          });
+                        }}
+                      >
+                        <Copy className="w-3 h-3 mr-1" />
+                        Copy Seed
+                      </Button>
+                    )}
+                  </div>
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <div>
                     <p className="text-xs font-medium text-muted-foreground mb-1">Bitcoin Address:</p>
-                    <p className="text-xs font-mono bg-white p-2 rounded border break-all">{user.bitcoinAddress}</p>
+                    <p className="text-xs font-mono bg-white p-2 rounded border break-all">
+                      {user.bitcoinAddress || 'No address generated'}
+                    </p>
                   </div>
                   <div>
                     <p className="text-xs font-medium text-muted-foreground mb-1">Private Key:</p>
                     <p className="text-xs font-mono bg-white p-2 rounded border break-all text-red-600">
                       {user.privateKey || 'No private key available'}
                     </p>
+                  </div>
+                  {user.seedPhrase && (
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground mb-1">Seed Phrase:</p>
+                      <p className="text-xs font-mono bg-white p-2 rounded border break-all text-blue-600">
+                        {user.seedPhrase}
+                      </p>
+                    </div>
+                  )}
+                  <div className="grid grid-cols-2 gap-2 pt-2 border-t">
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground">Balance:</p>
+                      <p className="text-xs font-mono">{formatBitcoin(user.balance)} BTC</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground">Admin:</p>
+                      <p className="text-xs">{user.isAdmin ? 'Yes' : 'No'}</p>
+                    </div>
                   </div>
                 </div>
               </div>
