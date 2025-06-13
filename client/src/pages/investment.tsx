@@ -1,3 +1,4 @@
+
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
@@ -17,13 +18,16 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useCurrency } from "@/hooks/use-currency";
 import { formatBitcoinAmount } from "@/lib/bitcoin";
-import { TrendingUp, Target, Clock, Award, ArrowLeft } from "lucide-react";
+import { TrendingUp, Target, Clock, Award, ArrowLeft, BarChart3, PieChart, Calendar, DollarSign, Zap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
+import { useBitcoinPrice } from "@/hooks/use-bitcoin-price";
 
 export default function Investment() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
+  const { currency } = useCurrency();
+  const { data: bitcoinPrice } = useBitcoinPrice();
 
   if (!user) {
     setLocation('/login');
@@ -32,7 +36,7 @@ export default function Investment() {
 
   const { data: investments } = useQuery<Investment[]>({
     queryKey: ['/api/investments/user', user.id],
-    refetchInterval: 30000, // Refresh every 30 seconds
+    refetchInterval: 30000,
   });
 
   const { data: plans } = useQuery<InvestmentPlan[]>({
@@ -41,7 +45,7 @@ export default function Investment() {
 
   const { data: transactions } = useQuery<any[]>({
     queryKey: ['/api/transactions'],
-    refetchInterval: 30000, // Refresh every 30 seconds
+    refetchInterval: 30000,
   });
 
   const getPlanName = (planId: number) => {
@@ -52,6 +56,22 @@ export default function Investment() {
   const completedInvestments = investments?.filter(inv => !inv.isActive) || [];
   const pendingInvestments = transactions?.filter(tx => tx.type === 'investment' && tx.status === 'pending') || [];
   const rejectedInvestments = transactions?.filter(tx => tx.type === 'investment' && tx.status === 'rejected') || [];
+
+  // Calculate portfolio statistics
+  const totalInvested = investments?.reduce((sum, inv) => sum + parseFloat(inv.amount), 0) || 0;
+  const totalProfit = investments?.reduce((sum, inv) => sum + parseFloat(inv.currentProfit), 0) || 0;
+  const totalValue = totalInvested + totalProfit;
+  const portfolioReturn = totalInvested > 0 ? ((totalProfit / totalInvested) * 100) : 0;
+
+  // Calculate average daily return
+  const avgDailyReturn = activeInvestments.length > 0 
+    ? activeInvestments.reduce((sum, inv) => {
+        const plan = plans?.find(p => p.id === inv.planId);
+        return sum + (plan ? parseFloat(plan.dailyReturnRate) * 100 : 0);
+      }, 0) / activeInvestments.length 
+    : 0;
+
+  const currencyPrice = currency === 'USD' ? bitcoinPrice?.usd.price : bitcoinPrice?.gbp.price;
 
   return (
     <div className="min-h-screen dark-bg">
@@ -65,24 +85,118 @@ export default function Investment() {
               </Button>
             </Link>
             <div>
-              <h1 className="text-xl font-bold dark-text">Investment</h1>
-              <p className="text-muted-foreground text-sm">Grow your Bitcoin</p>
+              <h1 className="text-xl font-bold dark-text">Investment Center</h1>
+              <p className="text-muted-foreground text-sm">Portfolio Analytics & Growth</p>
             </div>
           </div>
         </div>
       </div>
 
       <div className="max-w-4xl mx-auto p-4 space-y-6 pb-20">
+        {/* Portfolio Overview */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Card className="dark-card rounded-xl p-4 dark-border">
+            <div className="flex items-center gap-2 mb-2">
+              <BarChart3 className="w-4 h-4 text-bitcoin" />
+              <span className="text-xs text-muted-foreground">Total Invested</span>
+            </div>
+            <div className="space-y-1">
+              <p className="text-lg font-bold text-foreground">{formatBitcoin(totalInvested.toString())} BTC</p>
+              {currencyPrice && (
+                <p className="text-xs text-muted-foreground">
+                  ≈ {currency === 'USD' ? '$' : '£'}{(totalInvested * currencyPrice).toLocaleString()}
+                </p>
+              )}
+            </div>
+          </Card>
+
+          <Card className="dark-card rounded-xl p-4 dark-border">
+            <div className="flex items-center gap-2 mb-2">
+              <TrendingUp className="w-4 h-4 text-green-400" />
+              <span className="text-xs text-muted-foreground">Total Profit</span>
+            </div>
+            <div className="space-y-1">
+              <p className="text-lg font-bold text-green-400">+{formatBitcoin(totalProfit.toString())} BTC</p>
+              {currencyPrice && (
+                <p className="text-xs text-muted-foreground">
+                  ≈ {currency === 'USD' ? '$' : '£'}{(totalProfit * currencyPrice).toLocaleString()}
+                </p>
+              )}
+            </div>
+          </Card>
+
+          <Card className="dark-card rounded-xl p-4 dark-border">
+            <div className="flex items-center gap-2 mb-2">
+              <PieChart className="w-4 h-4 text-purple-400" />
+              <span className="text-xs text-muted-foreground">Portfolio Value</span>
+            </div>
+            <div className="space-y-1">
+              <p className="text-lg font-bold text-foreground">{formatBitcoin(totalValue.toString())} BTC</p>
+              {currencyPrice && (
+                <p className="text-xs text-muted-foreground">
+                  ≈ {currency === 'USD' ? '$' : '£'}{(totalValue * currencyPrice).toLocaleString()}
+                </p>
+              )}
+            </div>
+          </Card>
+
+          <Card className="dark-card rounded-xl p-4 dark-border">
+            <div className="flex items-center gap-2 mb-2">
+              <Zap className="w-4 h-4 text-orange-400" />
+              <span className="text-xs text-muted-foreground">ROI</span>
+            </div>
+            <div className="space-y-1">
+              <p className={`text-lg font-bold ${portfolioReturn >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                {portfolioReturn >= 0 ? '+' : ''}{portfolioReturn.toFixed(2)}%
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Avg Daily: {avgDailyReturn.toFixed(3)}%
+              </p>
+            </div>
+          </Card>
+        </div>
+
+        {/* Performance Insights */}
+        {activeInvestments.length > 0 && (
+          <Card className="dark-card dark-border">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="w-5 h-5 text-bitcoin" />
+                Performance Insights
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="text-center p-4 bg-green-500/10 rounded-lg">
+                  <div className="text-2xl font-bold text-green-400">{activeInvestments.length}</div>
+                  <div className="text-sm text-muted-foreground">Active Investments</div>
+                </div>
+                <div className="text-center p-4 bg-blue-500/10 rounded-lg">
+                  <div className="text-2xl font-bold text-blue-400">{completedInvestments.length}</div>
+                  <div className="text-sm text-muted-foreground">Completed</div>
+                </div>
+                <div className="text-center p-4 bg-orange-500/10 rounded-lg">
+                  <div className="text-2xl font-bold text-orange-400">{pendingInvestments.length}</div>
+                  <div className="text-sm text-muted-foreground">Pending Review</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Investment Plans */}
         <InvestmentPlans />
 
         {/* Pending Investments */}
         {pendingInvestments.length > 0 && (
-          <div className="px-4 mb-6">
-            <h3 className="text-lg font-semibold mb-4 text-foreground">Pending Investments</h3>
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+              <Clock className="w-5 h-5 text-orange-400" />
+              Pending Investments
+            </h3>
             <div className="space-y-3">
               {pendingInvestments.map((transaction) => (
-                <Card key={transaction.id} className="dark-card rounded-xl p-4 dark-border">
+                <Card key={transaction.id} className="dark-card rounded-xl p-4 dark-border border-orange-500/20">
                   <div className="flex justify-between items-start mb-3">
                     <div>
                       <h4 className="font-semibold text-orange-400">{getPlanName(transaction.planId || 1)}</h4>
@@ -90,62 +204,26 @@ export default function Investment() {
                         Submitted: {formatDate(new Date(transaction.createdAt))}
                       </p>
                     </div>
-                    <span className="bg-orange-500 bg-opacity-20 text-orange-400 px-2 py-1 rounded-full text-xs">
-                      Pending
-                    </span>
+                    <Badge variant="outline" className="border-orange-500 text-orange-400">
+                      Under Review
+                    </Badge>
                   </div>
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Amount</span>
-                      <span className="text-foreground">{formatBitcoin(transaction.amount)} BTC</span>
+                      <span className="text-foreground font-medium">{formatBitcoin(transaction.amount)} BTC</span>
                     </div>
                     {transaction.transactionHash && (
                       <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Transaction Hash</span>
+                        <span className="text-muted-foreground">TX Hash</span>
                         <span className="text-xs text-muted-foreground font-mono">
                           {transaction.transactionHash.substring(0, 8)}...{transaction.transactionHash.substring(-8)}
                         </span>
                       </div>
                     )}
                   </div>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Your investment is under review and will be activated once verified and confirmed.
-                  </p>
-                </Card>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Rejected Investments */}
-        {rejectedInvestments.length > 0 && (
-          <div className="px-4 mb-6">
-            <h3 className="text-lg font-semibold mb-4 text-foreground">Rejected Investments</h3>
-            <div className="space-y-3">
-              {rejectedInvestments.map((transaction) => (
-                <Card key={transaction.id} className="dark-card rounded-xl p-4 dark-border opacity-75">
-                  <div className="flex justify-between items-start mb-3">
-                    <div>
-                      <h4 className="font-semibold text-red-400">{getPlanName(transaction.planId || 1)}</h4>
-                      <p className="text-muted-foreground text-sm">
-                        Rejected: {transaction.confirmedAt ? formatDate(new Date(transaction.confirmedAt)) : 'Recently'}
-                      </p>
-                    </div>
-                    <span className="bg-red-500 bg-opacity-20 text-red-400 px-2 py-1 rounded-full text-xs">
-                      Rejected
-                    </span>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Amount</span>
-                      <span className="text-foreground">{formatBitcoin(transaction.amount)} BTC</span>
-                    </div>
-                    {transaction.notes && (
-                      <div className="bg-red-500 bg-opacity-10 p-2 rounded text-sm">
-                        <span className="text-red-400 font-medium">Reason: </span>
-                        <span className="text-muted-foreground">{transaction.notes}</span>
-                      </div>
-                    )}
+                  <div className="mt-3 p-2 bg-orange-500/10 rounded text-xs text-orange-400">
+                    💡 Your investment is being verified by our team. This usually takes 1-24 hours.
                   </div>
                 </Card>
               ))}
@@ -155,8 +233,11 @@ export default function Investment() {
 
         {/* Active Investments */}
         {activeInvestments.length > 0 && (
-          <div className="px-4 mb-6">
-            <h3 className="text-lg font-semibold mb-4 text-foreground">Active Investments</h3>
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-green-400" />
+              Active Investments
+            </h3>
             <div className="space-y-3">
               {activeInvestments.map((investment) => {
                 const progress = calculateInvestmentProgress(
@@ -166,34 +247,62 @@ export default function Investment() {
                 const daysLeft = Math.ceil(
                   (new Date(investment.endDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
                 );
+                const plan = plans?.find(p => p.id === investment.planId);
+                const currentValue = parseFloat(investment.amount) + parseFloat(investment.currentProfit);
+                const profitPercentage = ((parseFloat(investment.currentProfit) / parseFloat(investment.amount)) * 100);
 
                 return (
-                  <Card key={investment.id} className="dark-card rounded-xl p-4 dark-border">
+                  <Card key={investment.id} className="dark-card rounded-xl p-4 dark-border border-green-500/20">
                     <div className="flex justify-between items-start mb-3">
                       <div>
-                        <h4 className="font-semibold text-gold">{getPlanName(investment.planId)}</h4>
+                        <h4 className="font-semibold text-gold flex items-center gap-2">
+                          {getPlanName(investment.planId)}
+                          <Award className="w-4 h-4" />
+                        </h4>
                         <p className="text-muted-foreground text-sm">
                           Started: {formatDate(new Date(investment.startDate))}
                         </p>
                       </div>
-                      <span className="bg-green-500 bg-opacity-20 text-green-400 px-2 py-1 rounded-full text-xs">
-                        Active
+                      <Badge className="bg-green-500/20 text-green-400 hover:bg-green-500/30">
+                        Earning
+                      </Badge>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <span className="text-xs text-muted-foreground">Principal</span>
+                        <div className="font-semibold text-foreground">{formatBitcoin(investment.amount)} BTC</div>
+                        {currencyPrice && (
+                          <div className="text-xs text-muted-foreground">
+                            ≈ {currency === 'USD' ? '$' : '£'}{(parseFloat(investment.amount) * currencyPrice).toLocaleString()}
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <span className="text-xs text-muted-foreground">Current Profit</span>
+                        <div className="font-semibold text-green-400">+{formatBitcoin(investment.currentProfit)} BTC</div>
+                        <div className="text-xs text-green-400">+{profitPercentage.toFixed(2)}%</div>
+                      </div>
+                    </div>
+
+                    <div className="mb-4">
+                      <div className="flex justify-between text-sm mb-2">
+                        <span className="text-muted-foreground">Progress</span>
+                        <span className="text-foreground">{progress.toFixed(1)}%</span>
+                      </div>
+                      <Progress value={progress} className="w-full h-2" />
+                    </div>
+
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-muted-foreground">
+                        {daysLeft > 0 ? `${daysLeft} days remaining` : 'Completed'}
                       </span>
+                      {plan && (
+                        <span className="text-bitcoin">
+                          Daily: {(parseFloat(plan.dailyReturnRate) * 100).toFixed(2)}%
+                        </span>
+                      )}
                     </div>
-                    <div className="space-y-2 mb-4">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Invested</span>
-                        <span className="text-foreground">{formatBitcoin(investment.amount)} BTC</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Current Profit</span>
-                        <span className="text-green-400">+{formatBitcoin(investment.currentProfit)} BTC</span>
-                      </div>
-                    </div>
-                    <Progress value={progress} className="w-full mb-2" />
-                    <p className="text-xs text-muted-foreground text-center">
-                      {daysLeft > 0 ? `${daysLeft} days remaining` : 'Completed'}
-                    </p>
                   </Card>
                 );
               })}
@@ -203,31 +312,78 @@ export default function Investment() {
 
         {/* Completed Investments */}
         {completedInvestments.length > 0 && (
-          <div className="px-4 mb-6">
-            <h3 className="text-lg font-semibold mb-4 text-foreground">Completed Investments</h3>
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+              <Target className="w-5 h-5 text-blue-400" />
+              Completed Investments
+            </h3>
             <div className="space-y-3">
-              {completedInvestments.map((investment) => (
-                <Card key={investment.id} className="dark-card rounded-xl p-4 dark-border opacity-75">
+              {completedInvestments.map((investment) => {
+                const finalReturn = ((parseFloat(investment.currentProfit) / parseFloat(investment.amount)) * 100);
+                
+                return (
+                  <Card key={investment.id} className="dark-card rounded-xl p-4 dark-border opacity-75">
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <h4 className="font-semibold text-muted-foreground">{getPlanName(investment.planId)}</h4>
+                        <p className="text-muted-foreground text-sm">
+                          Completed: {formatDate(new Date(investment.endDate))}
+                        </p>
+                      </div>
+                      <Badge variant="secondary">Completed</Badge>
+                    </div>
+                    
+                    <div className="grid grid-cols-3 gap-4 text-sm">
+                      <div>
+                        <span className="text-muted-foreground block">Invested</span>
+                        <span className="text-foreground font-medium">{formatBitcoin(investment.amount)} BTC</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground block">Final Profit</span>
+                        <span className="text-green-400 font-medium">+{formatBitcoin(investment.currentProfit)} BTC</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground block">Total Return</span>
+                        <span className="text-blue-400 font-medium">+{finalReturn.toFixed(2)}%</span>
+                      </div>
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Rejected Investments */}
+        {rejectedInvestments.length > 0 && (
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+              <span className="w-5 h-5 text-red-400">⚠️</span>
+              Rejected Investments
+            </h3>
+            <div className="space-y-3">
+              {rejectedInvestments.map((transaction) => (
+                <Card key={transaction.id} className="dark-card rounded-xl p-4 dark-border border-red-500/20 opacity-75">
                   <div className="flex justify-between items-start mb-3">
                     <div>
-                      <h4 className="font-semibold text-muted-foreground">{getPlanName(investment.planId)}</h4>
+                      <h4 className="font-semibold text-red-400">{getPlanName(transaction.planId || 1)}</h4>
                       <p className="text-muted-foreground text-sm">
-                        Completed: {formatDate(new Date(investment.endDate))}
+                        Rejected: {transaction.confirmedAt ? formatDate(new Date(transaction.confirmedAt)) : 'Recently'}
                       </p>
                     </div>
-                    <span className="bg-gray-500 bg-opacity-20 text-gray-400 px-2 py-1 rounded-full text-xs">
-                      Completed
-                    </span>
+                    <Badge variant="destructive">Rejected</Badge>
                   </div>
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Invested</span>
-                      <span className="text-foreground">{formatBitcoin(investment.amount)} BTC</span>
+                      <span className="text-muted-foreground">Amount</span>
+                      <span className="text-foreground">{formatBitcoin(transaction.amount)} BTC</span>
                     </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Final Profit</span>
-                      <span className="text-green-400">+{formatBitcoin(investment.currentProfit)} BTC</span>
-                    </div>
+                    {transaction.notes && (
+                      <div className="bg-red-500/10 p-3 rounded border border-red-500/20">
+                        <span className="text-red-400 font-medium text-sm">Reason: </span>
+                        <span className="text-muted-foreground text-sm">{transaction.notes}</span>
+                      </div>
+                    )}
                   </div>
                 </Card>
               ))}
@@ -236,17 +392,30 @@ export default function Investment() {
         )}
 
         {/* Empty State */}
-        {(!investments || investments.length === 0) && (
-          <div className="px-4 text-center py-8">
-            <div className="text-muted-foreground">
-              <p className="text-lg mb-2">No investments yet</p>
-              <p className="text-sm">Choose an investment plan above to get started</p>
+        {(!investments || investments.length === 0) && pendingInvestments.length === 0 && (
+          <div className="text-center py-12">
+            <div className="w-20 h-20 rounded-full bg-bitcoin/10 flex items-center justify-center mx-auto mb-4">
+              <TrendingUp className="w-10 h-10 text-bitcoin" />
+            </div>
+            <h3 className="text-xl font-semibold mb-2 text-foreground">Start Your Investment Journey</h3>
+            <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+              Choose from our carefully crafted investment plans designed to maximize your Bitcoin returns with automated profit generation.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Badge variant="outline" className="border-bitcoin text-bitcoin">
+                ⚡ 10-minute profit updates
+              </Badge>
+              <Badge variant="outline" className="border-green-500 text-green-400">
+                🔒 Secure & automated
+              </Badge>
+              <Badge variant="outline" className="border-blue-500 text-blue-400">
+                📈 Real-time tracking
+              </Badge>
             </div>
           </div>
         )}
       </div>
 
-      {/* Bottom Navigation */}
       <BottomNavigation />
     </div>
   );
