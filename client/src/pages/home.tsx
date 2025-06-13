@@ -149,17 +149,17 @@ export default function Home() {
       </header>
 
       {/* Wallet Balance */}
-      <div className="relative px-6 mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-foreground">Wallet Balance</h3>
+      <div className="relative px-4 mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-base font-semibold text-foreground">Wallet Balance</h3>
             <Button
               variant="ghost"
               size="icon"
               onClick={handleRefreshBalance}
               disabled={isRefreshing}
-              className="rounded-2xl relative glass-card hover:glow-bitcoin transition-all duration-300"
+              className="rounded-2xl relative glass-card hover:glow-bitcoin transition-all duration-300 h-8 w-8"
             >
-              <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-3 h-3 ${isRefreshing ? 'animate-spin' : ''}`} />
             </Button>
           </div>
           <WalletBalance />
@@ -174,25 +174,25 @@ export default function Home() {
       </div>
 
       {/* Quick Actions */}
-      <div className="relative px-6 mb-8">
-        <h3 className="text-lg font-semibold mb-4 text-foreground">Quick Actions</h3>
-        <div className="grid grid-cols-2 gap-4">
+      <div className="relative px-4 mb-6">
+        <h3 className="text-base font-semibold mb-3 text-foreground">Quick Actions</h3>
+        <div className="grid grid-cols-2 gap-3">
           <Button 
-            className="neo-card rounded-2xl p-6 text-center hover:glow-ruby transition-all duration-300 transform hover:scale-105 flex flex-col items-center gap-3 h-auto group"
+            className="neo-card rounded-2xl p-4 text-center hover:glow-ruby transition-all duration-300 transform hover:scale-105 flex flex-col items-center gap-2 h-auto group"
             onClick={() => setLocation('/withdraw')}
           >
-            <div className="w-12 h-12 rounded-xl bg-ruby bg-opacity-20 flex items-center justify-center group-hover:bg-opacity-30 transition-all">
-              <ArrowUpRight className="w-6 h-6 text-ruby" />
+            <div className="w-10 h-10 rounded-xl bg-ruby bg-opacity-20 flex items-center justify-center group-hover:bg-opacity-30 transition-all">
+              <ArrowUpRight className="w-5 h-5 text-ruby" />
             </div>
             <span className="text-sm font-medium text-foreground">Withdraw</span>
             <span className="text-xs text-muted-foreground">Send Bitcoin</span>
           </Button>
           <Button 
-            className="neo-card rounded-2xl p-6 text-center hover:glow-emerald transition-all duration-300 transform hover:scale-105 flex flex-col items-center gap-3 h-auto group"
+            className="neo-card rounded-2xl p-4 text-center hover:glow-emerald transition-all duration-300 transform hover:scale-105 flex flex-col items-center gap-2 h-auto group"
             onClick={() => setLocation('/deposit')}
           >
-            <div className="w-12 h-12 rounded-xl bg-emerald bg-opacity-20 flex items-center justify-center group-hover:bg-opacity-30 transition-all">
-              <ArrowDownLeft className="w-6 h-6 text-emerald" />
+            <div className="w-10 h-10 rounded-xl bg-emerald bg-opacity-20 flex items-center justify-center group-hover:bg-opacity-30 transition-all">
+              <ArrowDownLeft className="w-5 h-5 text-emerald" />
             </div>
             <span className="text-sm font-medium text-foreground">Deposit</span>
             <span className="text-xs text-muted-foreground">Receive Bitcoin</span>
@@ -201,25 +201,25 @@ export default function Home() {
       </div>
 
       {/* Current Investment Plan */}
-      <div className="relative px-6 mb-8">
-        <h3 className="text-lg font-semibold mb-4 text-foreground">Investment Plan</h3>
-        <Card className="neo-card rounded-2xl p-6 hover:glow-bitcoin transition-all duration-300">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+      <div className="relative px-4 mb-6">
+        <h3 className="text-base font-semibold mb-3 text-foreground">Investment Plan</h3>
+        <Card className="neo-card rounded-2xl p-4 hover:glow-bitcoin transition-all duration-300">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
                 currentPlan 
                   ? 'bg-emerald bg-opacity-20' 
                   : 'bg-sapphire bg-opacity-20'
               }`}>
-                <TrendingUp className={`w-6 h-6 ${
+                <TrendingUp className={`w-5 h-5 ${
                   currentPlan ? 'text-emerald' : 'text-sapphire'
                 }`} />
               </div>
-              <div>
-                <h4 className="font-bold text-lg text-foreground">
+              <div className="flex-1 min-w-0">
+                <h4 className="font-bold text-base text-foreground truncate">
                   {currentPlan ? currentPlan.name : "Free Plan"}
                 </h4>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   {currentPlan 
                     ? `${(parseFloat(currentPlan.dailyReturnRate) * 100).toFixed(2)}% daily return`
                     : "3.67% every 10 minutes"
@@ -227,7 +227,7 @@ export default function Home() {
                 </p>
               </div>
             </div>
-            <Badge className={`px-3 py-1 rounded-xl text-sm font-medium ${
+            <Badge className={`px-2 py-1 rounded-lg text-xs font-medium ${
               currentPlan 
                 ? 'bg-emerald bg-opacity-20 text-emerald border-emerald' 
                 : 'bg-sapphire bg-opacity-20 text-sapphire border-sapphire'
@@ -247,91 +247,91 @@ export default function Home() {
       </div>
 
       {/* Portfolio Overview */}
-      <div className="relative px-6 mb-8">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-bold text-foreground">Portfolio Analytics</h3>
-          <Badge className="bg-emerald bg-opacity-20 text-emerald border-emerald">
+      <div className="relative px-4 mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-bold text-foreground">Portfolio Analytics</h3>
+          <Badge className="bg-emerald bg-opacity-20 text-emerald border-emerald text-xs">
             24h Active
           </Badge>
         </div>
 
         {/* Main Portfolio Card */}
-        <Card className="neo-card rounded-3xl p-6 mb-6 hover:glow-bitcoin transition-all duration-300 bg-gradient-to-br from-card to-card/80">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h4 className="text-sm text-muted-foreground mb-1">Total Portfolio Value</h4>
-              <p className="text-3xl font-bold text-foreground">
+        <Card className="neo-card rounded-2xl p-4 mb-4 hover:glow-bitcoin transition-all duration-300 bg-gradient-to-br from-card to-card/80">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex-1 min-w-0">
+              <h4 className="text-xs text-muted-foreground mb-1">Total Portfolio Value</h4>
+              <p className="text-xl font-bold text-foreground">
                 {formatBitcoin(totalInvestmentValue.toString())} BTC
               </p>
-              <p className="text-sm text-bitcoin font-medium mt-1">
+              <p className="text-xs text-bitcoin font-medium mt-1">
                 ≈ ${(totalInvestmentValue * 103789).toLocaleString()} USD
               </p>
             </div>
-            <div className="w-16 h-16 rounded-2xl gradient-primary flex items-center justify-center animate-pulse-slow">
-              <TrendingUp className="w-8 h-8 text-black" />
+            <div className="w-12 h-12 rounded-xl gradient-primary flex items-center justify-center animate-pulse-slow">
+              <TrendingUp className="w-6 h-6 text-black" />
             </div>
           </div>
           
-          <div className="grid grid-cols-3 gap-4 mb-4">
+          <div className="grid grid-cols-3 gap-2 mb-3">
             <div className="text-center">
-              <p className="text-2xl font-bold text-emerald">+{((totalProfit / totalInvestedAmount) * 100 || 0).toFixed(1)}%</p>
+              <p className="text-lg font-bold text-emerald">+{((totalProfit / totalInvestedAmount) * 100 || 0).toFixed(1)}%</p>
               <p className="text-xs text-muted-foreground">Total Return</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-bold text-foreground">{activeInvestments.length}</p>
+              <p className="text-lg font-bold text-foreground">{activeInvestments.length}</p>
               <p className="text-xs text-muted-foreground">Active Plans</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-bold text-bitcoin">24/7</p>
+              <p className="text-lg font-bold text-bitcoin">24/7</p>
               <p className="text-xs text-muted-foreground">Earning</p>
             </div>
           </div>
 
-          <div className="w-full bg-muted h-2 rounded-full overflow-hidden mb-2">
+          <div className="w-full bg-muted h-1.5 rounded-full overflow-hidden mb-2">
             <div className="h-full bg-gradient-to-r from-emerald to-bitcoin rounded-full" style={{ width: "67%" }}></div>
           </div>
           <p className="text-xs text-center text-muted-foreground">67% of target portfolio reached</p>
         </Card>
 
         {/* Portfolio Stats Grid */}
-        <div className="grid grid-cols-2 gap-4 mb-6">
-          <Card className="neo-card rounded-2xl p-5 hover:glow-emerald transition-all duration-300 group">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-12 h-12 rounded-xl bg-emerald bg-opacity-20 flex items-center justify-center group-hover:bg-opacity-30 transition-all">
-                <TrendingUp className="w-6 h-6 text-emerald" />
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          <Card className="neo-card rounded-2xl p-3 hover:glow-emerald transition-all duration-300 group">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 rounded-lg bg-emerald bg-opacity-20 flex items-center justify-center group-hover:bg-opacity-30 transition-all">
+                <TrendingUp className="w-4 h-4 text-emerald" />
               </div>
-              <div>
-                <span className="text-sm text-muted-foreground font-medium block">Total Invested</span>
+              <div className="flex-1 min-w-0">
+                <span className="text-xs text-muted-foreground font-medium block">Total Invested</span>
                 <span className="text-xs text-emerald">+12.3% this month</span>
               </div>
             </div>
-            <p className="text-2xl font-bold text-foreground">{formatBitcoin(totalInvestedAmount.toString())}</p>
-            <p className="text-sm text-bitcoin font-medium">BTC</p>
+            <p className="text-lg font-bold text-foreground">{formatBitcoin(totalInvestedAmount.toString())}</p>
+            <p className="text-xs text-bitcoin font-medium">BTC</p>
           </Card>
 
-          <Card className="neo-card rounded-2xl p-5 hover:glow-bitcoin transition-all duration-300 group">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-12 h-12 rounded-xl bg-bitcoin bg-opacity-20 flex items-center justify-center group-hover:bg-opacity-30 transition-all">
-                <Activity className="w-6 h-6 text-bitcoin" />
+          <Card className="neo-card rounded-2xl p-3 hover:glow-bitcoin transition-all duration-300 group">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 rounded-lg bg-bitcoin bg-opacity-20 flex items-center justify-center group-hover:bg-opacity-30 transition-all">
+                <Activity className="w-4 h-4 text-bitcoin" />
               </div>
-              <div>
-                <span className="text-sm text-muted-foreground font-medium block">Total Profit</span>
+              <div className="flex-1 min-w-0">
+                <span className="text-xs text-muted-foreground font-medium block">Total Profit</span>
                 <span className="text-xs text-bitcoin">Generated today</span>
               </div>
             </div>
-            <p className="text-2xl font-bold text-emerald">+{formatBitcoin(totalProfit.toString())}</p>
-            <p className="text-sm text-bitcoin font-medium">BTC</p>
+            <p className="text-lg font-bold text-emerald">+{formatBitcoin(totalProfit.toString())}</p>
+            <p className="text-xs text-bitcoin font-medium">BTC</p>
           </Card>
         </div>
 
         {/* Performance Metrics */}
-        <Card className="neo-card rounded-2xl p-5 hover:glow-sapphire transition-all duration-300">
-          <h4 className="font-semibold mb-4 text-foreground flex items-center gap-2">
-            <Activity className="w-5 h-5 text-sapphire" />
+        <Card className="neo-card rounded-2xl p-3 hover:glow-sapphire transition-all duration-300">
+          <h4 className="font-semibold mb-3 text-foreground flex items-center gap-2 text-sm">
+            <Activity className="w-4 h-4 text-sapphire" />
             Performance Metrics
           </h4>
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3 text-xs">
+            <div className="space-y-2">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Daily Yield</span>
                 <span className="text-emerald font-medium">3.67%</span>
@@ -341,7 +341,7 @@ export default function Home() {
                 <span className="text-bitcoin font-medium">110.1%</span>
               </div>
             </div>
-            <div className="space-y-3">
+            <div className="space-y-2">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Risk Level</span>
                 <span className="text-green-400 font-medium">Low</span>

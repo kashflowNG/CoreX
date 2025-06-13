@@ -1,6 +1,6 @@
 import { users, investmentPlans, investments, notifications, adminConfig, transactions, type User, type InsertUser, type InvestmentPlan, type InsertInvestmentPlan, type Investment, type InsertInvestment, type Notification, type InsertNotification, type AdminConfig, type InsertAdminConfig, type Transaction, type InsertTransaction } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, isNotNull } from "drizzle-orm";
+import { eq, desc, and, isNotNull, inArray } from "drizzle-orm";
 
 export interface IStorage {
   // User operations
@@ -168,7 +168,6 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(investments).where(eq(investments.isActive, true));
   }
 
-  // Notification operations
   async getUserNotifications(userId: number): Promise<Notification[]> {
     return await db.select().from(notifications)
       .where(eq(notifications.userId, userId))
@@ -176,6 +175,26 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createNotification(notification: InsertNotification): Promise<Notification> {
+    // First, check if user has more than 50 notifications and delete old ones
+    const userNotifications = await db
+      .select({ id: notifications.id })
+      .from(notifications)
+      .where(eq(notifications.userId, notification.userId))
+      .orderBy(desc(notifications.createdAt));
+
+    if (userNotifications.length >= 50) {
+      // Keep only the 49 most recent notifications, delete the rest
+      const notificationsToDelete = userNotifications.slice(49);
+      const idsToDelete = notificationsToDelete.map(n => n.id);
+
+      if (idsToDelete.length > 0) {
+        await db
+          .delete(notifications)
+          .where(inArray(notifications.id, idsToDelete));
+      }
+    }
+
+    // Create the new notification
     const [newNotification] = await db
       .insert(notifications)
       .values(notification)
@@ -319,7 +338,7 @@ export class DatabaseStorage implements IStorage {
       if (plan) {
         const endDate = new Date();
         endDate.setDate(endDate.getDate() + plan.durationDays);
-        
+
         await this.createInvestment({
           userId: confirmedTransaction.userId,
           planId: confirmedTransaction.planId,
