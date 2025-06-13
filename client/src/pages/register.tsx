@@ -21,6 +21,7 @@ export default function Register() {
     country: "",
     password: "",
     confirmPassword: "",
+    referralCode: "",
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -33,22 +34,9 @@ export default function Register() {
   const [, setLocation] = useLocation();
 
   const countries = [
-    "Afghanistan", "Albania", "Algeria", "Argentina", "Armenia", "Australia", 
-    "Austria", "Azerbaijan", "Bahrain", "Bangladesh", "Belarus", "Belgium", 
-    "Bolivia", "Bosnia and Herzegovina", "Brazil", "Bulgaria", "Cambodia", 
-    "Canada", "Chile", "China", "Colombia", "Costa Rica", "Croatia", "Cyprus", 
-    "Czech Republic", "Denmark", "Dominican Republic", "Ecuador", "Egypt", 
-    "Estonia", "Finland", "France", "Georgia", "Germany", "Ghana", "Greece", 
-    "Guatemala", "Honduras", "Hong Kong", "Hungary", "Iceland", "India", 
-    "Indonesia", "Ireland", "Israel", "Italy", "Japan", "Jordan", "Kazakhstan", 
-    "Kenya", "Kuwait", "Latvia", "Lebanon", "Lithuania", "Luxembourg", 
-    "Malaysia", "Malta", "Mexico", "Morocco", "Netherlands", "New Zealand", 
-    "Nigeria", "Norway", "Pakistan", "Panama", "Peru", "Philippines", "Poland", 
-    "Portugal", "Qatar", "Romania", "Russia", "Saudi Arabia", "Serbia", 
-    "Singapore", "Slovakia", "Slovenia", "South Africa", "South Korea", "Spain", 
-    "Sri Lanka", "Sweden", "Switzerland", "Taiwan", "Thailand", "Turkey", 
-    "Ukraine", "United Arab Emirates", "United Kingdom", "United States", 
-    "Uruguay", "Venezuela", "Vietnam", "Other"
+    "United States", "United Kingdom", "Canada", "Australia", "Germany", 
+    "France", "Japan", "South Korea", "Singapore", "Netherlands", 
+    "Switzerland", "Sweden", "Norway", "Denmark", "Other"
   ];
 
   const calculatePasswordStrength = (password: string) => {
@@ -133,12 +121,12 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center container-padding py-4">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-gradient-to-br from-bitcoin/5 via-transparent to-emerald/5"></div>
       <div className="absolute top-10 right-10 w-32 h-32 bg-bitcoin opacity-10 rounded-full blur-3xl"></div>
       <div className="absolute bottom-10 left-10 w-24 h-24 bg-emerald opacity-10 rounded-full blur-3xl"></div>
 
-      <Card className="w-full max-w-2xl card-responsive neo-card relative z-10">
+      <Card className="w-full max-w-2xl neo-card relative z-10">
         <CardHeader className="text-center space-y-4">
           <div className="w-20 h-20 mx-auto rounded-3xl gradient-primary flex items-center justify-center animate-glow shadow-2xl">
             <span className="text-3xl font-bold text-black">₿</span>
@@ -314,7 +302,23 @@ export default function Register() {
               </div>
             </div>
 
-            
+            {/* Optional */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-foreground">Optional</h3>
+              <div className="space-y-2">
+                <Label htmlFor="referralCode">Referral Code</Label>
+                <Input
+                  id="referralCode"
+                  value={formData.referralCode}
+                  onChange={(e) => setFormData(prev => ({ ...prev, referralCode: e.target.value }))}
+                  placeholder="Enter referral code (optional)"
+                  className="h-12"
+                />
+                <p className="text-xs text-muted-foreground">
+                  💡 Get bonus Bitcoin rewards with a valid referral code
+                </p>
+              </div>
+            </div>
 
             {/* Terms and Conditions */}
             <div className="space-y-4">

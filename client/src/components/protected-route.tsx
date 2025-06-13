@@ -1,32 +1,31 @@
 
 import { useAuth } from "@/hooks/use-auth";
-import { useLocation } from "wouter";
-import { useEffect } from "react";
+import { LoginRedirect } from "./login-redirect";
+import { ReactNode } from "react";
 
 interface ProtectedRouteProps {
-  children: React.ReactNode;
+  children: ReactNode;
+  message?: string;
+  redirectPath?: string;
 }
 
-export function ProtectedRoute({ children }: ProtectedRouteProps) {
+export function ProtectedRoute({ 
+  children, 
+  message = "Please sign in to access this page",
+  redirectPath = "/login"
+}: ProtectedRouteProps) {
   const { user, isLoading } = useAuth();
-  const [, setLocation] = useLocation();
-
-  useEffect(() => {
-    if (!isLoading && !user) {
-      setLocation('/login');
-    }
-  }, [user, isLoading, setLocation]);
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-bitcoin border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
 
   if (!user) {
-    return null;
+    return <LoginRedirect message={message} redirectPath={redirectPath} />;
   }
 
   return <>{children}</>;

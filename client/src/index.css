@@ -81,47 +81,47 @@
   .gradient-primary {
     background: var(--gradient-primary);
   }
-
+  
   .gradient-secondary {
     background: var(--gradient-secondary);
   }
-
+  
   .gradient-accent {
     background: var(--gradient-accent);
   }
-
+  
   .bitcoin-gradient {
     background: linear-gradient(135deg, hsl(var(--bitcoin)) 0%, hsl(var(--bitcoin-dark)) 50%, hsl(var(--gold)) 100%);
   }
-
+  
   .glass-card {
     background: rgba(255, 255, 255, 0.05);
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.1);
   }
-
+  
   .neo-card {
     background: hsl(var(--card));
     box-shadow: 8px 8px 16px rgba(0, 0, 0, 0.3), -8px -8px 16px rgba(255, 255, 255, 0.02);
     border: 1px solid hsl(var(--border));
   }
-
+  
   .glow-bitcoin {
     box-shadow: 0 0 20px rgba(247, 147, 26, 0.3), 0 0 40px rgba(247, 147, 26, 0.2);
   }
-
+  
   .glow-emerald {
     box-shadow: 0 0 20px rgba(16, 185, 129, 0.3), 0 0 40px rgba(16, 185, 129, 0.2);
   }
-
+  
   .glow-ruby {
     box-shadow: 0 0 20px rgba(239, 68, 68, 0.3), 0 0 40px rgba(239, 68, 68, 0.2);
   }
-
+  
   .text-bitcoin {
     color: hsl(var(--bitcoin));
   }
-
+  
   .text-bitcoin-light {
     color: hsl(var(--bitcoin-light));
   }
@@ -129,15 +129,15 @@
   .text-gold {
     color: hsl(var(--gold));
   }
-
+  
   .text-emerald {
     color: hsl(var(--emerald));
   }
-
+  
   .text-ruby {
     color: hsl(var(--ruby));
   }
-
+  
   .text-sapphire {
     color: hsl(var(--sapphire));
   }
@@ -149,15 +149,15 @@
   .bg-gold {
     background-color: hsl(var(--gold));
   }
-
+  
   .bg-emerald {
     background-color: hsl(var(--emerald));
   }
-
+  
   .bg-ruby {
     background-color: hsl(var(--ruby));
   }
-
+  
   .bg-sapphire {
     background-color: hsl(var(--sapphire));
   }
@@ -165,23 +165,23 @@
   .border-bitcoin {
     border-color: hsl(var(--bitcoin));
   }
-
+  
   .border-emerald {
     border-color: hsl(var(--emerald));
   }
-
+  
   .border-ruby {
     border-color: hsl(var(--ruby));
   }
-
+  
   .animate-pulse-slow {
     animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
-
+  
   .animate-float {
     animation: float 6s ease-in-out infinite;
   }
-
+  
   .animate-glow {
     animation: glow 2s ease-in-out infinite alternate;
   }
@@ -200,60 +200,6 @@
 
   .gradient-primary {
     background: linear-gradient(135deg, hsl(25 95% 53%) 0%, hsl(25 91% 48%) 50%, hsl(51 100% 50%) 100%);
-  }
-
-  /* Responsive container fixes */
-  .max-w-sm {
-    max-width: 24rem;
-    width: 100%;
-  }
-
-  @media (max-width: 640px) {
-    .max-w-sm {
-      max-width: 100vw;
-      margin: 0;
-      padding: 0;
-    }
-
-    .container-padding {
-      padding: 0 1rem;
-    }
-  }
-
-  /* Better card spacing and responsive layout */
-  .neo-card {
-    margin-bottom: 1rem;
-    width: 100%;
-    box-sizing: border-box;
-  }
-
-  /* Grid responsive fixes */
-  .grid {
-    width: 100%;
-    box-sizing: border-box;
-  }
-
-  .grid > * {
-    min-width: 0;
-  }
-
-  /* Card content responsive */
-  .card-responsive {
-    width: 100%;
-    max-width: none;
-    margin: 0 auto;
-  }
-
-  @media (max-width: 480px) {
-    .grid-cols-2 {
-      grid-template-columns: 1fr;
-      gap: 0.75rem;
-    }
-
-    .grid-cols-3 {
-      grid-template-columns: 1fr;
-      gap: 0.5rem;
-    }
   }
 }
 
