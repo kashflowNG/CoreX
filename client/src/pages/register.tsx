@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -6,20 +7,73 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Link, useLocation } from "wouter";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Eye, EyeOff, Shield, UserCheck, Globe, Phone } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 export default function Register() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    country: "",
+    password: "",
+    confirmPassword: "",
+    referralCode: "",
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [acceptTerms, setAcceptTerms] = useState(false);
+  const [acceptMarketing, setAcceptMarketing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [passwordStrength, setPasswordStrength] = useState(0);
   const { register } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
+  const countries = [
+    "United States", "United Kingdom", "Canada", "Australia", "Germany", 
+    "France", "Japan", "South Korea", "Singapore", "Netherlands", 
+    "Switzerland", "Sweden", "Norway", "Denmark", "Other"
+  ];
+
+  const calculatePasswordStrength = (password: string) => {
+    let strength = 0;
+    if (password.length >= 8) strength++;
+    if (/[A-Z]/.test(password)) strength++;
+    if (/[a-z]/.test(password)) strength++;
+    if (/[0-9]/.test(password)) strength++;
+    if (/[^A-Za-z0-9]/.test(password)) strength++;
+    return strength;
+  };
+
+  const handlePasswordChange = (password: string) => {
+    setFormData(prev => ({ ...prev, password }));
+    setPasswordStrength(calculatePasswordStrength(password));
+  };
+
+  const getPasswordStrengthColor = () => {
+    if (passwordStrength <= 1) return "bg-red-500";
+    if (passwordStrength <= 2) return "bg-yellow-500";
+    if (passwordStrength <= 3) return "bg-blue-500";
+    if (passwordStrength <= 4) return "bg-green-500";
+    return "bg-emerald-500";
+  };
+
+  const getPasswordStrengthText = () => {
+    if (passwordStrength <= 1) return "Weak";
+    if (passwordStrength <= 2) return "Fair";
+    if (passwordStrength <= 3) return "Good";
+    if (passwordStrength <= 4) return "Strong";
+    return "Very Strong";
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (password !== confirmPassword) {
+    if (formData.password !== formData.confirmPassword) {
       toast({
         title: "Passwords don't match",
         description: "Please make sure your passwords match.",
@@ -28,13 +82,31 @@ export default function Register() {
       return;
     }
 
+    if (passwordStrength < 3) {
+      toast({
+        title: "Password too weak",
+        description: "Please choose a stronger password with at least 8 characters, uppercase, lowercase, and numbers.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!acceptTerms) {
+      toast({
+        title: "Terms required",
+        description: "Please accept the terms and conditions to continue.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      await register(email, password);
+      await register(formData.email, formData.password);
       toast({
-        title: "Account created!",
-        description: "Your Bitcoin wallet has been automatically generated.",
+        title: "Account created successfully! 🎉",
+        description: "Your Bitcoin wallet has been automatically generated. Welcome to CoreX!",
       });
       setLocation('/');
     } catch (error) {
@@ -49,69 +121,273 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-bitcoin flex items-center justify-center">
-            <span className="text-2xl font-bold text-black">₿</span>
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-gradient-to-br from-bitcoin/5 via-transparent to-emerald/5"></div>
+      <div className="absolute top-10 right-10 w-32 h-32 bg-bitcoin opacity-10 rounded-full blur-3xl"></div>
+      <div className="absolute bottom-10 left-10 w-24 h-24 bg-emerald opacity-10 rounded-full blur-3xl"></div>
+
+      <Card className="w-full max-w-2xl neo-card relative z-10">
+        <CardHeader className="text-center space-y-4">
+          <div className="w-20 h-20 mx-auto rounded-3xl gradient-primary flex items-center justify-center animate-glow shadow-2xl">
+            <span className="text-3xl font-bold text-black">₿</span>
           </div>
-          <CardTitle className="text-2xl font-bold">Join CoreX</CardTitle>
-          <CardDescription>
-            Create your account and get a Bitcoin wallet instantly
-          </CardDescription>
+          <div>
+            <CardTitle className="text-3xl font-bold bg-gradient-to-r from-bitcoin to-gold bg-clip-text text-transparent">
+              Join CoreX
+            </CardTitle>
+            <CardDescription className="text-lg mt-2">
+              Create your professional Bitcoin investment account
+            </CardDescription>
+          </div>
+          <div className="flex justify-center gap-2">
+            <Badge variant="outline" className="text-xs">
+              <Shield className="w-3 h-3 mr-1" />
+              Bank-Grade Security
+            </Badge>
+            <Badge variant="outline" className="text-xs">
+              <UserCheck className="w-3 h-3 mr-1" />
+              Instant Verification
+            </Badge>
+          </div>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                placeholder="Enter your email"
-              />
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Personal Information */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                <UserCheck className="w-5 h-5 text-bitcoin" />
+                Personal Information
+              </h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="firstName">First Name *</Label>
+                  <Input
+                    id="firstName"
+                    value={formData.firstName}
+                    onChange={(e) => setFormData(prev => ({ ...prev, firstName: e.target.value }))}
+                    required
+                    placeholder="John"
+                    className="h-12"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lastName">Last Name *</Label>
+                  <Input
+                    id="lastName"
+                    value={formData.lastName}
+                    onChange={(e) => setFormData(prev => ({ ...prev, lastName: e.target.value }))}
+                    required
+                    placeholder="Doe"
+                    className="h-12"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email Address *</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                    required
+                    placeholder="john@example.com"
+                    className="h-12"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Phone Number</Label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    value={formData.phone}
+                    onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                    placeholder="+1 (555) 000-0000"
+                    className="h-12"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="country">Country/Region *</Label>
+                <Select onValueChange={(value) => setFormData(prev => ({ ...prev, country: value }))}>
+                  <SelectTrigger className="h-12">
+                    <SelectValue placeholder="Select your country" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {countries.map((country) => (
+                      <SelectItem key={country} value={country}>
+                        <div className="flex items-center gap-2">
+                          <Globe className="w-4 h-4" />
+                          {country}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                placeholder="Create a password"
-                minLength={6}
-              />
+
+            {/* Security */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                <Shield className="w-5 h-5 text-bitcoin" />
+                Security Setup
+              </h3>
+              <div className="space-y-2">
+                <Label htmlFor="password">Password *</Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={formData.password}
+                    onChange={(e) => handlePasswordChange(e.target.value)}
+                    required
+                    placeholder="Create a strong password"
+                    className="h-12 pr-12"
+                    minLength={8}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
+                {formData.password && (
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span>Password Strength:</span>
+                      <span className={`font-medium ${
+                        passwordStrength <= 2 ? 'text-red-500' : 
+                        passwordStrength <= 3 ? 'text-yellow-500' : 'text-green-500'
+                      }`}>
+                        {getPasswordStrengthText()}
+                      </span>
+                    </div>
+                    <div className="w-full bg-muted h-2 rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full transition-all duration-300 ${getPasswordStrengthColor()}`}
+                        style={{ width: `${(passwordStrength / 5) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Confirm Password *</Label>
+                <div className="relative">
+                  <Input
+                    id="confirmPassword"
+                    type={showConfirmPassword ? "text" : "password"}
+                    value={formData.confirmPassword}
+                    onChange={(e) => setFormData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                    required
+                    placeholder="Confirm your password"
+                    className="h-12 pr-12"
+                    minLength={8}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  >
+                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password</Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-                placeholder="Confirm your password"
-                minLength={6}
-              />
+
+            {/* Optional */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-foreground">Optional</h3>
+              <div className="space-y-2">
+                <Label htmlFor="referralCode">Referral Code</Label>
+                <Input
+                  id="referralCode"
+                  value={formData.referralCode}
+                  onChange={(e) => setFormData(prev => ({ ...prev, referralCode: e.target.value }))}
+                  placeholder="Enter referral code (optional)"
+                  className="h-12"
+                />
+                <p className="text-xs text-muted-foreground">
+                  💡 Get bonus Bitcoin rewards with a valid referral code
+                </p>
+              </div>
             </div>
+
+            {/* Terms and Conditions */}
+            <div className="space-y-4">
+              <div className="flex items-start space-x-3">
+                <Checkbox 
+                  id="terms" 
+                  checked={acceptTerms}
+                  onCheckedChange={setAcceptTerms}
+                  className="mt-1"
+                />
+                <div className="space-y-1">
+                  <Label htmlFor="terms" className="text-sm leading-5">
+                    I agree to the{" "}
+                    <Link href="/terms" className="text-bitcoin hover:underline font-medium">
+                      Terms of Service
+                    </Link>{" "}
+                    and{" "}
+                    <Link href="/privacy" className="text-bitcoin hover:underline font-medium">
+                      Privacy Policy
+                    </Link>
+                    <span className="text-red-500 ml-1">*</span>
+                  </Label>
+                </div>
+              </div>
+              <div className="flex items-start space-x-3">
+                <Checkbox 
+                  id="marketing" 
+                  checked={acceptMarketing}
+                  onCheckedChange={setAcceptMarketing}
+                />
+                <Label htmlFor="marketing" className="text-sm leading-5">
+                  I want to receive market updates, investment insights, and promotional offers via email
+                </Label>
+              </div>
+            </div>
+
             <Button 
               type="submit" 
-              className="w-full bg-bitcoin hover:bg-bitcoin/90 text-black font-semibold"
-              disabled={isLoading}
+              className="w-full h-14 text-lg gradient-primary text-black font-bold rounded-xl hover:scale-105 transition-all duration-300 shadow-lg"
+              disabled={isLoading || !acceptTerms}
             >
-              {isLoading ? "Creating Account..." : "Create Account"}
+              {isLoading ? (
+                <div className="flex items-center gap-3">
+                  <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
+                  Creating Your Account...
+                </div>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <UserCheck className="w-6 h-6" />
+                  Create Account & Generate Wallet
+                </div>
+              )}
             </Button>
           </form>
-          <div className="mt-6 text-center">
-            <p className="text-sm text-muted-foreground">
-              Already have an account?{" "}
-              <Link href="/login" className="text-bitcoin hover:underline font-medium">
-                Sign in
-              </Link>
-            </p>
+          <div className="mt-8 text-center">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="flex-1 h-px bg-border"></div>
+              <span className="text-sm text-muted-foreground">Already have an account?</span>
+              <div className="flex-1 h-px bg-border"></div>
+            </div>
+            
+            <Link href="/login">
+              <Button 
+                variant="outline" 
+                className="w-full h-12 rounded-xl border-bitcoin text-bitcoin hover:bg-bitcoin hover:text-black transition-all duration-300"
+              >
+                Sign In to Existing Account
+              </Button>
+            </Link>
           </div>
         </CardContent>
       </Card>

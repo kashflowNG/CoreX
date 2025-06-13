@@ -137,30 +137,69 @@ export default function Deposit() {
       </header>
 
       <div className="p-4 pb-20 space-y-6">
+        {/* Step-by-Step Guide */}
+        <Card className="neo-card rounded-2xl p-6 mb-6 bg-gradient-to-br from-bitcoin/5 to-emerald/5">
+          <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+            <Info className="w-5 h-5 text-bitcoin" />
+            How to Deposit Bitcoin
+          </h3>
+          <div className="space-y-3">
+            <div className="flex items-start gap-3">
+              <div className="w-6 h-6 rounded-full bg-bitcoin text-black text-sm font-bold flex items-center justify-center flex-shrink-0">1</div>
+              <div>
+                <p className="font-medium text-foreground">Choose Your Deposit Method</p>
+                <p className="text-sm text-muted-foreground">Select instant deposit for trading or vault for long-term storage</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="w-6 h-6 rounded-full bg-emerald text-black text-sm font-bold flex items-center justify-center flex-shrink-0">2</div>
+              <div>
+                <p className="font-medium text-foreground">Copy the Address or Scan QR Code</p>
+                <p className="text-sm text-muted-foreground">Use your Bitcoin wallet to send to our secure address</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="w-6 h-6 rounded-full bg-sapphire text-white text-sm font-bold flex items-center justify-center flex-shrink-0">3</div>
+              <div>
+                <p className="font-medium text-foreground">Submit Your Deposit</p>
+                <p className="text-sm text-muted-foreground">Enter amount and transaction hash for faster confirmation</p>
+              </div>
+            </div>
+          </div>
+        </Card>
+
         {/* Deposit Method Selector */}
-        <div className="flex p-1 bg-muted rounded-lg">
-          <button
-            onClick={() => setSelectedTab('instant')}
-            className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-all ${
-              selectedTab === 'instant' 
-                ? 'bg-background text-foreground shadow-sm' 
-                : 'text-muted-foreground'
-            }`}
-          >
-            <Zap className="w-4 h-4 inline mr-2" />
-            Instant
-          </button>
-          <button
-            onClick={() => setSelectedTab('vault')}
-            className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-all ${
-              selectedTab === 'vault' 
-                ? 'bg-background text-foreground shadow-sm' 
-                : 'text-muted-foreground'
-            }`}
-          >
-            <Wallet className="w-4 h-4 inline mr-2" />
-            Vault
-          </button>
+        <div className="bg-muted p-1 rounded-xl mb-6">
+          <div className="grid grid-cols-2 gap-1">
+            <button
+              onClick={() => setSelectedTab('instant')}
+              className={`py-4 px-4 rounded-lg text-sm font-medium transition-all ${
+                selectedTab === 'instant' 
+                  ? 'bg-background text-foreground shadow-lg neo-card' 
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <div className="flex flex-col items-center gap-2">
+                <Zap className="w-6 h-6" />
+                <span>Instant Deposit</span>
+                <span className="text-xs opacity-75">For Trading</span>
+              </div>
+            </button>
+            <button
+              onClick={() => setSelectedTab('vault')}
+              className={`py-4 px-4 rounded-lg text-sm font-medium transition-all ${
+                selectedTab === 'vault' 
+                  ? 'bg-background text-foreground shadow-lg neo-card' 
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <div className="flex flex-col items-center gap-2">
+                <Shield className="w-6 h-6" />
+                <span>Secure Vault</span>
+                <span className="text-xs opacity-75">Long-term Storage</span>
+              </div>
+            </button>
+          </div>
         </div>
 
         {/* Deposit Address Card */}
@@ -223,23 +262,35 @@ export default function Deposit() {
               </div>
 
               {/* Method Description */}
-              <div className="bg-muted/50 p-3 rounded-lg">
-                <div className="flex items-start gap-2">
-                  <Info className="w-4 h-4 text-bitcoin mt-0.5 flex-shrink-0" />
-                  <div className="text-xs text-muted-foreground space-y-1">
+              <div className="bg-gradient-to-r from-muted/50 to-muted/30 p-4 rounded-xl border border-muted">
+                <div className="flex items-start gap-3">
+                  <div className={`w-10 h-10 rounded-xl ${selectedTab === 'instant' ? 'bg-bitcoin/20' : 'bg-emerald/20'} flex items-center justify-center flex-shrink-0`}>
+                    {selectedTab === 'instant' ? (
+                      <Zap className="w-5 h-5 text-bitcoin" />
+                    ) : (
+                      <Shield className="w-5 h-5 text-emerald" />
+                    )}
+                  </div>
+                  <div className="text-sm space-y-2">
                     {selectedTab === 'instant' ? (
                       <>
-                        <p className="font-medium text-foreground">Instant Balance Update</p>
-                        <p>• Send Bitcoin to this address for immediate balance update</p>
-                        <p>• Perfect for trading and quick investments</p>
-                        <p>• Confirmations: 1 required</p>
+                        <p className="font-bold text-foreground text-base">⚡ Instant Deposit</p>
+                        <div className="space-y-1 text-muted-foreground">
+                          <p>✅ Balance updates within 1 confirmation (~10 mins)</p>
+                          <p>✅ Perfect for active trading and investments</p>
+                          <p>✅ Start earning profits immediately</p>
+                          <p>✅ Minimum deposit: 0.001 BTC</p>
+                        </div>
                       </>
                     ) : (
                       <>
-                        <p className="font-medium text-foreground">Long-term Investment Storage</p>
-                        <p>• Secure vault for long-term Bitcoin storage</p>
-                        <p>• Enhanced security with multi-signature protection</p>
-                        <p>• Ideal for large investments</p>
+                        <p className="font-bold text-foreground text-base">🔒 Secure Vault</p>
+                        <div className="space-y-1 text-muted-foreground">
+                          <p>✅ Multi-signature protection (2-of-3)</p>
+                          <p>✅ Cold storage security</p>
+                          <p>✅ Ideal for large amounts (1+ BTC)</p>
+                          <p>✅ Enhanced insurance coverage</p>
+                        </div>
                       </>
                     )}
                   </div>
@@ -271,7 +322,7 @@ export default function Deposit() {
                   className="mt-1"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  Minimum: 0.00001 BTC
+                  Minimum: 0.001 BTC (~$104)
                 </p>
               </div>
               
@@ -291,7 +342,7 @@ export default function Deposit() {
 
               <Button 
                 onClick={() => submitDepositMutation.mutate({ amount, transactionHash })}
-                disabled={!amount || parseFloat(amount) < 0.00001 || submitDepositMutation.isPending}
+                disabled={!amount || parseFloat(amount) < 0.001 || submitDepositMutation.isPending}
                 className="w-full bg-bitcoin hover:bg-bitcoin/90 text-black font-semibold"
               >
                 {submitDepositMutation.isPending ? (
