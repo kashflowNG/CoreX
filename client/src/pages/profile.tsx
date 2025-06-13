@@ -305,4 +305,6 @@ export default function Profile() {
       <ProfileContent />
     </ProtectedRoute>
   );
+}oute>
+  );
 }

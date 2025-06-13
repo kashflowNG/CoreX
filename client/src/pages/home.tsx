@@ -105,6 +105,7 @@ export default function Home() {
 
   return (
     <div className="max-w-sm mx-auto bg-background min-h-screen relative overflow-hidden">
+      <div className="container-padding">
       {/* Background Elements */}
       <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-background opacity-50"></div>
       <div className="absolute top-0 right-0 w-64 h-64 bg-bitcoin opacity-5 rounded-full blur-3xl animate-pulse-slow"></div>
@@ -176,9 +177,9 @@ export default function Home() {
       {/* Quick Actions */}
       <div className="relative px-6 mb-8">
         <h3 className="text-lg font-semibold mb-4 text-foreground">Quick Actions</h3>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Button 
-            className="neo-card rounded-2xl p-6 text-center hover:glow-ruby transition-all duration-300 transform hover:scale-105 flex flex-col items-center gap-3 h-auto group"
+            className="neo-card rounded-2xl p-6 text-center hover:glow-ruby transition-all duration-300 transform hover:scale-105 flex flex-col items-center gap-3 h-auto group w-full"
             onClick={() => setLocation('/withdraw')}
           >
             <div className="w-12 h-12 rounded-xl bg-ruby bg-opacity-20 flex items-center justify-center group-hover:bg-opacity-30 transition-all">
@@ -188,7 +189,7 @@ export default function Home() {
             <span className="text-xs text-muted-foreground">Send Bitcoin</span>
           </Button>
           <Button 
-            className="neo-card rounded-2xl p-6 text-center hover:glow-emerald transition-all duration-300 transform hover:scale-105 flex flex-col items-center gap-3 h-auto group"
+            className="neo-card rounded-2xl p-6 text-center hover:glow-emerald transition-all duration-300 transform hover:scale-105 flex flex-col items-center gap-3 h-auto group w-full"
             onClick={() => setLocation('/deposit')}
           >
             <div className="w-12 h-12 rounded-xl bg-emerald bg-opacity-20 flex items-center justify-center group-hover:bg-opacity-30 transition-all">
@@ -272,7 +273,7 @@ export default function Home() {
             </div>
           </div>
           
-          <div className="grid grid-cols-3 gap-4 mb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
             <div className="text-center">
               <p className="text-2xl font-bold text-emerald">+{((totalProfit / totalInvestedAmount) * 100 || 0).toFixed(1)}%</p>
               <p className="text-xs text-muted-foreground">Total Return</p>
@@ -294,7 +295,7 @@ export default function Home() {
         </Card>
 
         {/* Portfolio Stats Grid */}
-        <div className="grid grid-cols-2 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
           <Card className="neo-card rounded-2xl p-5 hover:glow-emerald transition-all duration-300 group">
             <div className="flex items-center gap-3 mb-3">
               <div className="w-12 h-12 rounded-xl bg-emerald bg-opacity-20 flex items-center justify-center group-hover:bg-opacity-30 transition-all">
@@ -330,7 +331,7 @@ export default function Home() {
             <Activity className="w-5 h-5 text-sapphire" />
             Performance Metrics
           </h4>
-          <div className="grid grid-cols-2 gap-4 text-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
             <div className="space-y-3">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Daily Yield</span>
@@ -411,6 +412,7 @@ export default function Home() {
 
       {/* Bottom Navigation */}
       <BottomNavigation />
+      </div>
     </div>
   );
 }

@@ -1,10 +1,11 @@
 import { useAuth } from "@/hooks/use-auth";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
+import { useLocation } from "wouter";
+import { BottomNavigation } from "@/components/bottom-navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BottomNavigation } from "@/components/bottom-navigation";
-import { ArrowLeft, Clock, Bitcoin, TrendingUp, CheckCircle, XCircle } from "lucide-react";
-import { useLocation } from "wouter";
-import { Button } from "@/components/ui/button";
+import { Clock, Bitcoin, TrendingUp, CheckCircle, XCircle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { formatBitcoin, formatDate } from "@/lib/utils";
 import type { Transaction } from "@shared/schema";
