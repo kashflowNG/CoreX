@@ -22,7 +22,8 @@ export default function Notifications() {
   const [searchTerm, setSearchTerm] = useState('');
 
   const { data: notifications, isLoading } = useQuery<Notification[]>({
-    queryKey: ['/api/notifications', user?.id],
+    queryKey: ['/api/notifications'],
+    queryFn: () => fetch(`/api/notifications/${user?.id}`).then(res => res.json()),
     enabled: !!user?.id,
     refetchInterval: 10000, // Refresh every 10 seconds for real-time updates
   });
@@ -40,7 +41,7 @@ export default function Notifications() {
         title: "All notifications marked as read",
         description: "Your notification center is now up to date.",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/notifications', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
       queryClient.invalidateQueries({ queryKey: ['/api/notifications', user?.id, 'unread-count'] });
     },
   });
@@ -54,7 +55,7 @@ export default function Notifications() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/notifications', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
       queryClient.invalidateQueries({ queryKey: ['/api/notifications', user?.id, 'unread-count'] });
     },
   });

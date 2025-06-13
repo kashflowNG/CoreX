@@ -15,7 +15,7 @@ export function NotificationsPanel() {
   const queryClient = useQueryClient();
 
   const { data: notifications, isLoading } = useQuery<Notification[]>({
-    queryKey: ['/api/notifications', user?.id],
+    queryKey: ['/api/notifications'],
     queryFn: () => fetch(`/api/notifications/${user?.id}`).then(res => res.json()),
     enabled: !!user?.id,
   });
@@ -24,6 +24,20 @@ export function NotificationsPanel() {
     queryKey: ['/api/notifications', user?.id, 'unread-count'],
     queryFn: () => fetch(`/api/notifications/${user?.id}/unread-count`).then(res => res.json()),
     enabled: !!user?.id,
+  });
+
+  const markAsReadMutation = useMutation({
+    mutationFn: async (notificationId: number) => {
+      const response = await fetch(`/api/notifications/${notificationId}/read`, {
+        method: 'PATCH',
+      });
+      if (!response.ok) throw new Error('Failed to mark as read');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/notifications', user?.id, 'unread-count'] });
+    },
   });
 
   const markAsReadMutation = useMutation({
@@ -130,4 +144,30 @@ export function NotificationsPanel() {
       </CardContent>
     </Card>
   );
+}
+
+function getTypeIcon(type: string) {
+  switch (type) {
+    case 'success':
+      return <CheckCircle className="w-4 h-4 text-green-500" />;
+    case 'error':
+      return <AlertCircle className="w-4 h-4 text-red-500" />;
+    case 'warning':
+      return <AlertTriangle className="w-4 h-4 text-orange-500" />;
+    default:
+      return <Info className="w-4 h-4 text-blue-500" />;
+  }
+}
+
+function getTypeBadgeVariant(type: string): "default" | "secondary" | "destructive" | "outline" {
+  switch (type) {
+    case 'success':
+      return 'default';
+    case 'error':
+      return 'destructive';
+    case 'warning':
+      return 'secondary';
+    default:
+      return 'outline';
+  }
 }
