@@ -95,61 +95,61 @@ export default function Investment() {
       <div className="max-w-4xl mx-auto p-4 space-y-6 pb-20">
         {/* Portfolio Overview */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card className="dark-card rounded-xl p-4 dark-border">
+          <Card className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-xl p-4">
             <div className="flex items-center gap-2 mb-2">
               <BarChart3 className="w-4 h-4 text-bitcoin" />
-              <span className="text-xs text-muted-foreground">Total Invested</span>
+              <span className="text-xs text-gray-300">Total Invested</span>
             </div>
             <div className="space-y-1">
-              <p className="text-lg font-bold text-foreground">{formatBitcoin(totalInvested.toString())} BTC</p>
+              <p className="text-lg font-bold text-white">{formatBitcoin(totalInvested.toString())} BTC</p>
               {currencyPrice && (
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-gray-400">
                   ≈ {currency === 'USD' ? '$' : '£'}{(totalInvested * currencyPrice).toLocaleString()}
                 </p>
               )}
             </div>
           </Card>
 
-          <Card className="dark-card rounded-xl p-4 dark-border">
+          <Card className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-xl p-4">
             <div className="flex items-center gap-2 mb-2">
               <TrendingUp className="w-4 h-4 text-green-400" />
-              <span className="text-xs text-muted-foreground">Total Profit</span>
+              <span className="text-xs text-gray-300">Total Profit</span>
             </div>
             <div className="space-y-1">
               <p className="text-lg font-bold text-green-400">+{formatBitcoin(totalProfit.toString())} BTC</p>
               {currencyPrice && (
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-gray-400">
                   ≈ {currency === 'USD' ? '$' : '£'}{(totalProfit * currencyPrice).toLocaleString()}
                 </p>
               )}
             </div>
           </Card>
 
-          <Card className="dark-card rounded-xl p-4 dark-border">
+          <Card className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-xl p-4">
             <div className="flex items-center gap-2 mb-2">
               <PieChart className="w-4 h-4 text-purple-400" />
-              <span className="text-xs text-muted-foreground">Portfolio Value</span>
+              <span className="text-xs text-gray-300">Portfolio Value</span>
             </div>
             <div className="space-y-1">
-              <p className="text-lg font-bold text-foreground">{formatBitcoin(totalValue.toString())} BTC</p>
+              <p className="text-lg font-bold text-white">{formatBitcoin(totalValue.toString())} BTC</p>
               {currencyPrice && (
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-gray-400">
                   ≈ {currency === 'USD' ? '$' : '£'}{(totalValue * currencyPrice).toLocaleString()}
                 </p>
               )}
             </div>
           </Card>
 
-          <Card className="dark-card rounded-xl p-4 dark-border">
+          <Card className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-xl p-4">
             <div className="flex items-center gap-2 mb-2">
               <Zap className="w-4 h-4 text-orange-400" />
-              <span className="text-xs text-muted-foreground">ROI</span>
+              <span className="text-xs text-gray-300">ROI</span>
             </div>
             <div className="space-y-1">
               <p className={`text-lg font-bold ${portfolioReturn >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                 {portfolioReturn >= 0 ? '+' : ''}{portfolioReturn.toFixed(2)}%
               </p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-gray-400">
                 Avg Daily: {avgDailyReturn.toFixed(3)}%
               </p>
             </div>
@@ -158,26 +158,26 @@ export default function Investment() {
 
         {/* Performance Insights */}
         {activeInvestments.length > 0 && (
-          <Card className="dark-card dark-border">
+          <Card className="bg-gray-900/50 backdrop-blur-sm border border-gray-800">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-white">
                 <BarChart3 className="w-5 h-5 text-bitcoin" />
                 Performance Insights
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="text-center p-4 bg-green-500/10 rounded-lg">
+                <div className="text-center p-4 bg-green-500/20 rounded-lg border border-green-500/30">
                   <div className="text-2xl font-bold text-green-400">{activeInvestments.length}</div>
-                  <div className="text-sm text-muted-foreground">Active Investments</div>
+                  <div className="text-sm text-gray-300">Active Investments</div>
                 </div>
-                <div className="text-center p-4 bg-blue-500/10 rounded-lg">
+                <div className="text-center p-4 bg-blue-500/20 rounded-lg border border-blue-500/30">
                   <div className="text-2xl font-bold text-blue-400">{completedInvestments.length}</div>
-                  <div className="text-sm text-muted-foreground">Completed</div>
+                  <div className="text-sm text-gray-300">Completed</div>
                 </div>
-                <div className="text-center p-4 bg-orange-500/10 rounded-lg">
+                <div className="text-center p-4 bg-orange-500/20 rounded-lg border border-orange-500/30">
                   <div className="text-2xl font-bold text-orange-400">{pendingInvestments.length}</div>
-                  <div className="text-sm text-muted-foreground">Pending Review</div>
+                  <div className="text-sm text-gray-300">Pending Review</div>
                 </div>
               </div>
             </CardContent>
@@ -234,7 +234,7 @@ export default function Investment() {
         {/* Active Investments */}
         {activeInvestments.length > 0 && (
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+            <h3 className="text-lg font-semibold text-white flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-green-400" />
               Active Investments
             </h3>
@@ -252,34 +252,34 @@ export default function Investment() {
                 const profitPercentage = ((parseFloat(investment.currentProfit) / parseFloat(investment.amount)) * 100);
 
                 return (
-                  <Card key={investment.id} className="dark-card rounded-xl p-4 dark-border border-green-500/20">
+                  <Card key={investment.id} className="bg-gray-900/60 backdrop-blur-sm border border-green-500/30 rounded-xl p-4">
                     <div className="flex justify-between items-start mb-3">
                       <div>
-                        <h4 className="font-semibold text-gold flex items-center gap-2">
+                        <h4 className="font-semibold text-yellow-400 flex items-center gap-2">
                           {getPlanName(investment.planId)}
                           <Award className="w-4 h-4" />
                         </h4>
-                        <p className="text-muted-foreground text-sm">
+                        <p className="text-gray-400 text-sm">
                           Started: {formatDate(new Date(investment.startDate))}
                         </p>
                       </div>
-                      <Badge className="bg-green-500/20 text-green-400 hover:bg-green-500/30">
+                      <Badge className="bg-green-500/30 text-green-300 hover:bg-green-500/40 border-green-500/50">
                         Earning
                       </Badge>
                     </div>
                     
                     <div className="grid grid-cols-2 gap-4 mb-4">
                       <div>
-                        <span className="text-xs text-muted-foreground">Principal</span>
-                        <div className="font-semibold text-foreground">{formatBitcoin(investment.amount)} BTC</div>
+                        <span className="text-xs text-gray-400">Principal</span>
+                        <div className="font-semibold text-white">{formatBitcoin(investment.amount)} BTC</div>
                         {currencyPrice && (
-                          <div className="text-xs text-muted-foreground">
+                          <div className="text-xs text-gray-500">
                             ≈ {currency === 'USD' ? '$' : '£'}{(parseFloat(investment.amount) * currencyPrice).toLocaleString()}
                           </div>
                         )}
                       </div>
                       <div>
-                        <span className="text-xs text-muted-foreground">Current Profit</span>
+                        <span className="text-xs text-gray-400">Current Profit</span>
                         <div className="font-semibold text-green-400">+{formatBitcoin(investment.currentProfit)} BTC</div>
                         <div className="text-xs text-green-400">+{profitPercentage.toFixed(2)}%</div>
                       </div>
@@ -287,14 +287,14 @@ export default function Investment() {
 
                     <div className="mb-4">
                       <div className="flex justify-between text-sm mb-2">
-                        <span className="text-muted-foreground">Progress</span>
-                        <span className="text-foreground">{progress.toFixed(1)}%</span>
+                        <span className="text-gray-400">Progress</span>
+                        <span className="text-white">{progress.toFixed(1)}%</span>
                       </div>
                       <Progress value={progress} className="w-full h-2" />
                     </div>
 
                     <div className="flex justify-between items-center text-xs">
-                      <span className="text-muted-foreground">
+                      <span className="text-gray-400">
                         {daysLeft > 0 ? `${daysLeft} days remaining` : 'Completed'}
                       </span>
                       {plan && (
@@ -397,8 +397,8 @@ export default function Investment() {
             <div className="w-20 h-20 rounded-full bg-bitcoin/10 flex items-center justify-center mx-auto mb-4">
               <TrendingUp className="w-10 h-10 text-bitcoin" />
             </div>
-            <h3 className="text-xl font-semibold mb-2 text-foreground">Start Your Investment Journey</h3>
-            <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+            <h3 className="text-xl font-semibold mb-2 text-white">Start Your Investment Journey</h3>
+            <p className="text-gray-300 mb-6 max-w-md mx-auto">
               Choose from our carefully crafted investment plans designed to maximize your Bitcoin returns with automated profit generation.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
