@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Eye, EyeOff, Shield, UserCheck, Globe, Phone } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import ReCAPTCHA from "react-google-recaptcha";
+import { countries } from "@/lib/countries";
 
 export default function Register() {
   const [formData, setFormData] = useState({
@@ -21,7 +23,6 @@ export default function Register() {
     country: "",
     password: "",
     confirmPassword: "",
-    referralCode: "",
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -29,15 +30,14 @@ export default function Register() {
   const [acceptMarketing, setAcceptMarketing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState(0);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const { register } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
-  const countries = [
-    "United States", "United Kingdom", "Canada", "Australia", "Germany", 
-    "France", "Japan", "South Korea", "Singapore", "Netherlands", 
-    "Switzerland", "Sweden", "Norway", "Denmark", "Other"
-  ];
+  const onCaptchaChange = useCallback((token: string | null) => {
+    setCaptchaToken(token);
+  }, []);
 
   const calculatePasswordStrength = (password: string) => {
     let strength = 0;
@@ -95,6 +95,15 @@ export default function Register() {
       toast({
         title: "Terms required",
         description: "Please accept the terms and conditions to continue.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!captchaToken) {
+      toast({
+        title: "Captcha verification required",
+        description: "Please complete the captcha verification to continue.",
         variant: "destructive",
       });
       return;
@@ -302,21 +311,18 @@ export default function Register() {
               </div>
             </div>
 
-            {/* Optional */}
+            {/* Security Verification */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-foreground">Optional</h3>
-              <div className="space-y-2">
-                <Label htmlFor="referralCode">Referral Code</Label>
-                <Input
-                  id="referralCode"
-                  value={formData.referralCode}
-                  onChange={(e) => setFormData(prev => ({ ...prev, referralCode: e.target.value }))}
-                  placeholder="Enter referral code (optional)"
-                  className="h-12"
+              <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                <Shield className="w-5 h-5 text-bitcoin" />
+                Security Verification
+              </h3>
+              <div className="flex justify-center">
+                <ReCAPTCHA
+                  sitekey="6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"
+                  onChange={onCaptchaChange}
+                  theme="light"
                 />
-                <p className="text-xs text-muted-foreground">
-                  💡 Get bonus Bitcoin rewards with a valid referral code
-                </p>
               </div>
             </div>
 
@@ -326,7 +332,7 @@ export default function Register() {
                 <Checkbox 
                   id="terms" 
                   checked={acceptTerms}
-                  onCheckedChange={setAcceptTerms}
+                  onCheckedChange={(checked) => setAcceptTerms(checked === true)}
                   className="mt-1"
                 />
                 <div className="space-y-1">
