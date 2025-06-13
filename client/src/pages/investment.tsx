@@ -37,15 +37,18 @@ export default function Investment() {
   const { data: investments } = useQuery<Investment[]>({
     queryKey: ['/api/investments/user', user.id],
     refetchInterval: 30000,
+    staleTime: 0, // Always consider data stale
   });
 
   const { data: plans } = useQuery<InvestmentPlan[]>({
     queryKey: ['/api/investment-plans'],
+    refetchInterval: 60000, // Refresh every minute
   });
 
   const { data: transactions } = useQuery<any[]>({
     queryKey: ['/api/transactions'],
     refetchInterval: 30000,
+    staleTime: 0, // Always consider data stale
   });
 
   const getPlanName = (planId: number) => {

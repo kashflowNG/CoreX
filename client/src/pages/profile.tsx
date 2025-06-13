@@ -27,16 +27,18 @@ function ProfileContent() {
   const { data: investments } = useQuery<Investment[]>({
     queryKey: ['/api/investments/user', user?.id],
     enabled: !!user?.id,
+    refetchInterval: 30000, // Refresh every 30 seconds
   });
 
   const { data: transactions } = useQuery<Transaction[]>({
     queryKey: ['/api/transactions'],
     enabled: !!user,
+    refetchInterval: 30000, // Refresh every 30 seconds
   });
 
   const fiatValue = parseFloat(user.balance) * (currency === 'USD' ? (price?.usd.price || 0) : (price?.gbp.price || 0));
-  const totalInvested = investments?.reduce((sum, inv) => sum + parseFloat(inv.amount), 0) || 0;
-  const totalProfit = investments?.reduce((sum, inv) => sum + parseFloat(inv.currentProfit), 0) || 0;
+  const totalInvested = investments?.reduce((sum, inv) => sum + parseFloat(inv.amount || '0'), 0) || 0;
+  const totalProfit = investments?.reduce((sum, inv) => sum + parseFloat(inv.currentProfit || '0'), 0) || 0;
   const activeInvestments = investments?.filter(inv => inv.isActive).length || 0;
   const completedInvestments = investments?.filter(inv => !inv.isActive).length || 0;
   const userTransactions = transactions?.filter(tx => tx.userId === user.id).length || 0;
@@ -159,9 +161,22 @@ function ProfileContent() {
         {/* Investment Statistics */}
         <Card className="dark-card dark-border mb-6">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 dark-text">
-              <TrendingUp className="w-5 h-5 text-green-500" />
-              Investment Statistics
+            <CardTitle className="flex items-center justify-between dark-text">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-green-500" />
+                Investment Statistics
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  // Force refresh the data
+                  window.location.reload();
+                }}
+                className="h-8 w-8 p-0"
+              >
+                <Activity className="w-4 h-4" />
+              </Button>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
