@@ -1,4 +1,4 @@
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { useBitcoinPrice } from "@/hooks/use-bitcoin-price";
@@ -60,8 +60,6 @@ export function WalletBalance() {
         </div>
 
         <CardContent className="p-8 relative z-10">
-
-        <div className="relative z-10">
           <div className="flex items-center justify-between mb-4">
             <div>
               <p className="text-black text-opacity-70 text-sm font-medium mb-1">Total Portfolio Balance</p>
@@ -118,7 +116,7 @@ export function WalletBalance() {
               <p className="text-black text-sm font-medium">Just now</p>
             </div>
           </div>
-        </div>
+        </CardContent>
       </Card>
     </div>
   );
