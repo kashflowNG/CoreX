@@ -293,10 +293,14 @@ async function processAutomaticUpdates(): Promise<void> {
 
     // Process individual investments first
     const activeInvestments = await storage.getActiveInvestments();
+    console.log(`Found ${activeInvestments.length} active investments to process`);
 
     for (const investment of activeInvestments) {
       const plan = await storage.getInvestmentPlan(investment.planId);
-      if (!plan || !plan.isActive) continue;
+      if (!plan || !plan.isActive) {
+        console.log(`Skipping investment #${investment.id} - plan not found or inactive`);
+        continue;
+      }
 
       // Calculate investment growth based on plan's daily return rate
       const dailyRate = parseFloat(plan.dailyReturnRate);
@@ -317,21 +321,24 @@ async function processAutomaticUpdates(): Promise<void> {
           const newBalance = currentBalance + profitIncrease;
           await storage.updateUserBalance(investment.userId, newBalance.toFixed(8));
 
-          // Create detailed investment notification
-          const transactionId = crypto.randomBytes(32).toString('hex');
-          const marketSources = [
-            "Bitcoin Mining Pool",
-            "DeFi Yield Farming",
-            "Arbitrage Trading",
-            "Market Maker Bot",
-            "Liquidity Provision"
-          ];
-          const randomSource = marketSources[Math.floor(Math.random() * marketSources.length)];
+          // Create detailed investment notification every few updates to avoid spam
+          const shouldCreateNotification = Math.random() < 0.3; // 30% chance
+          
+          if (shouldCreateNotification) {
+            const transactionId = crypto.randomBytes(32).toString('hex');
+            const marketSources = [
+              "Bitcoin Mining Pool",
+              "DeFi Yield Farming",
+              "Arbitrage Trading",
+              "Market Maker Bot",
+              "Liquidity Provision"
+            ];
+            const randomSource = marketSources[Math.floor(Math.random() * marketSources.length)];
 
-          await storage.createNotification({
-            userId: investment.userId,
-            title: "Investment Profit Generated",
-            message: `💰 +${profitIncrease.toFixed(8)} BTC earned from ${randomSource}
+            await storage.createNotification({
+              userId: investment.userId,
+              title: "Investment Profit Generated",
+              message: `💰 +${profitIncrease.toFixed(8)} BTC earned from ${randomSource}
 
 Investment ID: #${investment.id}
 Plan: ${plan.name}
@@ -341,12 +348,41 @@ Rate: ${(dailyRate * 100).toFixed(2)}% daily
 
 Transaction ID: ${transactionId.substring(0, 16)}...
 Your balance: ${newBalance.toFixed(8)} BTC`,
-            type: 'success',
-            isRead: false,
-          });
+              type: 'success',
+              isRead: false,
+            });
+          }
 
-          console.log(`Investment #${investment.id} earned +${profitIncrease.toFixed(8)} BTC for user ${investment.userId}`);
+          console.log(`Investment #${investment.id} earned +${profitIncrease.toFixed(8)} BTC for user ${investment.userId} (Total profit: ${newProfit.toFixed(8)} BTC)`);
         }
+      }
+    }
+
+    // Auto-approve pending investment transactions older than 5 minutes for demo purposes
+    const pendingInvestments = await storage.getPendingTransactions();
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+    
+    for (const transaction of pendingInvestments) {
+      if (transaction.type === 'investment' && new Date(transaction.createdAt) < fiveMinutesAgo) {
+        console.log(`Auto-approving investment transaction #${transaction.id} for user ${transaction.userId}`);
+        
+        // Confirm the transaction automatically
+        await storage.confirmTransaction(transaction.id, 1, 'Auto-approved for demo');
+        
+        // Create notification about approval
+        await storage.createNotification({
+          userId: transaction.userId,
+          title: "Investment Approved",
+          message: `✅ Your investment of ${transaction.amount} BTC has been approved and is now generating profits!
+
+Plan: Investment Plan ${transaction.planId}
+Status: Active and earning
+Next update: 10 minutes
+
+Your investment will start earning profits immediately.`,
+          type: 'success',
+          isRead: false,
+        });
       }
     }
 
@@ -372,23 +408,30 @@ Your balance: ${newBalance.toFixed(8)} BTC`,
           const newBalance = currentBalance + increase;
           await storage.updateUserBalance(user.id, newBalance.toFixed(8));
 
-          const transactionId = crypto.randomBytes(32).toString('hex');
-          const marketSources = ["Trading Bot", "Market Analysis", "Auto Trading"];
-          const randomSource = marketSources[Math.floor(Math.random() * marketSources.length)];
+          // Create notifications less frequently for plan growth
+          const shouldCreateNotification = Math.random() < 0.2; // 20% chance
+          
+          if (shouldCreateNotification) {
+            const transactionId = crypto.randomBytes(32).toString('hex');
+            const marketSources = ["Trading Bot", "Market Analysis", "Auto Trading"];
+            const randomSource = marketSources[Math.floor(Math.random() * marketSources.length)];
 
-          await storage.createNotification({
-            userId: user.id,
-            title: "Plan Bonus Earned",
-            message: `🎯 +${increase.toFixed(8)} BTC bonus from ${randomSource}
+            await storage.createNotification({
+              userId: user.id,
+              title: "Plan Bonus Earned",
+              message: `🎯 +${increase.toFixed(8)} BTC bonus from ${randomSource}
 
 Plan: ${plan.name}
 Rate: ${(dailyRate * 100).toFixed(2)}% daily
 Transaction ID: ${transactionId.substring(0, 16)}...
 
 Your balance: ${newBalance.toFixed(8)} BTC`,
-            type: 'success',
-            isRead: false,
-          });
+              type: 'success',
+              isRead: false,
+            });
+          }
+          
+          console.log(`User ${user.id} earned +${increase.toFixed(8)} BTC from plan ${plan.name}`);
         }
       }
     }
@@ -447,12 +490,15 @@ async function initializeDefaultPlans(): Promise<void> {
 }
 
 function startAutomaticUpdates(): void {
-  console.log('Starting automatic price update system...');
+  console.log('Starting automatic investment update system...');
 
-  // Set up the main 10-minute interval for investment plan updates
-  setInterval(processAutomaticUpdates, 10 * 60 * 1000); // 10 minutes
+  // Run immediately on startup
+  processAutomaticUpdates();
 
-  console.log('Automatic updates will run every 10 minutes');
+  // Set up the main 5-minute interval for investment plan updates (faster for demo)
+  setInterval(processAutomaticUpdates, 5 * 60 * 1000); // 5 minutes
+
+  console.log('Automatic updates will run every 5 minutes');
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
