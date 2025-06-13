@@ -1303,6 +1303,16 @@ Your new balance: ${newBalance.toFixed(8)} BTC`,
     }
   });
 
+  app.delete("/api/notifications/:userId/clear-all", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      await storage.clearAllUserNotifications(userId);
+      res.json({ message: "All notifications cleared successfully" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to clear notifications" });
+    }
+  });
+
   // Get user balance from database
   app.get("/api/bitcoin/balance/:userId", async (req, res) => {
     try {

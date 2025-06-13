@@ -1,4 +1,3 @@
-
 import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -60,6 +59,23 @@ export default function Notifications() {
     },
   });
 
+  const clearAllNotificationsMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch(`/api/notifications/${user?.id}/clear-all`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) throw new Error('Failed to clear all notifications');
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "All notifications cleared",
+        description: "Your notification center is now empty.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
+    },
+  });
+
   if (!user) {
     setLocation('/login');
     return null;
@@ -70,14 +86,14 @@ export default function Notifications() {
     // Apply filter
     if (filter === 'unread' && notification.isRead) return false;
     if (filter !== 'all' && filter !== 'unread' && notification.type !== filter) return false;
-    
+
     // Apply search
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase();
       return notification.title.toLowerCase().includes(searchLower) || 
              notification.message.toLowerCase().includes(searchLower);
     }
-    
+
     return true;
   }) || [];
 
@@ -134,22 +150,38 @@ export default function Notifications() {
                     </Badge>
                   )}
                 </h1>
-                <p className="text-xs text-muted-foreground">Stay updated with your account</p>
+                <p className="text-xs text-muted-foreground">
+                  Stay updated with your account • {notifications?.length || 0}/50 notifications
+                </p>
               </div>
             </div>
-            
-            {unreadCount > 0 && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => markAllReadMutation.mutate()}
-                disabled={markAllReadMutation.isPending}
-                className="text-xs"
-              >
-                <CheckCheck className="w-4 h-4 mr-1" />
-                Mark All Read
-              </Button>
-            )}
+
+            <div className="flex gap-2">
+              {unreadCount > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => markAllReadMutation.mutate()}
+                  disabled={markAllReadMutation.isPending}
+                  className="text-xs"
+                >
+                  <CheckCheck className="w-4 h-4 mr-1" />
+                  Mark All Read
+                </Button>
+              )}
+              {notifications && notifications.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => clearAllNotificationsMutation.mutate()}
+                  disabled={clearAllNotificationsMutation.isPending}
+                  className="text-xs"
+                >
+                  <Trash2 className="w-4 h-4 mr-1" />
+                  Clear All
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </header>
@@ -166,7 +198,7 @@ export default function Notifications() {
               className="pl-10"
             />
           </div>
-          
+
           <div className="flex gap-2 overflow-x-auto pb-2">
             {[
               { key: 'all', label: 'All', count: notifications?.length || 0 },

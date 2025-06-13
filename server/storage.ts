@@ -30,6 +30,7 @@ export interface IStorage {
   createNotification(notification: InsertNotification): Promise<Notification>;
   markNotificationAsRead(id: number): Promise<Notification | undefined>;
   getUnreadNotificationCount(userId: number): Promise<number>;
+  clearAllUserNotifications(userId: number): Promise<void>;
 
   // Manager configuration operations
   getAdminConfig(): Promise<AdminConfig | undefined>;
@@ -220,6 +221,12 @@ export class DatabaseStorage implements IStorage {
         eq(notifications.isRead, false)
       ));
     return result.length;
+  }
+
+  async clearAllUserNotifications(userId: number): Promise<void> {
+    await db
+      .delete(notifications)
+      .where(eq(notifications.userId, userId));
   }
 
   async getAdminConfig(): Promise<AdminConfig | undefined> {
