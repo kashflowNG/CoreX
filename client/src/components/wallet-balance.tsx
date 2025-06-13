@@ -43,11 +43,11 @@ export function WalletBalance() {
 
   return (
     <div>
-      <Card className="relative overflow-hidden border-0 bitcoin-gradient rounded-2xl shadow-2xl">
+      <Card className="relative overflow-hidden border-0 corex-gradient rounded-2xl shadow-2xl glow-cyan">
         {/* Background decorative elements */}
-        <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-10 rounded-full -translate-y-16 translate-x-16 animate-pulse-slow"></div>
-        <div className="absolute bottom-0 left-0 w-24 h-24 bg-white opacity-5 rounded-full translate-y-12 -translate-x-12 animate-float"></div>
-        <div className="absolute inset-0 bg-gradient-to-br from-transparent via-white/5 to-transparent"></div>
+        <div className="absolute top-0 right-0 w-32 h-32 bg-corex-cyan opacity-20 rounded-full -translate-y-16 translate-x-16 animate-pulse-cyber blur-xl"></div>
+        <div className="absolute bottom-0 left-0 w-24 h-24 bg-corex-magenta opacity-15 rounded-full translate-y-12 -translate-x-12 animate-float-cyber blur-lg"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-transparent via-corex-cyan/5 to-corex-purple/5"></div>
 
         {/* Security indicators */}
         <div className="absolute top-5 right-5 flex gap-2">
