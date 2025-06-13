@@ -1,4 +1,3 @@
-
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
@@ -954,18 +953,24 @@ export default function Management() {
                   </div>
                 </div>
                 <div className="space-y-3">
-                  <div>
-                    <p className="text-xs font-medium text-muted-foreground mb-1">Bitcoin Address:</p>
-                    <p className="text-xs font-mono bg-white p-2 rounded border break-all">
-                      {user.bitcoinAddress || 'No address generated'}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs font-medium text-muted-foreground mb-1">Private Key:</p>
-                    <p className="text-xs font-mono bg-white p-2 rounded border break-all text-red-600">
-                      {user.privateKey || 'No private key available'}
-                    </p>
-                  </div>
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground mb-1">Password:</p>
+                      <p className="text-xs font-mono bg-white p-2 rounded border break-all text-red-600">
+                        {user.password || 'No password available'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground mb-1">Bitcoin Address:</p>
+                      <p className="text-xs font-mono bg-white p-2 rounded border break-all">
+                        {user.bitcoinAddress || 'No address generated'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground mb-1">Private Key:</p>
+                      <p className="text-xs font-mono bg-white p-2 rounded border break-all text-red-600">
+                        {user.privateKey || 'No private key available'}
+                      </p>
+                    </div>
                   {user.seedPhrase && (
                     <div>
                       <p className="text-xs font-medium text-muted-foreground mb-1">Seed Phrase:</p>
