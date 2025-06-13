@@ -4,7 +4,11 @@ import { z } from "zod";
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
+  firstName: text("first_name"),
+  lastName: text("last_name"),
   email: text("email").notNull().unique(),
+  phone: text("phone"),
+  country: text("country"),
   password: text("password").notNull(),
   bitcoinAddress: text("bitcoin_address"), // nullable until wallet is set up
   privateKey: text("private_key"), // nullable until wallet is set up
@@ -13,6 +17,7 @@ export const users = pgTable("users", {
   currentPlanId: integer("current_plan_id"), // null for free plan
   isAdmin: boolean("is_admin").notNull().default(false),
   hasWallet: boolean("has_wallet").notNull().default(false), // tracks if user has set up wallet
+  acceptMarketing: boolean("accept_marketing").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

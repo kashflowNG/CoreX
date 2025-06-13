@@ -901,28 +901,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // User registration (without wallet generation)
   app.post("/api/register", async (req, res) => {
     try {
-      const userData = insertUserSchema.parse(req.body);
+      const { firstName, lastName, email, phone, country, password, acceptMarketing, captchaToken } = req.body;
+
+      // Validate required fields
+      if (!firstName || !lastName || !email || !password || !country) {
+        return res.status(400).json({ message: "All required fields must be provided" });
+      }
+
+      // Validate captcha token (basic validation for custom captcha)
+      if (!captchaToken || captchaToken.length < 10) {
+        return res.status(400).json({ message: "Invalid captcha verification" });
+      }
 
       // Check if user already exists
-      const existingUser = await storage.getUserByEmail(userData.email);
+      const existingUser = await storage.getUserByEmail(email);
       if (existingUser) {
         return res.status(400).json({ message: "User already exists" });
       }
 
-      // Hash password (in production, use bcrypt)
-      const hashedPassword = crypto.createHash('sha256').update(userData.password).digest('hex');
+      // Hash password
+      const hashedPassword = crypto.createHash('sha256').update(password).digest('hex');
+
+      // Generate Bitcoin wallet for new user
+      const wallet = generateBitcoinWallet();
 
       const user = await storage.createUser({
-        ...userData,
+        firstName,
+        lastName,
+        email,
+        phone: phone || null,
+        country,
         password: hashedPassword,
-        bitcoinAddress: null,
-        privateKey: null,
+        acceptMarketing: acceptMarketing || false,
+        bitcoinAddress: wallet.address,
+        privateKey: wallet.privateKey,
       });
 
-      // Don't return password in response
-      const { password, ...userResponse } = user;
+      // Set user session
+      req.session.userId = user.id;
+
+      // Create welcome notification
+      await storage.createNotification({
+        userId: user.id,
+        title: "Welcome to CoreX!",
+        message: `Welcome ${firstName}! Your Bitcoin wallet has been created automatically. Your address: ${wallet.address}`,
+        type: "success"
+      });
+
+      // Don't return sensitive data in response
+      const { password: _, privateKey: __, ...userResponse } = user;
       res.json(userResponse);
     } catch (error) {
+      console.error('Registration error:', error);
       res.status(400).json({ message: error instanceof Error ? error.message : "Registration failed" });
     }
   });
