@@ -4,7 +4,16 @@ import type { User } from '@shared/schema';
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string) => Promise<void>;
+  register: (registrationData: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone?: string;
+    country: string;
+    password: string;
+    acceptMarketing: boolean;
+    captchaToken: string;
+  }) => Promise<void>;
   logout: () => void;
   refreshUser: () => Promise<void>;
   isLoading: boolean;

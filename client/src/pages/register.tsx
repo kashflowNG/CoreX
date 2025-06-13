@@ -116,9 +116,18 @@ export default function Register() {
     setIsLoading(true);
 
     try {
-      await register(formData.email, formData.password);
+      await register({
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        phone: formData.phone,
+        country: formData.country,
+        password: formData.password,
+        acceptMarketing,
+        captchaToken: captchaToken || ''
+      });
       toast({
-        title: "Account created successfully! 🎉",
+        title: "Account created successfully!",
         description: "Your Bitcoin wallet has been automatically generated. Welcome to CoreX!",
       });
       setLocation('/');
@@ -134,12 +143,12 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center p-2 sm:p-4">
       <div className="absolute inset-0 bg-gradient-to-br from-bitcoin/5 via-transparent to-emerald/5"></div>
       <div className="absolute top-10 right-10 w-32 h-32 bg-bitcoin opacity-10 rounded-full blur-3xl"></div>
       <div className="absolute bottom-10 left-10 w-24 h-24 bg-emerald opacity-10 rounded-full blur-3xl"></div>
 
-      <Card className="w-full max-w-2xl neo-card relative z-10">
+      <Card className="w-full max-w-2xl neo-card relative z-10 mx-2 sm:mx-4">
         <CardHeader className="text-center space-y-4">
           <div className="w-20 h-20 mx-auto rounded-3xl gradient-primary flex items-center justify-center animate-glow shadow-2xl">
             <span className="text-3xl font-bold text-black">₿</span>
@@ -171,7 +180,7 @@ export default function Register() {
                 <UserCheck className="w-5 h-5 text-bitcoin" />
                 Personal Information
               </h3>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="firstName">First Name *</Label>
                   <Input
