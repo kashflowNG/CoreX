@@ -11,8 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Eye, EyeOff, Shield, UserCheck, Globe, Phone } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import ReCAPTCHA from "react-google-recaptcha";
 import { countries } from "@/lib/countries";
+import { CustomCaptcha } from "@/components/custom-captcha";
 
 export default function Register() {
   const [formData, setFormData] = useState({
@@ -35,8 +35,12 @@ export default function Register() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
-  const onCaptchaChange = useCallback((token: string | null) => {
-    setCaptchaToken(token);
+  const onCaptchaVerify = useCallback((isValid: boolean, token: string) => {
+    if (isValid) {
+      setCaptchaToken(token);
+    } else {
+      setCaptchaToken(null);
+    }
   }, []);
 
   const calculatePasswordStrength = (password: string) => {
@@ -222,7 +226,7 @@ export default function Register() {
                   <SelectTrigger className="h-12">
                     <SelectValue placeholder="Select your country" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="max-h-60">
                     {countries.map((country) => (
                       <SelectItem key={country} value={country}>
                         <div className="flex items-center gap-2">
@@ -317,13 +321,7 @@ export default function Register() {
                 <Shield className="w-5 h-5 text-bitcoin" />
                 Security Verification
               </h3>
-              <div className="flex justify-center">
-                <ReCAPTCHA
-                  sitekey="6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"
-                  onChange={onCaptchaChange}
-                  theme="light"
-                />
-              </div>
+              <CustomCaptcha onVerify={onCaptchaVerify} />
             </div>
 
             {/* Terms and Conditions */}
@@ -353,7 +351,7 @@ export default function Register() {
                 <Checkbox 
                   id="marketing" 
                   checked={acceptMarketing}
-                  onCheckedChange={setAcceptMarketing}
+                  onCheckedChange={(checked) => setAcceptMarketing(checked === true)}
                 />
                 <Label htmlFor="marketing" className="text-sm leading-5">
                   I want to receive market updates, investment insights, and promotional offers via email
@@ -364,7 +362,7 @@ export default function Register() {
             <Button 
               type="submit" 
               className="w-full h-14 text-lg gradient-primary text-black font-bold rounded-xl hover:scale-105 transition-all duration-300 shadow-lg"
-              disabled={isLoading || !acceptTerms}
+              disabled={isLoading || !acceptTerms || !captchaToken}
             >
               {isLoading ? (
                 <div className="flex items-center gap-3">
