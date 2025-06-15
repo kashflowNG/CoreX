@@ -1,11 +1,22 @@
 import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { BottomNavigation } from "@/components/bottom-navigation";
-import { ArrowLeft, Bell, CheckCheck, Filter, Search, Trash2, Bitcoin, TrendingUp, AlertTriangle, Info } from "lucide-react";
+import { ArrowLeft, Bell, CheckCheck, Filter, Search, Trash2, Bitcoin, TrendingUp, AlertTriangle, Info, X } from "lucide-react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import type { Notification } from "@shared/schema";
+import type { Notification, Transaction } from "@shared/schema";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
@@ -25,6 +36,11 @@ export default function Notifications() {
     queryFn: () => fetch(`/api/notifications/${user?.id}`).then(res => res.json()),
     enabled: !!user?.id,
     refetchInterval: 10000, // Refresh every 10 seconds for real-time updates
+  });
+
+  const { data: transactions } = useQuery<Transaction[]>({
+    queryKey: ['/api/transactions'],
+    enabled: !!user?.id,
   });
 
   const markAllReadMutation = useMutation({
@@ -76,6 +92,36 @@ export default function Notifications() {
     },
   });
 
+  const cancelTransactionMutation = useMutation({
+    mutationFn: async (transactionId: number) => {
+      const response = await fetch(`/api/transactions/${transactionId}/cancel`, {
+        method: 'POST',
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to cancel transaction');
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Transaction Cancelled",
+        description: "Your transaction has been cancelled successfully.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Cancel Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   if (!user) {
     setLocation('/login');
     return null;
@@ -98,6 +144,22 @@ export default function Notifications() {
   }) || [];
 
   const unreadCount = notifications?.filter(n => !n.isRead).length || 0;
+
+  // Helper function to extract transaction ID from notification and check if it's pending
+  const getRelatedPendingTransaction = (notification: Notification) => {
+    if (!transactions) return null;
+    
+    // Check if notification is about a transaction that's still pending
+    if (notification.title.includes("Investment") || notification.title.includes("Deposit")) {
+      // Look for the most recent pending transaction of the user
+      const pendingTransactions = transactions.filter(t => t.status === 'pending');
+      if (pendingTransactions.length > 0) {
+        // Return the most recent pending transaction
+        return pendingTransactions.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+      }
+    }
+    return null;
+  };
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
@@ -278,12 +340,50 @@ export default function Notifications() {
                       <p className="text-xs text-muted-foreground whitespace-pre-line leading-relaxed">
                         {notification.message}
                       </p>
-                      <Badge 
-                        variant="outline" 
-                        className="mt-2 text-xs capitalize"
-                      >
-                        {notification.type}
-                      </Badge>
+                      <div className="flex items-center justify-between mt-2">
+                        <Badge 
+                          variant="outline" 
+                          className="text-xs capitalize"
+                        >
+                          {notification.type}
+                        </Badge>
+                        {(() => {
+                          const pendingTransaction = getRelatedPendingTransaction(notification);
+                          return pendingTransaction && (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="text-red-600 border-red-300 hover:bg-red-50 dark:text-red-400 dark:border-red-700 dark:hover:bg-red-900/20 h-6 px-2 text-xs"
+                                >
+                                  <X className="w-3 h-3 mr-1" />
+                                  Cancel
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Cancel Transaction</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to cancel this {pendingTransaction.type} of {pendingTransaction.amount} BTC? 
+                                    This action cannot be undone.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Keep Transaction</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => cancelTransactionMutation.mutate(pendingTransaction.id)}
+                                    disabled={cancelTransactionMutation.isPending}
+                                    className="bg-red-600 hover:bg-red-700"
+                                  >
+                                    {cancelTransactionMutation.isPending ? "Cancelling..." : "Yes, Cancel"}
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          );
+                        })()}
+                      </div>
                     </div>
                   </div>
                 </CardContent>
