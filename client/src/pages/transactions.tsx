@@ -214,8 +214,20 @@ export default function Transactions() {
                   )}
 
                   {transaction.status === 'pending' && (
-                    <div className="bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400 p-2 rounded text-xs">
-                      Your transaction is under review and will be processed shortly. You will be notified once completed.
+                    <div className="space-y-2">
+                      <div className="bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400 p-2 rounded text-xs">
+                        Your transaction is under review and will be processed shortly. You will be notified once completed.
+                      </div>
+                      <Button
+                        onClick={() => cancelTransactionMutation.mutate(transaction.id)}
+                        disabled={cancelTransactionMutation.isPending}
+                        variant="outline"
+                        size="sm"
+                        className="w-full text-red-600 border-red-200 hover:bg-red-50"
+                      >
+                        <X className="w-4 h-4 mr-1" />
+                        {cancelTransactionMutation.isPending ? "Cancelling..." : "Cancel Transaction"}
+                      </Button>
                     </div>
                   )}
                 </div>
