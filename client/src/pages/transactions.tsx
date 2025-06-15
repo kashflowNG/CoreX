@@ -223,9 +223,9 @@ export default function Transactions() {
                         disabled={cancelTransactionMutation.isPending}
                         variant="outline"
                         size="sm"
-                        className="w-full text-red-600 border-red-200 hover:bg-red-50"
+                        className="w-full text-red-600 border-red-300 hover:bg-red-50 dark:text-red-400 dark:border-red-700 dark:hover:bg-red-900/20"
                       >
-                        <X className="w-4 h-4 mr-1" />
+                        <X className="w-4 h-4 mr-2" />
                         {cancelTransactionMutation.isPending ? "Cancelling..." : "Cancel Transaction"}
                       </Button>
                     </div>
