@@ -11,6 +11,7 @@ export interface IStorage {
   updateUserPlan(id: number, planId: number | null): Promise<User | undefined>;
   getAllUsers(): Promise<User[]>;
   getUsersWithPlans(): Promise<User[]>;
+  deleteUser(id: number): Promise<void>;
 
   // Investment plan operations
   getInvestmentPlans(): Promise<InvestmentPlan[]>;
@@ -46,6 +47,7 @@ export interface IStorage {
   confirmTransaction(id: number, adminId: number, notes?: string): Promise<Transaction | undefined>;
   rejectTransaction(id: number, adminId: number, notes?: string): Promise<Transaction | undefined>;
   getTransaction(id: number): Promise<Transaction | undefined>;
+  cancelTransaction(id: number, userId: number): Promise<Transaction | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -95,6 +97,16 @@ export class DatabaseStorage implements IStorage {
 
   async getUsersWithPlans(): Promise<User[]> {
     return await db.select().from(users).where(isNotNull(users.currentPlanId));
+  }
+
+  async deleteUser(userId: number): Promise<void> {
+    // Delete user's related data first to maintain referential integrity
+    await db.delete(notifications).where(eq(notifications.userId, userId));
+    await db.delete(transactions).where(eq(transactions.userId, userId));
+    await db.delete(investments).where(eq(investments.userId, userId));
+    
+    // Finally delete the user
+    await db.delete(users).where(eq(users.id, userId));
   }
 
   async getInvestmentPlans(): Promise<InvestmentPlan[]> {
@@ -373,6 +385,24 @@ export class DatabaseStorage implements IStorage {
 
   async getTransaction(id: number): Promise<Transaction | undefined> {
     const [transaction] = await db.select().from(transactions).where(eq(transactions.id, id));
+    return transaction || undefined;
+  }
+
+  async cancelTransaction(id: number, userId: number): Promise<Transaction | undefined> {
+    // Only allow canceling pending transactions by the user who created them
+    const [transaction] = await db
+      .update(transactions)
+      .set({ 
+        status: 'cancelled',
+        updatedAt: new Date(),
+        notes: 'Cancelled by user'
+      })
+      .where(and(
+        eq(transactions.id, id),
+        eq(transactions.userId, userId),
+        eq(transactions.status, 'pending')
+      ))
+      .returning();
     return transaction || undefined;
   }
 }
