@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import { WebSocketServer, WebSocket } from "ws";
 import { z } from "zod";
 
 // Extend Express Request type to include session
@@ -354,6 +355,17 @@ Your balance: ${newBalance.toFixed(8)} BTC`,
           }
 
           console.log(`Investment #${investment.id} earned +${profitIncrease.toFixed(8)} BTC for user ${investment.userId} (Total profit: ${newProfit.toFixed(8)} BTC)`);
+          
+          // Broadcast investment update to connected clients
+          broadcastToClients({
+            type: 'investment_update',
+            investmentId: investment.id,
+            userId: investment.userId,
+            profit: profitIncrease.toFixed(8),
+            totalProfit: newProfit.toFixed(8),
+            planName: plan.name,
+            newBalance: newBalance.toFixed(8)
+          });
         }
       }
     }
@@ -442,6 +454,18 @@ Your balance: ${newBalance.toFixed(8)} BTC`,
 
 // Global update intervals storage
 const updateIntervals = new Map<number, NodeJS.Timeout>();
+
+// WebSocket clients storage
+const wsClients = new Set<WebSocket>();
+
+function broadcastToClients(data: any) {
+  const message = JSON.stringify(data);
+  wsClients.forEach((client) => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(message);
+    }
+  });
+}
 
 async function initializeDefaultPlans(): Promise<void> {
   try {
@@ -1443,7 +1467,11 @@ Your new balance: ${newBalance.toFixed(8)} BTC`,
         }
       }
 
-      await storage.cleanupAllUserNotifications();
+      // Clear all notifications for all users
+      const allUsers = await storage.getAllUsers();
+      for (const user of allUsers) {
+        await storage.clearAllUserNotifications(user.id);
+      }
       res.json({ message: "Notification cleanup completed successfully" });
     } catch (error) {
       res.status(500).json({ message: "Failed to cleanup notifications" });
