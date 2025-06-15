@@ -5,6 +5,17 @@ import { BottomNavigation } from "@/components/bottom-navigation";
 import { ArrowLeft, Clock, Bitcoin, TrendingUp, CheckCircle, XCircle, X } from "lucide-react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { formatBitcoin, formatDate } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -169,6 +180,39 @@ export default function Transactions() {
                   <div className="flex items-center gap-2">
                     {getStatusIcon(transaction.status)}
                     {getStatusBadge(transaction.status)}
+                    {transaction.status === 'pending' && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-red-600 border-red-300 hover:bg-red-50 dark:text-red-400 dark:border-red-700 dark:hover:bg-red-900/20 h-6 px-2"
+                          >
+                            <X className="w-3 h-3 mr-1" />
+                            Cancel
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Cancel Transaction</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to cancel this {transaction.type} of {formatBitcoin(transaction.amount)} BTC? 
+                              This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Keep Transaction</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => cancelTransactionMutation.mutate(transaction.id)}
+                              disabled={cancelTransactionMutation.isPending}
+                              className="bg-red-600 hover:bg-red-700"
+                            >
+                              {cancelTransactionMutation.isPending ? "Cancelling..." : "Yes, Cancel"}
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
                   </div>
                 </div>
               </CardHeader>
@@ -214,20 +258,8 @@ export default function Transactions() {
                   )}
 
                   {transaction.status === 'pending' && (
-                    <div className="space-y-2">
-                      <div className="bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400 p-2 rounded text-xs">
-                        Your transaction is under review and will be processed shortly. You will be notified once completed.
-                      </div>
-                      <Button
-                        onClick={() => cancelTransactionMutation.mutate(transaction.id)}
-                        disabled={cancelTransactionMutation.isPending}
-                        variant="outline"
-                        size="sm"
-                        className="w-full text-red-600 border-red-300 hover:bg-red-50 dark:text-red-400 dark:border-red-700 dark:hover:bg-red-900/20"
-                      >
-                        <X className="w-4 h-4 mr-2" />
-                        {cancelTransactionMutation.isPending ? "Cancelling..." : "Cancel Transaction"}
-                      </Button>
+                    <div className="bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400 p-2 rounded text-xs">
+                      Your transaction is under review and will be processed shortly. You will be notified once completed.
                     </div>
                   )}
                 </div>
