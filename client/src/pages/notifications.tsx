@@ -149,13 +149,24 @@ export default function Notifications() {
   const getRelatedPendingTransaction = (notification: Notification) => {
     if (!transactions) return null;
     
-    // Check if notification is about a transaction that's still pending
-    if (notification.title.includes("Investment") || notification.title.includes("Deposit")) {
-      // Look for the most recent pending transaction of the user
+    // Only show cancel button for specific pending transaction notifications
+    const isPendingTransactionNotification = (
+      notification.title.includes("Investment Submitted") || 
+      notification.title.includes("Deposit Submitted") ||
+      notification.title.includes("Transaction Pending")
+    ) && notification.type === 'info';
+    
+    if (isPendingTransactionNotification) {
+      // Look for pending transactions that match the timeframe of this notification
       const pendingTransactions = transactions.filter(t => t.status === 'pending');
       if (pendingTransactions.length > 0) {
-        // Return the most recent pending transaction
-        return pendingTransactions.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+        // Find transaction created around the same time as the notification (within 1 minute)
+        const notificationTime = new Date(notification.createdAt).getTime();
+        const matchingTransaction = pendingTransactions.find(t => {
+          const transactionTime = new Date(t.createdAt).getTime();
+          return Math.abs(notificationTime - transactionTime) < 60000; // Within 1 minute
+        });
+        return matchingTransaction || null;
       }
     }
     return null;

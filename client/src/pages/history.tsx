@@ -27,11 +27,14 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
+import { useMutation } from "@tanstack/react-query";
+import { X } from "lucide-react";
 
 export default function History() {
   const { user } = useAuth();
   const { currency } = useCurrency();
   const { data: bitcoinPrice } = useBitcoinPrice();
+  const { toast } = useToast();
 
   const { data: investments, isLoading } = useQuery<Investment[]>({
     queryKey: ['/api/investments/user', user?.id],
@@ -48,6 +51,36 @@ export default function History() {
   const { data: transactions, isLoading: loadingTransactions } = useQuery<Transaction[]>({
     queryKey: ['/api/transactions'],
     enabled: !!user?.id,
+  });
+
+  const cancelTransactionMutation = useMutation({
+    mutationFn: async (transactionId: number) => {
+      const response = await fetch(`/api/transactions/${transactionId}/cancel`, {
+        method: 'POST',
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to cancel transaction');
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Transaction Cancelled",
+        description: "Your transaction has been cancelled successfully.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Cancel Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
   });
 
   if (!user) {
@@ -136,7 +169,42 @@ export default function History() {
                               {transaction.type.charAt(0).toUpperCase() + transaction.type.slice(1)}
                             </CardTitle>
                           </div>
-                          {getStatusBadge()}
+                          <div className="flex items-center gap-2">
+                            {getStatusBadge()}
+                            {transaction.status === 'pending' && (
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="text-red-600 border-red-300 hover:bg-red-50 dark:text-red-400 dark:border-red-700 dark:hover:bg-red-900/20 h-6 px-2"
+                                  >
+                                    <X className="w-3 h-3 mr-1" />
+                                    Cancel
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Cancel Transaction</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Are you sure you want to cancel this {transaction.type} of {formatBitcoin(transaction.amount)} BTC? 
+                                      This action cannot be undone.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Keep Transaction</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => cancelTransactionMutation.mutate(transaction.id)}
+                                      disabled={cancelTransactionMutation.isPending}
+                                      className="bg-red-600 hover:bg-red-700"
+                                    >
+                                      {cancelTransactionMutation.isPending ? "Cancelling..." : "Yes, Cancel"}
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            )}
+                          </div>
                         </div>
                       </CardHeader>
                       <CardContent className="pt-0">
