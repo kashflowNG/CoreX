@@ -394,7 +394,6 @@ export class DatabaseStorage implements IStorage {
       .update(transactions)
       .set({ 
         status: 'cancelled',
-        updatedAt: new Date(),
         notes: 'Cancelled by user'
       })
       .where(and(

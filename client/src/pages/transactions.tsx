@@ -2,21 +2,55 @@ import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BottomNavigation } from "@/components/bottom-navigation";
-import { ArrowLeft, Clock, Bitcoin, TrendingUp, CheckCircle, XCircle } from "lucide-react";
+import { ArrowLeft, Clock, Bitcoin, TrendingUp, CheckCircle, XCircle, X } from "lucide-react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { formatBitcoin, formatDate } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+import { queryClient } from "@/lib/queryClient";
 import type { Transaction } from "@shared/schema";
 
 export default function Transactions() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
 
   // Fetch user transactions
   const { data: transactions, isLoading } = useQuery<Transaction[]>({
     queryKey: ['/api/transactions'],
     enabled: !!user,
+  });
+
+  // Cancel transaction mutation
+  const cancelTransactionMutation = useMutation({
+    mutationFn: async (transactionId: number) => {
+      const response = await fetch(`/api/transactions/${transactionId}/cancel`, {
+        method: 'POST',
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to cancel transaction');
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Transaction Cancelled",
+        description: "Your transaction has been cancelled successfully.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Cancel Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
   });
 
   if (!user) {
