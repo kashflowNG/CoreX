@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/use-auth";
 import { CurrencyProvider } from "@/hooks/use-currency";
+import { RealtimeConnection } from "@/components/realtime-connection";
 import Home from "@/pages/home";
 import Login from "@/pages/login";
 import Register from "@/pages/register";
@@ -54,6 +55,7 @@ function App() {
       <TooltipProvider>
         <CurrencyProvider>
           <AuthProvider>
+            <RealtimeConnection />
             <Toaster />
             <Router />
           </AuthProvider>

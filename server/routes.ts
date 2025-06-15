@@ -1610,6 +1610,30 @@ You are now on the free plan and will no longer receive automatic profit updates
 
   const httpServer = createServer(app);
 
+  // Set up WebSocket server for real-time updates
+  const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
+
+  wss.on('connection', (ws) => {
+    console.log('New WebSocket client connected');
+    wsClients.add(ws);
+
+    ws.on('close', () => {
+      console.log('WebSocket client disconnected');
+      wsClients.delete(ws);
+    });
+
+    ws.on('error', (error) => {
+      console.error('WebSocket error:', error);
+      wsClients.delete(ws);
+    });
+
+    // Send welcome message
+    ws.send(JSON.stringify({
+      type: 'connection_established',
+      message: 'Real-time investment updates connected'
+    }));
+  });
+
   // Initialize default investment plans if they don't exist
   await initializeDefaultPlans();
 
