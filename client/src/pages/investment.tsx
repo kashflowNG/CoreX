@@ -55,8 +55,8 @@ export default function Investment() {
     return plans?.find(plan => plan.id === planId)?.name || `Plan ${planId}`;
   };
 
-  const activeInvestments = investments?.filter(inv => inv.isActive) || [];
-  const completedInvestments = investments?.filter(inv => !inv.isActive) || [];
+  const activeInvestments = investments?.filter(inv => inv.isActive === true) || [];
+  const completedInvestments = investments?.filter(inv => inv.isActive === false) || [];
   const pendingInvestments = transactions?.filter(tx => tx.type === 'investment' && tx.status === 'pending') || [];
   const rejectedInvestments = transactions?.filter(tx => tx.type === 'investment' && tx.status === 'rejected') || [];
 

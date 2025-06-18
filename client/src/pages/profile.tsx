@@ -39,8 +39,8 @@ function ProfileContent() {
   const fiatValue = parseFloat(user.balance) * (currency === 'USD' ? (price?.usd.price || 0) : (price?.gbp.price || 0));
   const totalInvested = investments?.reduce((sum, inv) => sum + parseFloat(inv.amount || '0'), 0) || 0;
   const totalProfit = investments?.reduce((sum, inv) => sum + parseFloat(inv.currentProfit || '0'), 0) || 0;
-  const activeInvestments = investments?.filter(inv => inv.isActive).length || 0;
-  const completedInvestments = investments?.filter(inv => !inv.isActive).length || 0;
+  const activeInvestments = investments?.filter(inv => inv.isActive === true).length || 0;
+  const completedInvestments = investments?.filter(inv => inv.isActive === false).length || 0;
   const userTransactions = transactions?.filter(tx => tx.userId === user.id).length || 0;
 
   const accountAge = Math.floor((Date.now() - new Date(user.createdAt).getTime()) / (1000 * 60 * 60 * 24));

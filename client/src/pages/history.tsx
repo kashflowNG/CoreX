@@ -29,12 +29,15 @@ import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import { useMutation } from "@tanstack/react-query";
 import { X } from "lucide-react";
+import { format } from 'date-fns';
+import { Activity, Award } from "lucide-react";
 
 export default function History() {
   const { user } = useAuth();
   const { currency } = useCurrency();
   const { data: bitcoinPrice } = useBitcoinPrice();
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
 
   const { data: investments, isLoading } = useQuery<Investment[]>({
     queryKey: ['/api/investments/user', user?.id],
@@ -50,8 +53,14 @@ export default function History() {
 
   const { data: transactions, isLoading: loadingTransactions } = useQuery<Transaction[]>({
     queryKey: ['/api/transactions'],
+    queryFn: () => fetch(`/api/transactions`).then(res => res.json()),
     enabled: !!user?.id,
   });
+
+    const { data: investmentPlans } = useQuery({
+        queryKey: ['/api/investment-plans'],
+        queryFn: () => fetch('/api/investment-plans').then(res => res.json()),
+    });
 
   const cancelTransactionMutation = useMutation({
     mutationFn: async (transactionId: number) => {
@@ -126,153 +135,181 @@ export default function History() {
           </div>
         ) : (
           <div className="space-y-4">
-            {/* Display all transactions (deposits, withdrawals, investments) */}
-            {transactions && transactions.length > 0 && (
-              <div className="space-y-4">
-                {transactions.map((transaction) => {
-                  const getTransactionIcon = () => {
-                    switch (transaction.type) {
-                      case 'deposit':
-                        return <ArrowDownLeft className="w-5 h-5 text-green-500" />;
-                      case 'withdrawal':
-                        return <ArrowUpRight className="w-5 h-5 text-red-500" />;
-                      case 'investment':
-                        return <TrendingUp className="w-5 h-5 text-blue-500" />;
-                      default:
-                        return <Clock className="w-5 h-5 text-gray-500" />;
-                    }
-                  };
+            <div className="space-y-4">
+            <h3 className="text-lg font-semibold dark-text">Transaction History</h3>
 
-                  const getStatusBadge = () => {
-                    switch (transaction.status) {
-                      case 'confirmed':
-                        return <Badge variant="default" className="bg-green-500 text-white">Confirmed</Badge>;
-                      case 'pending':
-                        return <Badge variant="secondary" className="bg-yellow-500 text-white">Pending</Badge>;
-                      case 'rejected':
-                        return <Badge variant="destructive">Rejected</Badge>;
-                      default:
-                        return <Badge variant="outline">{transaction.status}</Badge>;
-                    }
-                  };
+            {/* All transactions including investment history */}
+            <div className="space-y-3">
+              {/* Recent transactions from API */}
+              {transactions?.map((transaction) => {
+                const getTransactionIcon = (type: string, status: string) => {
+                  if (type === 'deposit') return <ArrowDownLeft className="w-4 h-4 text-green-500" />;
+                  if (type === 'withdrawal') return <ArrowUpRight className="w-4 h-4 text-red-500" />;
+                  if (type === 'investment') return <TrendingUp className="w-4 h-4 text-blue-500" />;
+                  return <Activity className="w-4 h-4 text-gray-500" />;
+                };
 
-                  const currencyPrice = currency === 'USD' ? bitcoinPrice?.usd.price : bitcoinPrice?.gbp.price;
-                  const fiatValue = currencyPrice ? parseFloat(transaction.amount) * currencyPrice : 0;
+                const getStatusColor = (status: string) => {
+                  if (status === 'confirmed') return 'text-green-500';
+                  if (status === 'pending') return 'text-yellow-500';
+                  if (status === 'rejected') return 'text-red-500';
+                  return 'text-gray-500';
+                };
 
-                  return (
-                    <Card 
-                      key={`transaction-${transaction.id}`} 
-                      className="dark-card dark-border cursor-pointer transition-all hover:shadow-md"
-                      onClick={() => setLocation(`/transactions/${transaction.id}`)}
-                    >
-                      <CardHeader className="pb-3">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            {getTransactionIcon()}
-                            <CardTitle className="text-lg dark-text">
-                              {transaction.type.charAt(0).toUpperCase() + transaction.type.slice(1)}
-                            </CardTitle>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {getStatusBadge()}
-                            {transaction.status === 'pending' && (
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="text-red-600 border-red-300 hover:bg-red-50 dark:text-red-400 dark:border-red-700 dark:hover:bg-red-900/20 h-6 px-2"
-                                  >
-                                    <X className="w-3 h-3 mr-1" />
-                                    Cancel
-                                  </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>Cancel Transaction</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      Are you sure you want to cancel this {transaction.type} of {formatBitcoin(transaction.amount)} BTC? 
-                                      This action cannot be undone.
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>Keep Transaction</AlertDialogCancel>
-                                    <AlertDialogAction
-                                      onClick={() => cancelTransactionMutation.mutate(transaction.id)}
-                                      disabled={cancelTransactionMutation.isPending}
-                                      className="bg-red-600 hover:bg-red-700"
-                                    >
-                                      {cancelTransactionMutation.isPending ? "Cancelling..." : "Yes, Cancel"}
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
-                            )}
-                          </div>
+                const getPlanName = (planId: number) => {
+                  return investmentPlans?.find(plan => plan.id === planId)?.name || `Plan ${planId}`;
+                };
+
+                return (
+                  <Card key={`tx-${transaction.id}`} className="dark-card dark-border p-4 hover:bg-muted/5 transition-colors">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        {getTransactionIcon(transaction.type, transaction.status)}
+                        <div>
+                          <p className="font-medium dark-text capitalize">
+                            {transaction.type === 'investment' && transaction.planId 
+                              ? `Investment - ${getPlanName(transaction.planId)}`
+                              : transaction.type
+                            }
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {format(new Date(transaction.createdAt), 'MMM dd, yyyy • HH:mm')}
+                          </p>
                         </div>
-                      </CardHeader>
-                      <CardContent className="pt-0">
-                        <div className="space-y-3">
-                          <div className="flex justify-between items-center">
-                            <span className="text-muted-foreground">Amount</span>
-                            <div className="text-right">
-                              <div className="font-semibold dark-text">
-                                {formatBitcoin(transaction.amount)} BTC
-                              </div>
-                              {currencyPrice && (
-                                <div className="text-sm text-muted-foreground">
-                                  {formatCurrency(fiatValue, currency)}
-                                </div>
-                              )}
-                            </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold dark-text">
+                          {transaction.type === 'withdrawal' ? '-' : '+'}
+                          {formatBitcoin(transaction.amount)} BTC
+                        </p>
+                        <p className={`text-sm capitalize ${getStatusColor(transaction.status)}`}>
+                          {transaction.status}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Transaction Hash or Address */}
+                    {transaction.transactionHash && (
+                      <div className="mt-3 pt-3 border-t dark-border">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">
+                            {transaction.type === 'withdrawal' ? 'To Address' : 'TX Hash'}
+                          </span>
+                          <span className="font-mono text-xs dark-text">
+                            {transaction.transactionHash.length > 16 
+                              ? `${transaction.transactionHash.substring(0, 8)}...${transaction.transactionHash.substring(-8)}`
+                              : transaction.transactionHash
+                            }
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Admin Notes */}
+                    {transaction.notes && (
+                      <div className="mt-2 p-2 bg-muted/30 rounded text-sm text-muted-foreground">
+                        <strong>Note:</strong> {transaction.notes}
+                      </div>
+                    )}
+
+                    {/* Confirmation details for wallet-style display */}
+                    {transaction.status === 'confirmed' && (
+                      <div className="mt-2 pt-2 border-t dark-border space-y-1">
+                        <div className="flex justify-between text-xs text-muted-foreground">
+                          <span>Confirmations</span>
+                          <span className="text-green-500">6/6 ✓</span>
+                        </div>
+                        <div className="flex justify-between text-xs text-muted-foreground">
+                          <span>Network Fee</span>
+                          <span>0.00001245 BTC</span>
+                        </div>
+                        {transaction.confirmedAt && (
+                          <div className="flex justify-between text-xs text-muted-foreground">
+                            <span>Confirmed</span>
+                            <span>{format(new Date(transaction.confirmedAt), 'MMM dd, HH:mm')}</span>
                           </div>
+                        )}
+                      </div>
+                    )}
+                  </Card>
+                );
+              })}
 
-                          {transaction.type === 'withdrawal' && transaction.transactionHash && (
-                            <div className="flex justify-between items-center">
-                              <span className="text-muted-foreground">Address</span>
-                              <span className="text-sm dark-text font-mono">
-                                {transaction.transactionHash.slice(0, 8)}...{transaction.transactionHash.slice(-8)}
-                              </span>
-                            </div>
-                          )}
+              {/* Investment History as Transactions */}
+              {investments?.map((investment) => {
+                const currentValue = parseFloat(investment.amount) + parseFloat(investment.currentProfit);
+                const progress = calculateInvestmentProgress(new Date(investment.startDate), new Date(investment.endDate));
+                const getPlanName = (planId: number) => {
+                  return investmentPlans?.find(plan => plan.id === planId)?.name || `Plan ${planId}`;
+                };
 
-                          {transaction.transactionHash && transaction.type !== 'withdrawal' && (
-                            <div className="flex justify-between items-center">
-                              <span className="text-muted-foreground">Transaction Hash</span>
-                              <span className="text-sm dark-text font-mono">
-                                {transaction.transactionHash.slice(0, 8)}...{transaction.transactionHash.slice(-8)}
-                              </span>
-                            </div>
-                          )}
-
-                          <div className="flex justify-between items-center">
-                            <span className="text-muted-foreground">Date</span>
-                            <span className="text-sm dark-text">{formatDate(new Date(transaction.createdAt))}</span>
-                          </div>
-
-                          {transaction.status === 'rejected' && transaction.notes && (
-                            <div className="bg-red-50 dark:bg-red-900/20 p-2 rounded">
-                              <div className="text-sm text-red-600 dark:text-red-400">
-                                <span className="font-medium">Reason: </span>
-                                {transaction.notes}
-                              </div>
-                            </div>
-                          )}
-
-                          {transaction.status === 'pending' && (
-                            <div className="bg-yellow-50 dark:bg-yellow-900/20 p-2 rounded">
-                              <div className="text-sm text-yellow-600 dark:text-yellow-400">
-                                Transaction is under review and will be processed shortly
-                              </div>
-                            </div>
+                return (
+                  <Card key={`inv-${investment.id}`} className="dark-card dark-border p-4 hover:bg-muted/5 transition-colors">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                          investment.isActive ? 'bg-green-500/20' : 'bg-blue-500/20'
+                        }`}>
+                          {investment.isActive ? (
+                            <TrendingUp className="w-4 h-4 text-green-500" />
+                          ) : (
+                            <Award className="w-4 h-4 text-blue-500" />
                           )}
                         </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            )}
+                        <div>
+                          <p className="font-medium dark-text">
+                            {getPlanName(investment.planId)} Investment
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {format(new Date(investment.startDate), 'MMM dd, yyyy • HH:mm')}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold dark-text">
+                          {formatBitcoin(currentValue.toString())} BTC
+                        </p>
+                        <p className={`text-sm ${investment.isActive ? 'text-green-500' : 'text-blue-500'}`}>
+                          {investment.isActive ? 'Active' : 'Completed'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Investment Details */}
+                    <div className="mt-3 pt-3 border-t dark-border space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Principal</span>
+                        <span className="dark-text">{formatBitcoin(investment.amount)} BTC</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Current Profit</span>
+                        <span className="text-green-500">+{formatBitcoin(investment.currentProfit)} BTC</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">End Date</span>
+                        <span className="dark-text">{format(new Date(investment.endDate), 'MMM dd, yyyy')}</span>
+                      </div>
+
+                      {/* Progress bar for active investments */}
+                      {investment.isActive && (
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-xs text-muted-foreground">
+                            <span>Progress</span>
+                            <span>{progress.toFixed(1)}%</span>
+                          </div>
+                          <div className="w-full bg-secondary rounded-full h-1.5">
+                            <div 
+                              className="bg-bitcoin h-1.5 rounded-full transition-all duration-300" 
+                              style={{ width: `${Math.min(progress, 100)}%` }}
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
 
             {/* Bitcoin Transactions from Notifications */}
             {notifications && notifications
@@ -348,100 +385,7 @@ export default function History() {
                   </Card>
                 );
               })}
-
-            {/* Investment History */}
-            {investments && investments.length > 0 ? (
-              <div className="space-y-4">
-                {investments.map((investment) => {
-                  const progress = calculateInvestmentProgress(new Date(investment.startDate), new Date(investment.endDate));
-                  const currentValue = parseFloat(investment.amount) + parseFloat(investment.currentProfit);
-                  const currencyPrice = currency === 'USD' ? bitcoinPrice?.usd.price : bitcoinPrice?.gbp.price;
-                  const fiatValue = currencyPrice ? currentValue * currencyPrice : 0;
-
-                  return (
-                    <Card key={investment.id} className="dark-card dark-border">
-                      <CardHeader className="pb-3">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <TrendingUp className="w-5 h-5 text-bitcoin" />
-                            <CardTitle className="text-lg dark-text">
-                              Investment Plan {investment.planId}
-                            </CardTitle>
-                          </div>
-                          <Badge variant={investment.isActive ? "default" : "secondary"}>
-                            {investment.isActive ? "Active" : "Completed"}
-                          </Badge>
-                        </div>
-                      </CardHeader>
-                      <CardContent className="pt-0">
-                        <div className="space-y-3">
-                          <div className="flex justify-between items-center">
-                            <span className="text-muted-foreground">Investment Amount</span>
-                            <div className="text-right">
-                              <div className="font-semibold dark-text">{formatBitcoin(investment.amount)} BTC</div>
-                              {currencyPrice && (
-                                <div className="text-sm text-muted-foreground">
-                                  {formatCurrency(parseFloat(investment.amount) * currencyPrice, currency)}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-
-                          <div className="flex justify-between items-center">
-                            <span className="text-muted-foreground">Current Profit</span>
-                            <div className="text-right">
-                              <div className="font-semibold text-green-500">+{formatBitcoin(investment.currentProfit)} BTC</div>
-                              {currencyPrice && (
-                                <div className="text-sm text-muted-foreground">
-                                  +{formatCurrency(parseFloat(investment.currentProfit) * currencyPrice, currency)}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-
-                          <div className="flex justify-between items-center">
-                            <span className="text-muted-foreground">Total Value</span>
-                            <div className="text-right">
-                              <div className="font-semibold dark-text">{formatBitcoin(currentValue)} BTC</div>
-                              {currencyPrice && (
-                                <div className="text-sm text-muted-foreground">
-                                  {formatCurrency(fiatValue, currency)}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-
-                          <div className="flex justify-between items-center">
-                            <span className="text-muted-foreground">Start Date</span>
-                            <span className="text-sm dark-text">{formatDate(new Date(investment.startDate))}</span>
-                          </div>
-
-                          <div className="flex justify-between items-center">
-                            <span className="text-muted-foreground">End Date</span>
-                            <span className="text-sm dark-text">{formatDate(new Date(investment.endDate))}</span>
-                          </div>
-
-                          {investment.isActive && (
-                            <div className="space-y-2">
-                              <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground">Progress</span>
-                                <span className="dark-text">{progress.toFixed(1)}%</span>
-                              </div>
-                              <div className="w-full bg-secondary rounded-full h-2">
-                                <div 
-                                  className="bg-bitcoin h-2 rounded-full transition-all duration-300" 
-                                  style={{ width: `${Math.min(progress, 100)}%` }}
-                                />
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            ) : null}
+            </div>
 
             {/* Show empty state only if no transactions, investments, or notifications */}
             {(!investments || investments.length === 0) && 

@@ -862,13 +862,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Transaction not found or already processed" });
       }
 
-      // Handle withdrawal confirmation - deduct balance
+      // Handle different transaction confirmations
       if (transaction.type === "withdrawal") {
         const user = await storage.getUser(transaction.userId);
         if (user) {
           const currentBalance = parseFloat(user.balance);
           const withdrawAmount = parseFloat(transaction.amount);
           const newBalance = Math.max(0, currentBalance - withdrawAmount);
+          await storage.updateUserBalance(transaction.userId, newBalance.toFixed(8));
+        }
+      } else if (transaction.type === "investment" && transaction.planId) {
+        // Create active investment when investment transaction is confirmed
+        const plan = await storage.getInvestmentPlan(transaction.planId);
+        if (plan) {
+          const endDate = new Date();
+          endDate.setDate(endDate.getDate() + plan.durationDays);
+          
+          await storage.createInvestment({
+            userId: transaction.userId,
+            planId: transaction.planId,
+            amount: transaction.amount,
+            endDate
+          });
+        }
+      } else if (transaction.type === "deposit") {
+        // Add deposit amount to user balance
+        const user = await storage.getUser(transaction.userId);
+        if (user) {
+          const currentBalance = parseFloat(user.balance);
+          const depositAmount = parseFloat(transaction.amount);
+          const newBalance = currentBalance + depositAmount;
           await storage.updateUserBalance(transaction.userId, newBalance.toFixed(8));
         }
       }

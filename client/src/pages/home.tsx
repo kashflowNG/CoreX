@@ -56,7 +56,8 @@ export default function Home() {
     return <div>Redirecting to login...</div>;
   }
 
-  const activeInvestments = investments?.filter(inv => inv.isActive) || [];
+  const activeInvestments = investments?.filter(inv => inv.isActive === true) || [];
+  const completedInvestments = investments?.filter(inv => inv.isActive === false) || [];
 
   const totalInvestedAmount = investments?.reduce((total, inv) => 
     total + parseFloat(inv.amount), 0
@@ -279,7 +280,7 @@ export default function Home() {
             </div>
             <div className="text-center">
               <p className="text-lg font-bold text-foreground">{activeInvestments.length}</p>
-              <p className="text-xs text-muted-foreground">Active Plans</p>
+              <p className="text-xs text-muted-foreground">Active ({completedInvestments.length} completed)</p>
             </div>
             <div className="text-center">
               <p className="text-lg font-bold text-bitcoin">24/7</p>
