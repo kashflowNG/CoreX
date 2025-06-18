@@ -76,6 +76,19 @@ export const transactions = pgTable("transactions", {
   confirmedAt: timestamp("confirmed_at"),
 });
 
+export const backupDatabases = pgTable("backup_databases", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  connectionString: text("connection_string").notNull(),
+  isActive: boolean("is_active").default(false),
+  isPrimary: boolean("is_primary").default(false),
+  lastSyncAt: timestamp("last_sync_at"),
+  status: text("status").default("inactive"), // 'active', 'inactive', 'syncing', 'error'
+  errorMessage: text("error_message"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   bitcoinAddress: true,
@@ -116,6 +129,12 @@ export const insertTransactionSchema = createInsertSchema(transactions).omit({
   confirmedAt: true,
 });
 
+export const insertBackupDatabaseSchema = createInsertSchema(backupDatabases).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertInvestmentPlan = z.infer<typeof insertInvestmentPlanSchema>;
@@ -128,3 +147,5 @@ export type InsertAdminConfig = z.infer<typeof insertAdminConfigSchema>;
 export type AdminConfig = typeof adminConfig.$inferSelect;
 export type InsertTransaction = z.infer<typeof insertTransactionSchema>;
 export type Transaction = typeof transactions.$inferSelect;
+export type InsertBackupDatabase = z.infer<typeof insertBackupDatabaseSchema>;
+export type BackupDatabase = typeof backupDatabases.$inferSelect;

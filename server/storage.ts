@@ -1,4 +1,4 @@
-import { users, investmentPlans, investments, notifications, adminConfig, transactions, type User, type InsertUser, type InvestmentPlan, type InsertInvestmentPlan, type Investment, type InsertInvestment, type Notification, type InsertNotification, type AdminConfig, type InsertAdminConfig, type Transaction, type InsertTransaction } from "@shared/schema";
+import { users, investmentPlans, investments, notifications, adminConfig, transactions, backupDatabases, type User, type InsertUser, type InvestmentPlan, type InsertInvestmentPlan, type Investment, type InsertInvestment, type Notification, type InsertNotification, type AdminConfig, type InsertAdminConfig, type Transaction, type InsertTransaction, type BackupDatabase, type InsertBackupDatabase } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, isNotNull, inArray } from "drizzle-orm";
 
@@ -48,6 +48,16 @@ export interface IStorage {
   rejectTransaction(id: number, adminId: number, notes?: string): Promise<Transaction | undefined>;
   getTransaction(id: number): Promise<Transaction | undefined>;
   cancelTransaction(id: number, userId: number): Promise<Transaction | undefined>;
+
+  // Backup database operations
+  getBackupDatabases(): Promise<BackupDatabase[]>;
+  createBackupDatabase(backup: InsertBackupDatabase): Promise<BackupDatabase>;
+  updateBackupDatabaseStatus(id: number, status: string, errorMessage?: string): Promise<BackupDatabase | undefined>;
+  activateBackupDatabase(id: number): Promise<BackupDatabase | undefined>;
+  deactivateBackupDatabase(id: number): Promise<BackupDatabase | undefined>;
+  deleteBackupDatabase(id: number): Promise<void>;
+  setPrimaryDatabase(id: number): Promise<BackupDatabase | undefined>;
+  syncDataToBackup(backupId: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
