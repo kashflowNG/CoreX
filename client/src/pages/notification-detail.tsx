@@ -1,3 +1,4 @@
+
 import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,7 +10,7 @@ import type { Notification } from "@shared/schema";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 export default function NotificationDetail() {
   const { user } = useAuth();
@@ -18,6 +19,7 @@ export default function NotificationDetail() {
   const queryClient = useQueryClient();
   const params = useParams();
   const notificationId = parseInt(params.id || "0");
+  const hasMarkedAsRead = useRef(false);
 
   const { data: notification, isLoading } = useQuery<Notification | undefined>({
     queryKey: ['/api/notifications', notificationId],
@@ -39,6 +41,14 @@ export default function NotificationDetail() {
       queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
     },
   });
+
+  // Mark as read when viewing if it's unread - using ref to prevent multiple calls
+  useEffect(() => {
+    if (notification && !notification.isRead && !hasMarkedAsRead.current) {
+      hasMarkedAsRead.current = true;
+      markAsReadMutation.mutate();
+    }
+  }, [notification?.isRead, notification?.id, markAsReadMutation]);
 
   const getTypeIcon = (type: string) => {
     switch (type) {
@@ -106,13 +116,6 @@ export default function NotificationDetail() {
       </div>
     );
   }
-
-  // Mark as read when viewing if it's unread
-  useEffect(() => {
-    if (!notification.isRead) {
-      markAsReadMutation.mutate();
-    }
-  }, [notification, markAsReadMutation]);
 
   return (
     <div className="max-w-sm mx-auto bg-background min-h-screen relative">
