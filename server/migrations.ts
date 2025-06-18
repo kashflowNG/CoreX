@@ -1,11 +1,31 @@
 import { db } from './db';
 import { sql } from 'drizzle-orm';
 
-// Simple check if tables exist
+// Check if database has any tables at all (completely new database)
+async function isDatabaseEmpty(): Promise<boolean> {
+  try {
+    const result = await db.execute(sql`
+      SELECT COUNT(*) as table_count 
+      FROM information_schema.tables 
+      WHERE table_schema = 'public'
+    `);
+    return Number(result[0]?.table_count) === 0;
+  } catch {
+    return true; // Assume empty if we can't check
+  }
+}
+
+// Check if core tables exist
 async function tablesExist(): Promise<boolean> {
   try {
-    await db.execute(sql`SELECT 1 FROM users LIMIT 1`);
-    return true;
+    const result = await db.execute(sql`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'users'
+      ) as users_exist
+    `);
+    return result[0]?.users_exist === true;
   } catch {
     return false;
   }
@@ -14,12 +34,19 @@ async function tablesExist(): Promise<boolean> {
 // Run safe schema updates that won't break existing data
 export async function runSafeMigrations() {
   try {
-    if (await tablesExist()) {
+    const isEmpty = await isDatabaseEmpty();
+    const hasCoreTables = await tablesExist();
+    
+    if (isEmpty) {
+      console.log('🆕 New database detected - setting up complete schema...');
+    } else if (hasCoreTables) {
       console.log('✅ Database schema is up to date');
       return;
+    } else {
+      console.log('📦 Creating missing database tables...');
     }
 
-    console.log('📦 Creating database tables...');
+    console.log('Creating database tables...');
     
     // Create tables with IF NOT EXISTS to avoid conflicts
     await db.execute(sql`

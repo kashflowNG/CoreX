@@ -620,6 +620,35 @@ function startAutomaticUpdates(): void {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Database health check endpoint
+  app.get("/api/health", async (req, res) => {
+    try {
+      const { testConnection } = await import('./db');
+      await testConnection();
+      
+      // Test if core tables exist
+      const users = await storage.getAllUsers();
+      const plans = await storage.getInvestmentPlans();
+      
+      res.json({
+        status: "healthy",
+        database: "connected",
+        tables: {
+          users: users.length,
+          investmentPlans: plans.length
+        },
+        timestamp: new Date().toISOString()
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        status: "unhealthy",
+        database: "disconnected",
+        error: error.message,
+        timestamp: new Date().toISOString()
+      });
+    }
+  });
+
   // Admin configuration routes
   app.get("/api/admin/config", async (req, res) => {
     try {
