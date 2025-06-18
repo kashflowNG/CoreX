@@ -12,7 +12,7 @@ export const config = {
   BLOCKCYPHER_API_TOKEN: process.env.BLOCKCYPHER_API_TOKEN || "bdaf36a6dd9f45578295978a2b6a7392",
   
   // Server configuration
-  PORT: process.env.PORT || 5000,
+  PORT: process.env.PORT || process.env.REPL_ID ? 3000 : 5000,
   NODE_ENV: process.env.NODE_ENV || "production",
   
   // Bitcoin network settings

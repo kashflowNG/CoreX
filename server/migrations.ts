@@ -122,6 +122,31 @@ export async function runSafeMigrations() {
       )
     `);
 
+    // Add missing columns to existing tables if they don't exist
+    await db.execute(sql`
+      ALTER TABLE users 
+      ADD COLUMN IF NOT EXISTS first_name TEXT,
+      ADD COLUMN IF NOT EXISTS last_name TEXT,
+      ADD COLUMN IF NOT EXISTS phone TEXT,
+      ADD COLUMN IF NOT EXISTS country TEXT,
+      ADD COLUMN IF NOT EXISTS current_plan_id INTEGER,
+      ADD COLUMN IF NOT EXISTS has_wallet BOOLEAN DEFAULT FALSE,
+      ADD COLUMN IF NOT EXISTS accept_marketing BOOLEAN DEFAULT FALSE
+    `);
+
+    await db.execute(sql`
+      ALTER TABLE investment_plans
+      ADD COLUMN IF NOT EXISTS roi_percentage INTEGER,
+      ADD COLUMN IF NOT EXISTS color TEXT,
+      ADD COLUMN IF NOT EXISTS update_interval_minutes INTEGER DEFAULT 60
+    `);
+
+    await db.execute(sql`
+      ALTER TABLE transactions
+      ADD COLUMN IF NOT EXISTS plan_id INTEGER,
+      ADD COLUMN IF NOT EXISTS transaction_hash TEXT
+    `);
+
     console.log('✅ Database tables created successfully');
     
   } catch (error) {
