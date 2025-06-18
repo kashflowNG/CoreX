@@ -160,6 +160,33 @@ export default function AdminDatabase() {
     }
   });
 
+  const testConnectionMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const response = await fetch(`/api/admin/backup-databases/${id}/test`, {
+        method: 'POST'
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to test connection');
+      }
+      return response.json();
+    },
+    onSuccess: (data, id) => {
+      toast({
+        title: "Connection Test",
+        description: data.success ? "Connection successful!" : "Connection failed",
+        variant: data.success ? "default" : "destructive",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Connection Test Failed",
+        description: error.message || "Failed to test connection",
+        variant: "destructive",
+      });
+    }
+  });
+
   const handleCreateDatabase = () => {
     if (!newDatabase.name || !newDatabase.connectionString) {
       toast({
@@ -265,6 +292,26 @@ export default function AdminDatabase() {
         </Dialog>
       </div>
 
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>Current Database Configuration</CardTitle>
+          <CardDescription>
+            Current DATABASE_URL environment variable
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="p-3 bg-muted rounded font-mono text-sm break-all">
+            {process.env.DATABASE_URL ? 
+              process.env.DATABASE_URL.replace(/:[^:@]+@/, ':****@') : 
+              'DATABASE_URL not configured'
+            }
+          </div>
+          <p className="text-xs text-muted-foreground mt-2">
+            This is your current primary database. Use backup databases below for redundancy.
+          </p>
+        </CardContent>
+      </Card>
+
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -345,16 +392,42 @@ export default function AdminDatabase() {
                         variant="outline"
                         size="sm"
                         onClick={() => handleViewDatabase(database)}
+                        title="View Details"
                       >
                         <Eye className="w-3 h-3" />
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
+                        onClick={() => {
+                          navigator.clipboard.writeText(database.connectionString);
+                          toast({
+                            title: "Copied!",
+                            description: `Connection string for ${database.name} copied to clipboard`,
+                          });
+                        }}
+                        title="Copy Connection String"
+                      >
+                        📋
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => syncMutation.mutate(database.id)}
                         disabled={syncMutation.isPending || database.status === 'syncing'}
+                        title="Sync Data"
                       >
                         <RotateCcw className="w-3 h-3" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => testConnectionMutation.mutate(database.id)}
+                        disabled={testConnectionMutation.isPending}
+                        className="text-blue-600 border-blue-600 hover:bg-blue-50"
+                        title="Test Connection"
+                      >
+                        🔗
                       </Button>
                       {!database.isActive && (
                         <Button
@@ -436,6 +509,20 @@ export default function AdminDatabase() {
                 <div className="mt-1 p-2 bg-muted rounded text-xs font-mono break-all">
                   {selectedDatabase.connectionString.replace(/:[^:@]+@/, ':****@')}
                 </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-2"
+                  onClick={() => {
+                    navigator.clipboard.writeText(selectedDatabase.connectionString);
+                    toast({
+                      title: "Copied!",
+                      description: "Full connection string copied to clipboard",
+                    });
+                  }}
+                >
+                  Copy Full Connection String
+                </Button>
               </div>
               {selectedDatabase.errorMessage && (
                 <div>
