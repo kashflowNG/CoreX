@@ -12,6 +12,7 @@ import Register from "@/pages/register";
 import Management from "@/pages/admin";
 import ManagementTransactions from "@/pages/admin-transactions";
 import ManagementNotifications from "@/pages/admin-notifications";
+import AdminDatabase from "@/pages/admin-database";
 import Investment from "@/pages/investment";
 import History from "@/pages/history";
 import Transactions from "@/pages/transactions";
@@ -33,6 +34,7 @@ function Router() {
       <Route path="/admin" component={Management} />
       <Route path="/admin-transactions" component={ManagementTransactions} />
       <Route path="/admin-notifications" component={ManagementNotifications} />
+      <Route path="/admin-database" component={AdminDatabase} />
       <Route path="/Hello10122" component={Management} />
       <Route path="/investment" component={Investment} />
       <Route path="/history" component={History} />

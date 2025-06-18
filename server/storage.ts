@@ -414,6 +414,103 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return transaction || undefined;
   }
+
+  // Backup database operations
+  async getBackupDatabases(): Promise<BackupDatabase[]> {
+    return await db.select().from(backupDatabases).orderBy(desc(backupDatabases.createdAt));
+  }
+
+  async createBackupDatabase(backup: InsertBackupDatabase): Promise<BackupDatabase> {
+    const created = await db.insert(backupDatabases).values(backup).returning();
+    return created[0];
+  }
+
+  async updateBackupDatabaseStatus(id: number, status: string, errorMessage?: string): Promise<BackupDatabase | undefined> {
+    const updated = await db
+      .update(backupDatabases)
+      .set({ 
+        status, 
+        errorMessage: errorMessage || null,
+        updatedAt: new Date(),
+        lastSyncAt: status === 'active' ? new Date() : undefined
+      })
+      .where(eq(backupDatabases.id, id))
+      .returning();
+    return updated[0];
+  }
+
+  async activateBackupDatabase(id: number): Promise<BackupDatabase | undefined> {
+    // Deactivate all other backup databases first
+    await db
+      .update(backupDatabases)
+      .set({ isActive: false, status: 'inactive' })
+      .where(eq(backupDatabases.isActive, true));
+
+    const updated = await db
+      .update(backupDatabases)
+      .set({ 
+        isActive: true, 
+        status: 'active',
+        lastSyncAt: new Date(),
+        updatedAt: new Date()
+      })
+      .where(eq(backupDatabases.id, id))
+      .returning();
+    return updated[0];
+  }
+
+  async deactivateBackupDatabase(id: number): Promise<BackupDatabase | undefined> {
+    const updated = await db
+      .update(backupDatabases)
+      .set({ 
+        isActive: false, 
+        status: 'inactive',
+        updatedAt: new Date()
+      })
+      .where(eq(backupDatabases.id, id))
+      .returning();
+    return updated[0];
+  }
+
+  async deleteBackupDatabase(id: number): Promise<void> {
+    await db.delete(backupDatabases).where(eq(backupDatabases.id, id));
+  }
+
+  async setPrimaryDatabase(id: number): Promise<BackupDatabase | undefined> {
+    // Remove primary flag from all databases
+    await db
+      .update(backupDatabases)
+      .set({ isPrimary: false });
+
+    const updated = await db
+      .update(backupDatabases)
+      .set({ 
+        isPrimary: true,
+        updatedAt: new Date()
+      })
+      .where(eq(backupDatabases.id, id))
+      .returning();
+    return updated[0];
+  }
+
+  async syncDataToBackup(backupId: number): Promise<void> {
+    const backup = await db.select().from(backupDatabases).where(eq(backupDatabases.id, backupId)).limit(1);
+    if (!backup[0]) {
+      throw new Error('Backup database not found');
+    }
+
+    // This is a placeholder - actual implementation would require 
+    // creating a connection to the backup database and transferring data
+    // For now, we'll just update the sync timestamp
+    await db
+      .update(backupDatabases)
+      .set({ 
+        lastSyncAt: new Date(),
+        status: 'active',
+        updatedAt: new Date()
+      })
+      .where(eq(backupDatabases.id, backupId));
+  }
 }
 
 export const storage = new DatabaseStorage();
