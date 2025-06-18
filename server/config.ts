@@ -11,7 +11,7 @@ export const config = {
   // Bitcoin API configuration
   BLOCKCYPHER_API_TOKEN: process.env.BLOCKCYPHER_API_TOKEN || "bdaf36a6dd9f45578295978a2b6a7392",
   
-  // Server configuration - use 5000 for Replit deployments
+  // Server configuration - supports both Replit (5000) and Render (auto-assigned)
   PORT: process.env.PORT || 5000,
   NODE_ENV: process.env.NODE_ENV || "production",
   
