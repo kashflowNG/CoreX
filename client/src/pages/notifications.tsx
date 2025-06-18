@@ -319,9 +319,7 @@ export default function Notifications() {
                   !notification.isRead ? 'ring-2 ring-bitcoin/20' : ''
                 } ${getNotificationColor(notification.type)}`}
                 onClick={() => {
-                  if (!notification.isRead) {
-                    markReadMutation.mutate(notification.id);
-                  }
+                  setLocation(`/notifications/${notification.id}`);
                 }}
               >
                 <CardContent className="p-4">

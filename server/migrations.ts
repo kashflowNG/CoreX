@@ -125,12 +125,12 @@ export async function runSafeMigrations() {
         amount DECIMAL(20, 8) NOT NULL,
         address VARCHAR(255),
         status VARCHAR(50) DEFAULT 'pending',
-        tx_hash VARCHAR(255),
-        confirmed_by INTEGER REFERENCES users(id),
-        confirmed_at TIMESTAMP,
+        plan_id INTEGER,
+        transaction_hash VARCHAR(255),
         notes TEXT,
+        confirmed_by INTEGER REFERENCES users(id),
         created_at TIMESTAMP DEFAULT NOW(),
-        updated_at TIMESTAMP DEFAULT NOW()
+        confirmed_at TIMESTAMP
       )
     `);
 

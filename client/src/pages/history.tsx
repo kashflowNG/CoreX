@@ -160,7 +160,11 @@ export default function History() {
                   const fiatValue = currencyPrice ? parseFloat(transaction.amount) * currencyPrice : 0;
 
                   return (
-                    <Card key={`transaction-${transaction.id}`} className="dark-card dark-border">
+                    <Card 
+                      key={`transaction-${transaction.id}`} 
+                      className="dark-card dark-border cursor-pointer transition-all hover:shadow-md"
+                      onClick={() => setLocation(`/transactions/${transaction.id}`)}
+                    >
                       <CardHeader className="pb-3">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
