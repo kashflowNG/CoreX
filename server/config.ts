@@ -3,7 +3,7 @@
 
 export const config = {
   // Database configuration
-  DATABASE_URL: process.env.DATABASE_URL || "postgresql://corex_database_user:bvwmeRXL3en1lw1i9NYnqxuXHJCtuU5V@dpg-d199jq15pdvs73e430o0-a/corex_database",
+  DATABASE_URL: process.env.DATABASE_URL,
   
   // Session configuration
   SESSION_SECRET: process.env.SESSION_SECRET || "5fC7gluqorDXJBsk11WetGFDd7s1ec47VezC3fRNhFRDAU5Yx2OA6US3kYtZx+/VCCuDYZoufk+050B3SopuCw==",
