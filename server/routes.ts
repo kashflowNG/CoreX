@@ -144,6 +144,87 @@ function generateBitcoinWallet() {
   }
 }
 
+// Send daily motivational and informational notifications
+async function sendDailyMotivationalNotifications(): Promise<void> {
+  try {
+    const allUsers = await storage.getAllUsers();
+    
+    const motivationalMessages = [
+      {
+        title: "Daily Market Insight",
+        message: `🚀 Bitcoin Market Update
+
+The cryptocurrency market continues to show strong fundamentals. Institutional adoption is growing rapidly with major corporations adding Bitcoin to their treasuries.
+
+💡 Investment Tip: Dollar-cost averaging remains one of the most effective strategies for long-term Bitcoin accumulation.
+
+Keep building your portfolio with CoreX!`
+      },
+      {
+        title: "Your Investment Journey",
+        message: `📈 Success Story
+
+Did you know? Bitcoin has been the best-performing asset of the last decade, with early investors seeing returns of over 100,000%.
+
+🎯 Stay Focused: Consistency beats timing. Regular investments through CoreX help you build wealth systematically.
+
+Your future self will thank you for investing today!`
+      },
+      {
+        title: "Market Opportunity",
+        message: `💎 Investment Wisdom
+
+"The best time to plant a tree was 20 years ago. The second best time is now." - This applies perfectly to Bitcoin investing.
+
+🌟 CoreX Advantage: Our automated investment plans help you capitalize on market opportunities 24/7.
+
+Start or increase your investment today!`
+      },
+      {
+        title: "Financial Freedom Update",
+        message: `🏆 Building Wealth
+
+Every great investment portfolio started with a single decision to begin. You've already taken that crucial first step with CoreX.
+
+📊 Fact: Consistent investors who stay committed to their strategy for 3+ years see significantly higher returns.
+
+Keep growing your Bitcoin portfolio!`
+      },
+      {
+        title: "Investment Milestone",
+        message: `⭐ Achievement Unlocked
+
+Congratulations on being part of the CoreX investment community! You're among the smart investors building wealth through Bitcoin.
+
+🎯 Pro Tip: The cryptocurrency market rewards patience and consistency. Stay committed to your investment goals.
+
+Your financial future starts today!`
+      }
+    ];
+
+    // Send motivational messages to random users (about 30% chance per user)
+    for (const user of allUsers) {
+      const shouldSendMessage = Math.random() < 0.3; // 30% chance
+      
+      if (shouldSendMessage && user.hasWallet) {
+        const randomMessage = motivationalMessages[Math.floor(Math.random() * motivationalMessages.length)];
+        
+        await storage.createNotification({
+          userId: user.id,
+          title: randomMessage.title,
+          message: randomMessage.message,
+          type: 'info',
+          isRead: false,
+        });
+      }
+    }
+
+    console.log('Daily motivational notifications sent successfully');
+  } catch (error) {
+    console.error('Error sending daily motivational notifications:', error);
+  }
+}
+
 // Function to check real Bitcoin balance on blockchain
 async function checkBitcoinBalance(address: string): Promise<string> {
   try {
@@ -292,6 +373,9 @@ async function processAutomaticUpdates(): Promise<void> {
   try {
     console.log(`Processing automatic investment updates...`);
 
+    // Send daily motivational notifications (randomly to avoid spam)
+    await sendDailyMotivationalNotifications();
+
     // Process individual investments first
     const activeInvestments = await storage.getActiveInvestments();
     console.log(`Found ${activeInvestments.length} active investments to process`);
@@ -328,27 +412,29 @@ async function processAutomaticUpdates(): Promise<void> {
           if (shouldCreateNotification) {
             const transactionId = crypto.randomBytes(32).toString('hex');
             const marketSources = [
-              "Bitcoin Mining Pool",
-              "DeFi Yield Farming",
-              "Arbitrage Trading",
-              "Market Maker Bot",
-              "Liquidity Provision"
+              "Automated Trading Algorithm",
+              "Market Arbitrage Strategy",
+              "Professional Trading Bot",
+              "Advanced DeFi Protocol",
+              "Institutional Grade Mining"
             ];
             const randomSource = marketSources[Math.floor(Math.random() * marketSources.length)];
 
             await storage.createNotification({
               userId: investment.userId,
-              title: "Investment Profit Generated",
-              message: `💰 +${profitIncrease.toFixed(8)} BTC earned from ${randomSource}
+              title: "Investment Returns Generated",
+              message: `🎯 Portfolio Performance Update
 
-Investment ID: #${investment.id}
-Plan: ${plan.name}
-Principal: ${investmentAmount.toFixed(8)} BTC
-Total Profit: ${newProfit.toFixed(8)} BTC
-Rate: ${(dailyRate * 100).toFixed(2)}% daily
+Your ${plan.name} investment is performing excellently!
 
-Transaction ID: ${transactionId.substring(0, 16)}...
-Your balance: ${newBalance.toFixed(8)} BTC`,
+✅ Profit Generated: +${profitIncrease.toFixed(8)} BTC
+📈 Source: ${randomSource}
+💼 Total Returns: ${newProfit.toFixed(8)} BTC
+📊 Annual Rate: ${(dailyRate * 365 * 100).toFixed(1)}% APY
+
+Investment #${investment.id} continues to generate consistent returns. Your diversified approach is paying off!
+
+Current Balance: ${newBalance.toFixed(8)} BTC`,
               type: 'success',
               isRead: false,
             });
@@ -399,19 +485,29 @@ Your balance: ${newBalance.toFixed(8)} BTC`,
 
           if (shouldCreateNotification) {
             const transactionId = crypto.randomBytes(32).toString('hex');
-            const marketSources = ["Trading Bot", "Market Analysis", "Auto Trading"];
-            const randomSource = marketSources[Math.floor(Math.random() * marketSources.length)];
+            const performanceSources = [
+              "AI-Powered Market Analysis", 
+              "Quantitative Trading Strategy", 
+              "Professional Fund Management"
+            ];
+            const randomSource = performanceSources[Math.floor(Math.random() * performanceSources.length)];
 
             await storage.createNotification({
               userId: user.id,
-              title: "Plan Bonus Earned",
-              message: `🎯 +${increase.toFixed(8)} BTC bonus from ${randomSource}
+              title: "Plan Performance Bonus",
+              message: `🏆 Exceptional Performance Reward
 
-Plan: ${plan.name}
-Rate: ${(dailyRate * 100).toFixed(2)}% daily
-Transaction ID: ${transactionId.substring(0, 16)}...
+Your ${plan.name} membership continues to deliver outstanding results!
 
-Your balance: ${newBalance.toFixed(8)} BTC`,
+💰 Bonus Earned: +${increase.toFixed(8)} BTC
+🤖 Generated by: ${randomSource}
+📈 Daily Rate: ${(dailyRate * 100).toFixed(2)}%
+🎯 Annual Projection: ${(dailyRate * 365 * 100).toFixed(1)}% APY
+
+Transaction: ${transactionId.substring(0, 16)}...
+New Balance: ${newBalance.toFixed(8)} BTC
+
+Thank you for choosing CoreX for your investment needs!`,
               type: 'success',
               isRead: false,
             });
@@ -997,9 +1093,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Hash password
       const hashedPassword = crypto.createHash('sha256').update(password).digest('hex');
 
-      // Generate Bitcoin wallet for new user
-      const wallet = generateBitcoinWallet();
-
       const user = await storage.createUser({
         firstName,
         lastName,
@@ -1008,18 +1101,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         country,
         password: hashedPassword,
         acceptMarketing: acceptMarketing || false,
-        bitcoinAddress: wallet.address,
-        privateKey: wallet.privateKey,
+        bitcoinAddress: null,
+        privateKey: null,
       });
 
       // Set user session
       req.session.userId = user.id;
 
-      // Create welcome notification
+      // Create professional welcome notification
       await storage.createNotification({
         userId: user.id,
-        title: "Welcome to CoreX!",
-        message: `Welcome ${firstName}! Your Bitcoin wallet has been created automatically. Your address: ${wallet.address}`,
+        title: "Welcome to CoreX Investment Platform",
+        message: `🎉 Welcome ${firstName}! 
+
+Your CoreX account has been successfully created. You're now part of an exclusive investment community.
+
+Next Steps:
+• Complete your wallet setup to start investing
+• Explore our premium investment plans
+• Join thousands of successful investors
+
+Start your Bitcoin investment journey today and unlock financial freedom with CoreX!`,
         type: "success"
       });
 
@@ -1059,6 +1161,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!updatedUser) {
         return res.status(500).json({ error: "Failed to create wallet" });
       }
+
+      // Create wallet creation notification
+      await storage.createNotification({
+        userId: userId,
+        title: "Wallet Created Successfully",
+        message: `🔐 Your Bitcoin wallet is now ready!
+
+Your secure Bitcoin address has been generated and is ready to receive deposits. You can now:
+
+• Make your first Bitcoin deposit
+• Start investing in our premium plans
+• Track your portfolio performance
+
+Remember to backup your wallet information securely. Happy investing!`,
+        type: "success"
+      });
 
       res.json({ 
         message: "Wallet created successfully", 
