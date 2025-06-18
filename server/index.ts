@@ -38,9 +38,17 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Initialize database with migrations
-  await testConnection();
-  await runSafeMigrations();
+  // Initialize database with migrations - don't fail on connection issues
+  try {
+    const connected = await testConnection();
+    if (connected) {
+      await runSafeMigrations();
+    } else {
+      console.warn('⚠️  Database connection failed, starting server without database');
+    }
+  } catch (error) {
+    console.warn('⚠️  Database initialization failed, starting server in limited mode:', error instanceof Error ? error.message : 'Unknown error');
+  }
   
   const server = await registerRoutes(app);
 

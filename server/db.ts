@@ -1,9 +1,19 @@
-import { drizzle } from 'drizzle-orm/neon-http';
-import { neon } from '@neondatabase/serverless';
-import { DATABASE_URL } from './config';
+import { drizzle } from 'drizzle-orm/postgres-js';
+import postgres from 'postgres';
 
-// Add connection configuration
-const sql = neon(DATABASE_URL);
+const DATABASE_URL = process.env.DATABASE_URL;
+
+if (!DATABASE_URL) {
+  throw new Error('DATABASE_URL environment variable is not set');
+}
+
+// Create postgres connection with better error handling
+const sql = postgres(DATABASE_URL, {
+  ssl: 'prefer',
+  max: 10,
+  idle_timeout: 20,
+  connect_timeout: 10,
+});
 
 export const db = drizzle(sql);
 
