@@ -24,6 +24,8 @@ import Deposit from "@/pages/deposit";
 import ImportWallet from "@/pages/import-wallet";
 import WalletSetup from "@/pages/wallet-setup";
 import NotFound from "@/pages/not-found";
+import NotificationDetail from "@/pages/notification-detail";
+import TransactionDetail from "@/pages/transaction-detail";
 
 function Router() {
   return (
@@ -41,6 +43,8 @@ function Router() {
       <Route path="/transactions" component={Transactions} />
       <Route path="/settings" component={Settings} />
       <Route path="/notifications" component={Notifications} />
+      <Route path="/notifications/:id" component={NotificationDetail} />
+      <Route path="/transactions/:id" component={TransactionDetail} />
       <Route path="/profile" component={Profile} />
       <Route path="/withdraw" component={Withdraw} />
       <Route path="/deposit" component={Deposit} />

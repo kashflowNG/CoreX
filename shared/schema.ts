@@ -67,6 +67,7 @@ export const transactions = pgTable("transactions", {
   userId: integer("user_id").notNull(),
   type: text("type").notNull(), // 'deposit', 'investment', 'withdrawal'
   amount: decimal("amount", { precision: 18, scale: 8 }).notNull(),
+  address: text("address"), // Bitcoin address for deposits/withdrawals
   status: text("status").notNull().default("pending"), // 'pending', 'confirmed', 'rejected'
   planId: integer("plan_id"), // only for investment transactions
   transactionHash: text("transaction_hash"), // user-provided transaction hash
