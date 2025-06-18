@@ -9,6 +9,7 @@ import type { Notification } from "@shared/schema";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { useEffect } from "react";
 
 export default function NotificationDetail() {
   const { user } = useAuth();
@@ -107,9 +108,11 @@ export default function NotificationDetail() {
   }
 
   // Mark as read when viewing if it's unread
-  if (!notification.isRead) {
-    markAsReadMutation.mutate();
-  }
+  useEffect(() => {
+    if (!notification.isRead) {
+      markAsReadMutation.mutate();
+    }
+  }, [notification, markAsReadMutation]);
 
   return (
     <div className="max-w-sm mx-auto bg-background min-h-screen relative">
@@ -220,7 +223,7 @@ export default function NotificationDetail() {
           >
             Back to Notifications
           </Button>
-          
+
           {notification.type === 'success' && notification.message.includes('investment') && (
             <Button 
               onClick={() => setLocation('/investment')}
@@ -230,7 +233,7 @@ export default function NotificationDetail() {
               View Investments
             </Button>
           )}
-          
+
           {notification.message.includes('wallet') && (
             <Button 
               onClick={() => setLocation('/deposit')}
