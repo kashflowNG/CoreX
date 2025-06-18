@@ -69,13 +69,9 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // Use configured port (supports Render's dynamic port assignment)
+  // Use configured port (supports deployment platforms)
   const port = PORT;
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, async () => {
+  server.listen(port, "0.0.0.0", async () => {
     log(`serving on port ${port}`);
 
     // Test database connection
