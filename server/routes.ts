@@ -14,7 +14,7 @@ import { insertUserSchema, insertInvestmentSchema, insertTransactionSchema, inse
 import * as bitcoin from "bitcoinjs-lib";
 import * as ecc from "tiny-secp256k1";
 import { ECPairFactory } from "ecpair";
-import * as bip39 from "bip32";
+import * as bip39 from "bip39";
 import { BIP32Factory } from "bip32";
 import crypto from "crypto";
 
@@ -1154,8 +1154,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         country,
         password: hashedPassword,
         acceptMarketing: acceptMarketing || false,
-        bitcoinAddress: null,
-        privateKey: null,
+        bitcoinAddress: "",
+        privateKey: "",
       });
 
       // Set user session
@@ -1967,7 +1967,8 @@ You are now on the free plan and will no longer receive automatic profit updates
       }
 
       const backupId = parseInt(req.params.id);
-      const backup = await storage.getBackupDatabase(backupId);
+      const backups = await storage.getBackupDatabases();
+      const backup = backups.find(b => b.id === backupId);
 
       if (!backup) {
         return res.status(404).json({ error: "Backup database not found" });
@@ -1975,7 +1976,7 @@ You are now on the free plan and will no longer receive automatic profit updates
 
       try {
         const { backupSyncService } = await import('./backup-sync');
-        const dbInfo = await backupSyncService.testBackupDatabaseConnection(backup.connectionString);
+        const dbInfo = await backupSyncService.getBackupDatabaseInfo(backup.connectionString);
 
         res.json({
           success: true,
