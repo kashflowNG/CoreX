@@ -144,67 +144,91 @@ function generateBitcoinWallet() {
   }
 }
 
-// Send daily motivational and informational notifications
+// Send daily motivational and informational notifications with professional content
 async function sendDailyMotivationalNotifications(): Promise<void> {
   try {
     const allUsers = await storage.getAllUsers();
     
     const motivationalMessages = [
       {
-        title: "Daily Market Insight",
-        message: `🚀 Bitcoin Market Update
+        title: "💰 Daily Investment Insight",
+        message: `Bitcoin continues to lead institutional adoption with major corporations adding BTC to their balance sheets.
 
-The cryptocurrency market continues to show strong fundamentals. Institutional adoption is growing rapidly with major corporations adding Bitcoin to their treasuries.
+📊 Market Update:
+• Institutional demand remains strong
+• Long-term holders continue accumulating
+• Network fundamentals show healthy growth
 
-💡 Investment Tip: Dollar-cost averaging remains one of the most effective strategies for long-term Bitcoin accumulation.
+💡 Investment Strategy: Dollar-cost averaging through CoreX investment plans reduces volatility risk while maximizing long-term returns.
 
-Keep building your portfolio with CoreX!`
+Your consistent approach is building real wealth!`
       },
       {
-        title: "Your Investment Journey",
-        message: `📈 Success Story
+        title: "🎯 Portfolio Growth Milestone",
+        message: `Bitcoin has delivered exceptional returns to patient investors over the past decade.
 
-Did you know? Bitcoin has been the best-performing asset of the last decade, with early investors seeing returns of over 100,000%.
+📈 Success Metrics:
+• 10-year CAGR exceeds traditional assets
+• Adoption growing across all demographics  
+• Supply remains mathematically scarce
 
-🎯 Stay Focused: Consistency beats timing. Regular investments through CoreX help you build wealth systematically.
+🏆 CoreX Advantage: Our automated systems work 24/7 to optimize your investment timing and maximize compound growth.
 
-Your future self will thank you for investing today!`
+Stay committed to your financial goals!`
       },
       {
-        title: "Market Opportunity",
-        message: `💎 Investment Wisdom
+        title: "🚀 Market Opportunity Alert",
+        message: `The best investment opportunities come to those who prepare and act consistently.
 
-"The best time to plant a tree was 20 years ago. The second best time is now." - This applies perfectly to Bitcoin investing.
+💎 Investment Wisdom:
+• Time in market beats timing the market
+• Consistent accumulation builds lasting wealth
+• Professional management reduces emotional decisions
 
-🌟 CoreX Advantage: Our automated investment plans help you capitalize on market opportunities 24/7.
-
-Start or increase your investment today!`
+🌟 CoreX delivers institutional-grade investment strategies directly to your portfolio. Your systematic approach is paying dividends!`
       },
       {
-        title: "Financial Freedom Update",
-        message: `🏆 Building Wealth
+        title: "📊 Financial Freedom Progress",
+        message: `Building wealth requires patience, strategy, and the right investment platform.
 
-Every great investment portfolio started with a single decision to begin. You've already taken that crucial first step with CoreX.
+🎯 Your Progress:
+• Consistent investment approach ✓
+• Professional management active ✓
+• Long-term strategy in place ✓
 
-📊 Fact: Consistent investors who stay committed to their strategy for 3+ years see significantly higher returns.
-
-Keep growing your Bitcoin portfolio!`
+💪 Keep Growing: Every successful investor started with a single decision to begin. Your commitment to CoreX investment plans positions you for long-term financial success.`
       },
       {
-        title: "Investment Milestone",
-        message: `⭐ Achievement Unlocked
+        title: "⭐ Investment Community Update", 
+        message: `You're part of an exclusive community of forward-thinking Bitcoin investors.
 
-Congratulations on being part of the CoreX investment community! You're among the smart investors building wealth through Bitcoin.
+🏆 Community Achievements:
+• Thousands of successful investment outcomes
+• Consistent daily returns being generated
+• Professional portfolio management active
 
-🎯 Pro Tip: The cryptocurrency market rewards patience and consistency. Stay committed to your investment goals.
+🎯 Pro Insight: The cryptocurrency market rewards disciplined, long-term investors. Your CoreX investment strategy is designed for sustainable wealth building.
 
-Your financial future starts today!`
+Excellence in investment requires patience and professional guidance!`
+      },
+      {
+        title: "💎 Weekly Portfolio Performance",
+        message: `Professional investment management delivers consistent results through market cycles.
+
+📈 Performance Highlights:
+• Automated trading systems active
+• Risk management protocols engaged
+• Portfolio optimization ongoing
+
+🔥 Investment Fact: Systematic investment approaches historically outperform emotional trading by significant margins.
+
+Your CoreX investment plans are working professionally while you focus on your life!`
       }
     ];
 
-    // Send motivational messages to random users (about 30% chance per user)
+    // Send motivational messages to users with wallets (selective delivery to avoid spam)
     for (const user of allUsers) {
-      const shouldSendMessage = Math.random() < 0.3; // 30% chance
+      const shouldSendMessage = Math.random() < 0.25; // 25% chance for quality over quantity
       
       if (shouldSendMessage && user.hasWallet) {
         const randomMessage = motivationalMessages[Math.floor(Math.random() * motivationalMessages.length)];
@@ -1108,21 +1132,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Set user session
       req.session.userId = user.id;
 
-      // Create professional welcome notification
+      // Create professional welcome notification (only once during registration)
       await storage.createNotification({
         userId: user.id,
         title: "Welcome to CoreX Investment Platform",
-        message: `🎉 Welcome ${firstName}! 
+        message: `🎉 Welcome to CoreX, ${firstName}!
 
-Your CoreX account has been successfully created. You're now part of an exclusive investment community.
+Your account has been successfully created. You're now part of an exclusive investment community with access to:
 
-Next Steps:
-• Complete your wallet setup to start investing
-• Explore our premium investment plans
-• Join thousands of successful investors
+💎 Premium Bitcoin Investment Plans
+📈 Real-time Portfolio Tracking  
+🔐 Secure Wallet Management
+💰 Daily Automated Returns
 
-Start your Bitcoin investment journey today and unlock financial freedom with CoreX!`,
-        type: "success"
+Next Step: Set up your Bitcoin wallet to start your investment journey.
+
+Join thousands of successful investors building wealth with CoreX!`,
+        type: "success",
+        isRead: false
       });
 
       // Don't return sensitive data in response
@@ -1153,7 +1180,7 @@ Start your Bitcoin investment journey today and unlock financial freedom with Co
         return res.status(400).json({ error: "User already has a wallet" });
       }
 
-      // Generate Bitcoin wallet
+      // Generate Bitcoin wallet (only once)
       const wallet = generateBitcoinWallet();
 
       // Update user's wallet
@@ -1162,20 +1189,25 @@ Start your Bitcoin investment journey today and unlock financial freedom with Co
         return res.status(500).json({ error: "Failed to create wallet" });
       }
 
-      // Create wallet creation notification
+      // Create professional wallet creation notification (only once)
       await storage.createNotification({
         userId: userId,
-        title: "Wallet Created Successfully",
-        message: `🔐 Your Bitcoin wallet is now ready!
+        title: "🔐 Bitcoin Wallet Activated",
+        message: `Your secure Bitcoin wallet is now ready for investment!
 
-Your secure Bitcoin address has been generated and is ready to receive deposits. You can now:
+📍 Wallet Address: ${wallet.address.substring(0, 12)}...${wallet.address.substring(-8)}
 
-• Make your first Bitcoin deposit
-• Start investing in our premium plans
-• Track your portfolio performance
+✅ What you can do now:
+• Make secure Bitcoin deposits
+• Start investing in premium plans  
+• Track real-time portfolio growth
+• Earn automated daily returns
 
-Remember to backup your wallet information securely. Happy investing!`,
-        type: "success"
+🎯 Professional Tip: Start with our Starter Plan to begin building your Bitcoin portfolio systematically.
+
+Your investment journey starts here!`,
+        type: "success",
+        isRead: false
       });
 
       res.json({ 
