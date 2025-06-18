@@ -107,6 +107,21 @@ export async function runSafeMigrations() {
       )
     `);
 
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS backup_databases (
+        id SERIAL PRIMARY KEY,
+        name TEXT NOT NULL,
+        connection_string TEXT NOT NULL,
+        is_active BOOLEAN DEFAULT FALSE,
+        is_primary BOOLEAN DEFAULT FALSE,
+        last_sync_at TIMESTAMP,
+        status TEXT DEFAULT 'inactive',
+        error_message TEXT,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
     console.log('✅ Database tables created successfully');
     
   } catch (error) {

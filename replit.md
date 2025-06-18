@@ -29,6 +29,7 @@ CoreX is a Bitcoin investment platform that provides users with cryptocurrency w
 - **Transactions**: Deposit/withdrawal transaction management
 - **Notifications**: Real-time user notifications
 - **Admin Config**: System configuration management
+- **Backup Databases**: Redundant database configuration and management
 
 ### Authentication System
 - Session-based authentication with secure cookie management
@@ -46,6 +47,13 @@ CoreX is a Bitcoin investment platform that provides users with cryptocurrency w
 - Automatic profit calculations every 10 minutes
 - Investment progress tracking with real-time updates
 - Transaction-based investment processing
+
+### Backup Database System
+- **Real-time Data Synchronization**: Automatic data replication to backup databases
+- **Failover Protection**: Seamless switching between primary and backup databases
+- **Database Viewer**: Admin interface to view and manage backup database contents
+- **Table Creation**: Automatic schema replication on backup databases
+- **Connection Management**: Secure handling of multiple database connections
 
 ## Data Flow
 
@@ -97,6 +105,7 @@ npx esbuild server/index.ts --platform=node --packages=external --bundle --forma
 - `PORT`: Server port (defaults to 5000)
 
 ## Changelog
+- June 18, 2025. Added comprehensive backup database management system with real-time data synchronization
 - June 15, 2025. Initial setup
 
 ## User Preferences

@@ -430,6 +430,7 @@ export default function Management() {
     { id: "plans", label: "Investment Plans", icon: TrendingUp },
     { id: "transactions", label: "Transactions", icon: Clock },
     { id: "security", label: "Security", icon: Shield },
+    { id: "database", label: "Database Management", icon: Database },
     { id: "config", label: "Configuration", icon: Settings },
   ];
 
@@ -460,8 +461,12 @@ export default function Management() {
           <button
             key={item.id}
             onClick={() => {
-              setActiveTab(item.id);
-              setSidebarOpen(false);
+              if (item.id === 'database') {
+                setLocation('/admin-database');
+              } else {
+                setActiveTab(item.id);
+                setSidebarOpen(false);
+              }
             }}
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg mb-1 transition-colors ${
               activeTab === item.id

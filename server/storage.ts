@@ -499,15 +499,24 @@ export class DatabaseStorage implements IStorage {
       throw new Error('Backup database not found');
     }
 
-    // This is a placeholder - actual implementation would require 
-    // creating a connection to the backup database and transferring data
-    // For now, we'll just update the sync timestamp
+    // Import the backup sync service
+    const { backupSyncService } = await import('./backup-sync');
+    
+    // Perform actual data synchronization
+    const syncResult = await backupSyncService.syncDataToBackup(backup[0].connectionString);
+    
+    if (!syncResult.success) {
+      throw new Error(syncResult.error || 'Failed to sync data to backup database');
+    }
+
+    // Update sync status and timestamp
     await db
       .update(backupDatabases)
       .set({ 
         lastSyncAt: new Date(),
         status: 'active',
-        updatedAt: new Date()
+        updatedAt: new Date(),
+        errorMessage: null
       })
       .where(eq(backupDatabases.id, backupId));
   }
