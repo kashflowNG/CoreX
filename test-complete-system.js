@@ -1,7 +1,7 @@
 
-import { db } from './server/db.js';
+import { db } from './server/db.ts';
 import { sql } from 'drizzle-orm';
-import { config } from './server/config.js';
+import { config } from './server/config.ts';
 import bitcoin from 'bitcoinjs-lib';
 import { ECPairFactory } from 'ecpair';
 import ecc from 'tiny-secp256k1';
