@@ -710,35 +710,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('Deposit request - Session:', req.session);
       console.log('Deposit request - Session ID:', req.sessionID);
       console.log('Deposit request - User ID:', req.session?.userId);
+      console.log('Deposit request - Body:', req.body);
       
       if (!req.session?.userId) {
         console.log('Authentication failed - no userId in session');
-        return res.status(401).json({ error: "Authentication required" });
+        return res.status(401).json({ error: "Authentication required. Please log in again." });
+      }
+
+      // Verify user exists
+      const user = await storage.getUser(req.session.userId);
+      if (!user) {
+        console.log('User not found for session userId:', req.session.userId);
+        return res.status(401).json({ error: "User not found. Please log in again." });
       }
 
       const { amount, transactionHash } = depositSchema.parse(req.body);
+
+      // Validate amount
+      const amountNum = parseFloat(amount);
+      if (isNaN(amountNum) || amountNum <= 0) {
+        return res.status(400).json({ error: "Invalid amount. Amount must be greater than 0." });
+      }
+
+      if (amountNum < 0.001) {
+        return res.status(400).json({ error: "Minimum deposit amount is 0.001 BTC." });
+      }
 
       const transaction = await storage.createTransaction({
         userId: req.session.userId,
         type: "deposit",
         amount,
         transactionHash,
+        status: "pending"
       });
 
       // Create notification for user
       await storage.createNotification({
         userId: req.session.userId,
-        title: "Deposit Pending",
-        message: `Your deposit of ${amount} BTC is under review. You will be notified once it's processed.`,
-        type: "info"
+        title: "✅ Deposit Submitted Successfully",
+        message: `Your deposit of ${amount} BTC has been submitted and is being processed.
+
+Transaction Details:
+• Amount: ${amount} BTC
+• Status: Pending Review
+• Processing Time: Usually 10-30 minutes
+
+${transactionHash ? `Transaction Hash: ${transactionHash.substring(0, 16)}...` : 'Manual verification required'}
+
+You will receive a notification once your deposit is confirmed and added to your balance.`,
+        type: "success",
+        isRead: false
       });
+
+      console.log('Deposit submitted successfully for user:', req.session.userId);
 
       res.json({ 
         message: "Deposit submitted successfully and is pending confirmation",
-        transaction 
+        transaction,
+        status: "success"
       });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      console.error('Deposit error:', error);
+      
+      // Handle validation errors specifically
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ 
+          error: "Invalid input data. Please check your amount and try again.",
+          details: error.issues
+        });
+      }
+      
+      res.status(500).json({ 
+        error: "Failed to submit deposit. Please try again.",
+        details: error.message 
+      });
     }
   });
 

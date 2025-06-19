@@ -63,18 +63,32 @@ export default function Deposit() {
   // Submit deposit transaction
   const submitDepositMutation = useMutation({
     mutationFn: async (data: { amount: string; transactionHash?: string }) => {
+      console.log('Submitting deposit:', data);
+      
       const response = await fetch('/api/deposit', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'include', // Include session cookies
         body: JSON.stringify(data),
       });
+      
+      console.log('Deposit response status:', response.status);
+      
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || 'Deposit failed');
+        console.log('Deposit error response:', error);
+        throw new Error(error.error || 'Deposit submission failed');
       }
-      return response.json();
+      
+      const result = await response.json();
+      console.log('Deposit success response:', result);
+      return result;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('Deposit mutation success:', data);
       toast({
         title: "Deposit Submitted Successfully! 🎉",
         description: "Your deposit is being processed and will be confirmed shortly.",
@@ -82,11 +96,29 @@ export default function Deposit() {
       setAmount("");
       setTransactionHash("");
       queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
     },
     onError: (error: any) => {
+      console.error('Deposit mutation error:', error);
+      
+      let errorMessage = error.message;
+      let errorTitle = "Deposit Submission Failed";
+      
+      // Handle specific error cases
+      if (error.message.includes("Authentication required")) {
+        errorTitle = "Authentication Required";
+        errorMessage = "Please log in again to continue.";
+      } else if (error.message.includes("Minimum deposit")) {
+        errorTitle = "Amount Too Small";
+        errorMessage = "Minimum deposit amount is 0.001 BTC (~$104).";
+      } else if (error.message.includes("Invalid amount")) {
+        errorTitle = "Invalid Amount";
+        errorMessage = "Please enter a valid Bitcoin amount.";
+      }
+      
       toast({
-        title: "Deposit Submission Failed",
-        description: error.message,
+        title: errorTitle,
+        description: errorMessage,
         variant: "destructive",
       });
     },
@@ -341,7 +373,39 @@ export default function Deposit() {
               </div>
 
               <Button 
-                onClick={() => submitDepositMutation.mutate({ amount, transactionHash })}
+                onClick={() => {
+                  // Client-side validation
+                  const amountNum = parseFloat(amount);
+                  if (!amount || isNaN(amountNum)) {
+                    toast({
+                      title: "Invalid Amount",
+                      description: "Please enter a valid Bitcoin amount.",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+                  
+                  if (amountNum < 0.001) {
+                    toast({
+                      title: "Amount Too Small",
+                      description: "Minimum deposit amount is 0.001 BTC.",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+                  
+                  if (amountNum > 10) {
+                    toast({
+                      title: "Large Amount Warning",
+                      description: "For deposits over 10 BTC, please contact support first.",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+                  
+                  // Proceed with submission
+                  submitDepositMutation.mutate({ amount, transactionHash });
+                }}
                 disabled={!amount || parseFloat(amount) < 0.001 || submitDepositMutation.isPending}
                 className="w-full bg-bitcoin hover:bg-bitcoin/90 text-black font-semibold"
               >
