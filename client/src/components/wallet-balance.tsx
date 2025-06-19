@@ -1,101 +1,122 @@
-import { useAuth } from "@/hooks/use-auth";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useCurrency } from "@/hooks/use-currency";
-import { formatBitcoin, formatCurrency } from "@/lib/utils";
+import { useAuth } from "@/hooks/use-auth";
 import { useBitcoinPrice } from "@/hooks/use-bitcoin-price";
-import { Bitcoin, TrendingUp, Eye, EyeOff, Wallet, Shield } from "lucide-react";
+import { useCurrency } from "@/hooks/use-currency";
+import { formatBitcoin, formatCurrency, calculateCurrencyValue } from "@/lib/utils";
+import { Eye, EyeOff, Shield, Zap, RefreshCw } from "lucide-react";
 import { useState } from "react";
-import { Badge } from "@/components/ui/badge";
 
 export function WalletBalance() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
+  const { data: bitcoinPrice } = useBitcoinPrice();
   const { currency } = useCurrency();
-  const { data: price } = useBitcoinPrice();
-  const [showBalance, setShowBalance] = useState(true);
+  const [isBalanceVisible, setIsBalanceVisible] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   if (!user) return null;
 
-  const fiatValue = parseFloat(user.balance) * (currency === 'USD' ? (price?.usd.price || 0) : (price?.gbp.price || 0));
+  const currentPriceData = bitcoinPrice ? (currency === 'USD' ? bitcoinPrice.usd : bitcoinPrice.gbp) : null;
+  const fiatValue = currentPriceData ? calculateCurrencyValue(user.balance, currentPriceData.price) : 0;
+
+  const handleRefreshBalance = async () => {
+    if (!user) return;
+
+    setIsRefreshing(true);
+    try {
+      const response = await fetch(`/api/bitcoin/sync-balance/${user.id}`, {
+        method: 'POST'
+      });
+
+      if (response.ok) {
+        await refreshUser();
+      } else {
+        throw new Error('Failed to sync balance');
+      }
+    } catch (error) {
+      console.error("Failed to sync balance with blockchain:", error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   return (
-    <Card className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 border border-gray-700/50 overflow-hidden relative">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-5">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-bitcoin rounded-full -translate-y-32 translate-x-32"></div>
-        <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-500 rounded-full translate-y-24 -translate-x-24"></div>
-      </div>
+    <div className="px-4 mb-6">
+      <Card className="gradient-primary rounded-2xl p-6 relative overflow-hidden border-0 shadow-xl">
+        {/* Background decorative elements */}
+        <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-8 rounded-full -translate-y-16 translate-x-16"></div>
+        <div className="absolute bottom-0 left-0 w-24 h-24 bg-white opacity-5 rounded-full translate-y-12 -translate-x-12"></div>
 
-      <CardHeader className="pb-3 relative z-10">
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-white">
-            <div className="w-8 h-8 bg-bitcoin/20 rounded-full flex items-center justify-center">
-              <Wallet className="w-4 h-4 text-bitcoin" />
-            </div>
-            Portfolio Balance
-          </CardTitle>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowBalance(!showBalance)}
-            className="text-gray-300 hover:text-white h-8 w-8 p-0"
-          >
-            {showBalance ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-          </Button>
+        {/* Security indicators */}
+        <div className="absolute top-3 right-3 flex gap-1.5">
+          <div className="w-6 h-6 rounded-full bg-white bg-opacity-20 flex items-center justify-center">
+            <Shield className="w-3 h-3 text-white" />
+          </div>
+          <div className="w-6 h-6 rounded-full bg-white bg-opacity-20 flex items-center justify-center animate-pulse">
+            <Zap className="w-3 h-3 text-white" />
+          </div>
         </div>
-      </CardHeader>
 
-      <CardContent className="pt-0 relative z-10">
-        <div className="space-y-4">
-          {/* Main Balance Display */}
-          <div className="text-center py-4">
-            <div className="mb-2">
-              <p className="text-3xl font-bold text-white">
-                {showBalance ? formatBitcoin(user.balance) : '••••••••'} 
-                <span className="text-lg text-bitcoin ml-2">BTC</span>
-              </p>
-              {price && (
-                <p className="text-gray-300 text-lg">
-                  {showBalance ? formatCurrency(fiatValue, currency) : '••••••••'}
-                </p>
+        <div className="relative z-10 space-y-4">
+          {/* Header */}
+          <div>
+            <p className="text-black text-opacity-70 text-xs font-medium mb-2">Total Portfolio Balance</p>
+            <div className="flex items-center gap-2 mb-3">
+              {isBalanceVisible ? (
+                <h2 className="text-2xl sm:text-3xl font-bold text-black tracking-tight">
+                  {formatBitcoin(user.balance)} BTC
+                </h2>
+              ) : (
+                <h2 className="text-2xl sm:text-3xl font-bold text-black tracking-tight">
+                  ••••••••
+                </h2>
               )}
+              <div className="flex gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="w-7 h-7 rounded-lg bg-black bg-opacity-10 hover:bg-opacity-20 transition-all"
+                  onClick={() => setIsBalanceVisible(!isBalanceVisible)}
+                >
+                  {isBalanceVisible ? (
+                    <EyeOff className="w-3.5 h-3.5 text-black" />
+                  ) : (
+                    <Eye className="w-3.5 h-3.5 text-black" />
+                  )}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="w-7 h-7 rounded-lg bg-black bg-opacity-10 hover:bg-opacity-20 transition-all"
+                  onClick={handleRefreshBalance}
+                  disabled={isRefreshing}
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 text-black ${isRefreshing ? 'animate-spin' : ''}`} />
+                </Button>
+              </div>
             </div>
 
-            {/* Security Badge */}
-            <div className="flex justify-center">
-              <Badge className="bg-green-500/20 text-green-300 border-green-500/30">
-                <Shield className="w-3 h-3 mr-1" />
-                Secured Wallet
-              </Badge>
-            </div>
+            {isBalanceVisible && (
+              <p className="text-black text-opacity-70 text-lg font-semibold">
+                ≈ {formatCurrency(fiatValue, currency)}
+              </p>
+            )}
           </div>
 
-          {/* Quick Stats */}
-          <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-700/50">
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-1 mb-1">
-                <Bitcoin className="w-4 h-4 text-bitcoin" />
-                <span className="text-xs text-gray-400">Network</span>
-              </div>
-              <p className="text-sm font-medium text-white">Bitcoin</p>
+          {/* Footer */}
+          <div className="flex items-center justify-between pt-3 border-t border-black border-opacity-20">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-emerald animate-pulse"></div>
+              <p className="text-black text-opacity-70 text-xs font-medium">
+                Secure Vault Protected
+              </p>
             </div>
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-1 mb-1">
-                <TrendingUp className="w-4 h-4 text-green-400" />
-                <span className="text-xs text-gray-400">Status</span>
-              </div>
-              <p className="text-sm font-medium text-green-400">Active</p>
+            <div className="text-right">
+              <p className="text-black text-opacity-70 text-xs">Live</p>
             </div>
-          </div>
-
-          {/* Professional Note */}
-          <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3 mt-4">
-            <p className="text-xs text-blue-300 text-center">
-              💎 Your Bitcoin is secured with institutional-grade custody solutions
-            </p>
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </Card>
+    </div>
   );
 }

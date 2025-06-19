@@ -2,10 +2,11 @@ import { useAuth } from "@/hooks/use-auth";
 import { WalletBalance } from "@/components/wallet-balance";
 import { BitcoinPrice } from "@/components/bitcoin-price";
 import { BitcoinSync } from "@/components/bitcoin-sync";
+
 import { BottomNavigation } from "@/components/bottom-navigation";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Bell, User, ArrowUpRight, ArrowDownLeft, TrendingUp, Activity, Target, Award, Briefcase, BarChart3 } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { Bell, User, ArrowUpRight, ArrowDownLeft, TrendingUp, Activity } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import type { Investment, InvestmentPlan } from "@shared/schema";
 import { Badge } from "@/components/ui/badge";
@@ -15,7 +16,6 @@ import { useLocation } from "wouter";
 import { useEffect, useState } from "react";
 import { RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Link } from "wouter";
 
 export default function Home() {
   const { user, logout, refreshUser } = useAuth();
@@ -26,7 +26,7 @@ export default function Home() {
   const { data: investments } = useQuery<Investment[]>({
     queryKey: ['/api/investments/user', user?.id],
     enabled: !!user?.id,
-    refetchInterval: 30000,
+    refetchInterval: 30000, // Refresh every 30 seconds
   });
 
   const { data: investmentPlans } = useQuery<InvestmentPlan[]>({
@@ -53,9 +53,25 @@ export default function Home() {
   }, [user, setLocation]);
 
   if (!user) {
-    setLocation('/login');
-    return null;
+    return <div>Redirecting to login...</div>;
   }
+
+  const activeInvestments = investments?.filter(inv => inv.isActive === true) || [];
+  const completedInvestments = investments?.filter(inv => inv.isActive === false) || [];
+
+  const totalInvestedAmount = investments?.reduce((total, inv) => 
+    total + parseFloat(inv.amount), 0
+  ) || 0;
+
+  const totalProfit = investments?.reduce((total, inv) => 
+    total + parseFloat(inv.currentProfit), 0
+  ) || 0;
+
+  const totalInvestmentValue = totalInvestedAmount + totalProfit;
+
+  const currentPlan = user?.currentPlanId 
+    ? investmentPlans?.find(plan => plan.id === user.currentPlanId)
+    : null;
 
   const handleRefreshBalance = async () => {
     if (!user) return;
@@ -79,7 +95,7 @@ export default function Home() {
     } catch (error) {
       console.error('Balance refresh error:', error);
       toast({
-        title: "Sync Failed",
+        title: "Sync Failed", 
         description: "Could not sync balance. Please try again.",
         variant: "destructive",
       });
@@ -88,222 +104,313 @@ export default function Home() {
     }
   };
 
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    try {
-      await refreshUser();
-      toast({
-        title: "Refreshed",
-        description: "Your data has been updated",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to refresh data",
-        variant: "destructive",
-      });
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
-
-  const activeInvestments = investments?.filter(inv => inv.isActive === true) || [];
-  const completedInvestments = investments?.filter(inv => inv.isActive === false) || [];
-
-  const totalInvestedAmount = investments?.reduce((total, inv) =>
-    total + parseFloat(inv.amount), 0
-  ) || 0;
-
-  const totalProfit = investments?.reduce((total, inv) =>
-    total + parseFloat(inv.currentProfit), 0
-  ) || 0;
-
-  const totalInvestmentValue = totalInvestedAmount + totalProfit;
-
-  const currentPlan = user?.currentPlanId
-    ? investmentPlans?.find(plan => plan.id === user.currentPlanId)
-    : null;
-
-  const totalInvested = investments?.reduce((sum, inv) => sum + parseFloat(inv.amount), 0) || 0;
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-black">
-      {/* Professional Header */}
-      <div className="bg-gradient-to-r from-gray-900/90 to-gray-800/90 backdrop-blur-sm border-b border-gray-700/50">
-        <div className="max-w-sm mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-bold text-white">Portfolio</h1>
-              <p className="text-sm text-gray-300">Welcome back, {user.email.split('@')[0]}</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleRefresh}
-                disabled={isRefreshing}
-                className="text-gray-300 hover:text-white hover:bg-white/10 h-10 w-10"
-              >
-                <RefreshCw className={`w-5 h-5 ${isRefreshing ? 'animate-spin' : ''}`} />
-              </Button>
-              <Link href="/notifications">
-                <Button variant="ghost" size="icon" className="text-gray-300 hover:text-white hover:bg-white/10 h-10 w-10">
-                  <Bell className="w-5 h-5" />
-                  {unreadCount && unreadCount.count > 0 && (
-                    <Badge variant="destructive" className="absolute -top-2 -right-2 h-6 w-6 text-xs p-0 flex items-center justify-center animate-pulse glow-ruby">
-                      {unreadCount.count > 9 ? '9+' : unreadCount.count}
-                    </Badge>
-                  )}
-                </Button>
-              </Link>
-              <Link href="/profile">
-                <Button variant="ghost" size="icon" className="text-gray-300 hover:text-white hover:bg-white/10 h-10 w-10">
-                  <User className="w-5 h-5" />
-                </Button>
-              </Link>
-            </div>
+    <div className="max-w-sm mx-auto bg-background min-h-screen relative overflow-hidden">
+      {/* Background Elements */}
+      <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-background opacity-50"></div>
+      <div className="absolute top-0 right-0 w-64 h-64 bg-bitcoin opacity-5 rounded-full blur-3xl animate-pulse-slow"></div>
+      <div className="absolute bottom-0 left-0 w-48 h-48 bg-emerald opacity-5 rounded-full blur-3xl animate-pulse-slow"></div>
+
+      {/* Header */}
+      <header className="relative px-6 py-4 flex justify-between items-center backdrop-blur-sm">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl gradient-primary flex items-center justify-center animate-glow shadow-lg">
+            <span className="text-black text-lg font-bold">₿</span>
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-foreground bg-gradient-to-r from-bitcoin to-gold bg-clip-text text-transparent">
+              CoreX
+            </h1>
+            <p className="text-sm text-muted-foreground font-medium">{user.email}</p>
           </div>
         </div>
+        <div className="flex gap-2">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="rounded-2xl relative glass-card hover:glow-bitcoin transition-all duration-300" 
+            onClick={() => setLocation('/notifications')}
+          >
+            <Bell className="w-5 h-5" />
+            {unreadCount && unreadCount.count > 0 && (
+              <Badge variant="destructive" className="absolute -top-2 -right-2 h-6 w-6 text-xs p-0 flex items-center justify-center animate-pulse glow-ruby">
+                {unreadCount.count > 9 ? '9+' : unreadCount.count}
+              </Badge>
+            )}
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="rounded-2xl glass-card hover:glow-emerald transition-all duration-300" 
+            onClick={() => setLocation('/profile')}
+          >
+            <User className="w-5 h-5" />
+          </Button>
+        </div>
+      </header>
+
+      {/* Wallet Balance */}
+      <div className="relative px-4 mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-base font-semibold text-foreground">Wallet Balance</h3>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleRefreshBalance}
+              disabled={isRefreshing}
+              className="rounded-2xl relative glass-card hover:glow-bitcoin transition-all duration-300 h-8 w-8"
+            >
+              <RefreshCw className={`w-3 h-3 ${isRefreshing ? 'animate-spin' : ''}`} />
+            </Button>
+          </div>
+          <WalletBalance />
       </div>
 
-      <div className="max-w-sm mx-auto p-6 space-y-6 pb-24">
-        {/* Wallet Balance */}
-        <WalletBalance />
+      {/* Bitcoin Price */}
+      <BitcoinPrice />
 
-        {/* Bitcoin Price */}
-        <BitcoinPrice />
+      {/* Bitcoin Sync */}
+      <div className="px-4 mb-6">
+        <BitcoinSync />
+      </div>
 
-        {/* Bitcoin Sync */}
-        <div className="px-4 mb-6">
-          <BitcoinSync />
+      {/* Quick Actions */}
+      <div className="relative px-4 mb-6">
+        <h3 className="text-base font-semibold mb-3 text-foreground">Quick Actions</h3>
+        <div className="grid grid-cols-2 gap-3">
+          <Button 
+            className="neo-card rounded-2xl p-4 text-center hover:glow-ruby transition-all duration-300 transform hover:scale-105 flex flex-col items-center gap-2 h-auto group"
+            onClick={() => setLocation('/withdraw')}
+          >
+            <div className="w-10 h-10 rounded-xl bg-ruby bg-opacity-20 flex items-center justify-center group-hover:bg-opacity-30 transition-all">
+              <ArrowUpRight className="w-5 h-5 text-ruby" />
+            </div>
+            <span className="text-sm font-medium text-foreground">Withdraw</span>
+            <span className="text-xs text-muted-foreground">Send Bitcoin</span>
+          </Button>
+          <Button 
+            className="neo-card rounded-2xl p-4 text-center hover:glow-emerald transition-all duration-300 transform hover:scale-105 flex flex-col items-center gap-2 h-auto group"
+            onClick={() => setLocation('/deposit')}
+          >
+            <div className="w-10 h-10 rounded-xl bg-emerald bg-opacity-20 flex items-center justify-center group-hover:bg-opacity-30 transition-all">
+              <ArrowDownLeft className="w-5 h-5 text-emerald" />
+            </div>
+            <span className="text-sm font-medium text-foreground">Deposit</span>
+            <span className="text-xs text-muted-foreground">Receive Bitcoin</span>
+          </Button>
         </div>
+      </div>
 
-        {/* Portfolio Overview */}
-        <Card className="bg-gray-900/50 backdrop-blur-sm border border-gray-700/50">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-white">
-              <Briefcase className="w-5 h-5 text-bitcoin" />
-              Investment Overview
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="text-center p-4 bg-green-500/10 rounded-lg border border-green-500/20">
-                <Activity className="w-6 h-6 mx-auto mb-2 text-green-400" />
-                <p className="text-2xl font-bold text-green-400">{activeInvestments.length}</p>
-                <p className="text-xs text-gray-300">Active Plans</p>
+      {/* Current Investment Plan */}
+      <div className="relative px-4 mb-6">
+        <h3 className="text-base font-semibold mb-3 text-foreground">Investment Plan</h3>
+        <Card className="neo-card rounded-2xl p-4 hover:glow-bitcoin transition-all duration-300">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                currentPlan 
+                  ? 'bg-emerald bg-opacity-20' 
+                  : 'bg-sapphire bg-opacity-20'
+              }`}>
+                <TrendingUp className={`w-5 h-5 ${
+                  currentPlan ? 'text-emerald' : 'text-sapphire'
+                }`} />
               </div>
-              <div className="text-center p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
-                <TrendingUp className="w-6 h-6 mx-auto mb-2 text-blue-400" />
-                <p className="text-2xl font-bold text-blue-400">+{formatBitcoin(totalProfit.toString())}</p>
-                <p className="text-xs text-gray-300">Total Profit (BTC)</p>
+              <div className="flex-1 min-w-0">
+                <h4 className="font-bold text-base text-foreground truncate">
+                  {currentPlan ? currentPlan.name : "Free Plan"}
+                </h4>
+                <p className="text-xs text-muted-foreground">
+                  {currentPlan 
+                    ? `${(parseFloat(currentPlan.dailyReturnRate) * 100).toFixed(2)}% daily return`
+                    : "3.67% every 10 minutes"
+                  }
+                </p>
               </div>
             </div>
-          </CardContent>
+            <Badge className={`px-2 py-1 rounded-lg text-xs font-medium ${
+              currentPlan 
+                ? 'bg-emerald bg-opacity-20 text-emerald border-emerald' 
+                : 'bg-sapphire bg-opacity-20 text-sapphire border-sapphire'
+            }`}>
+              {currentPlan ? 'Premium' : 'Free'}
+            </Badge>
+          </div>
+          {!currentPlan && (
+            <Button 
+              className="w-full gradient-primary text-black font-medium rounded-xl hover:scale-105 transition-all duration-300"
+              onClick={() => setLocation('/investment')}
+            >
+              Upgrade Plan
+            </Button>
+          )}
         </Card>
+      </div>
+
+      {/* Portfolio Overview */}
+      <div className="relative px-4 mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-bold text-foreground">Portfolio Analytics</h3>
+          <Badge className="bg-emerald bg-opacity-20 text-emerald border-emerald text-xs">
+            24h Active
+          </Badge>
+        </div>
+
+        {/* Main Portfolio Card */}
+        <Card className="neo-card rounded-2xl p-4 mb-4 hover:glow-bitcoin transition-all duration-300 bg-gradient-to-br from-card to-card/80">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex-1 min-w-0">
+              <h4 className="text-xs text-muted-foreground mb-1">Total Portfolio Value</h4>
+              <p className="text-xl font-bold text-foreground">
+                {formatBitcoin(totalInvestmentValue.toString())} BTC
+              </p>
+              <p className="text-xs text-bitcoin font-medium mt-1">
+                ≈ ${(totalInvestmentValue * 103789).toLocaleString()} USD
+              </p>
+            </div>
+            <div className="w-12 h-12 rounded-xl gradient-primary flex items-center justify-center animate-pulse-slow">
+              <TrendingUp className="w-6 h-6 text-black" />
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-3 gap-2 mb-3">
+            <div className="text-center">
+              <p className="text-lg font-bold text-emerald">+{((totalProfit / totalInvestedAmount) * 100 || 0).toFixed(1)}%</p>
+              <p className="text-xs text-muted-foreground">Total Return</p>
+            </div>
+            <div className="text-center">
+              <p className="text-lg font-bold text-foreground">{activeInvestments.length}</p>
+              <p className="text-xs text-muted-foreground">Active ({completedInvestments.length} completed)</p>
+            </div>
+            <div className="text-center">
+              <p className="text-lg font-bold text-bitcoin">24/7</p>
+              <p className="text-xs text-muted-foreground">Earning</p>
+            </div>
+          </div>
+
+          <div className="w-full bg-muted h-1.5 rounded-full overflow-hidden mb-2">
+            <div className="h-full bg-gradient-to-r from-emerald to-bitcoin rounded-full" style={{ width: "67%" }}></div>
+          </div>
+          <p className="text-xs text-center text-muted-foreground">67% of target portfolio reached</p>
+        </Card>
+
+        {/* Portfolio Stats Grid */}
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          <Card className="neo-card rounded-2xl p-3 hover:glow-emerald transition-all duration-300 group">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 rounded-lg bg-emerald bg-opacity-20 flex items-center justify-center group-hover:bg-opacity-30 transition-all">
+                <TrendingUp className="w-4 h-4 text-emerald" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <span className="text-xs text-muted-foreground font-medium block">Total Invested</span>
+                <span className="text-xs text-emerald">+12.3% this month</span>
+              </div>
+            </div>
+            <p className="text-lg font-bold text-foreground">{formatBitcoin(totalInvestedAmount.toString())}</p>
+            <p className="text-xs text-bitcoin font-medium">BTC</p>
+          </Card>
+
+          <Card className="neo-card rounded-2xl p-3 hover:glow-bitcoin transition-all duration-300 group">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 rounded-lg bg-bitcoin bg-opacity-20 flex items-center justify-center group-hover:bg-opacity-30 transition-all">
+                <Activity className="w-4 h-4 text-bitcoin" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <span className="text-xs text-muted-foreground font-medium block">Total Profit</span>
+                <span className="text-xs text-bitcoin">Generated today</span>
+              </div>
+            </div>
+            <p className="text-lg font-bold text-emerald">+{formatBitcoin(totalProfit.toString())}</p>
+            <p className="text-xs text-bitcoin font-medium">BTC</p>
+          </Card>
+        </div>
 
         {/* Performance Metrics */}
-        <Card className="bg-gray-900/50 backdrop-blur-sm border border-gray-700/50">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-white">
-              <BarChart3 className="w-5 h-5 text-purple-400" />
-              Performance Metrics
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-gray-300">Daily Yield</span>
-                  <span className="text-green-400 font-medium">3.67%</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-300">Monthly ROI</span>
-                  <span className="text-bitcoin font-medium">110.1%</span>
-                </div>
+        <Card className="neo-card rounded-2xl p-3 hover:glow-sapphire transition-all duration-300">
+          <h4 className="font-semibold mb-3 text-foreground flex items-center gap-2 text-sm">
+            <Activity className="w-4 h-4 text-sapphire" />
+            Performance Metrics
+          </h4>
+          <div className="grid grid-cols-2 gap-3 text-xs">
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Daily Yield</span>
+                <span className="text-emerald font-medium">3.67%</span>
               </div>
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-gray-300">Risk Level</span>
-                  <Badge className="bg-green-500/20 text-green-300 border-green-500/30 text-xs">Low</Badge>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-300">Next Profit</span>
-                  <span className="text-blue-400 font-medium">8 min</span>
-                </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Monthly ROI</span>
+                <span className="text-bitcoin font-medium">110.1%</span>
               </div>
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Active Investments */}
-        {activeInvestments.length > 0 && (
-          <Card className="bg-gray-900/50 backdrop-blur-sm border border-gray-700/50">
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between text-white">
-                <div className="flex items-center gap-2">
-                  <Target className="w-5 h-5 text-green-400" />
-                  Active Investments
-                </div>
-                <Link href="/investment">
-                  <Button variant="ghost" size="sm" className="text-bitcoin hover:text-white">
-                    View All
-                  </Button>
-                </Link>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {activeInvestments.slice(0, 2).map((investment) => {
-                  const plan = investmentPlans?.find(p => p.id === investment.planId);
-                  const progress = calculateInvestmentProgress(
-                    new Date(investment.startDate),
-                    new Date(investment.endDate)
-                  );
-
-                  return (
-                    <div key={investment.id} className="p-4 bg-gray-800/50 rounded-lg border border-gray-700/30">
-                      <div className="flex justify-between items-start mb-3">
-                        <div>
-                          <h4 className="font-medium text-white">{plan?.name || `Plan ${investment.planId}`}</h4>
-                          <p className="text-sm text-gray-400">{formatBitcoin(investment.amount)} BTC</p>
-                        </div>
-                        <Badge className="bg-green-500/20 text-green-300 border-green-500/30">
-                          +{formatBitcoin(investment.currentProfit)} BTC
-                        </Badge>
-                      </div>
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-xs text-gray-400">
-                          <span>Progress</span>
-                          <span>{progress.toFixed(1)}%</span>
-                        </div>
-                        <Progress value={progress} className="h-1.5" />
-                      </div>
-                    </div>
-                  );
-                })}
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Risk Level</span>
+                <span className="text-green-400 font-medium">Low</span>
               </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Quick Actions */}
-        <div className="grid grid-cols-2 gap-4">
-          <Link href="/investment">
-            <Button className="w-full h-12 bg-gradient-to-r from-bitcoin to-orange-500 hover:from-bitcoin/90 hover:to-orange-500/90 text-white border-0">
-              <TrendingUp className="w-4 h-4 mr-2" />
-              Invest
-            </Button>
-          </Link>
-          <Link href="/history">
-            <Button variant="outline" className="w-full h-12 border-gray-600 text-gray-300 hover:bg-gray-800 hover:text-white">
-              <Activity className="w-4 h-4 mr-2" />
-              History
-            </Button>
-          </Link>
-        </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Next Profit</span>
+                <span className="text-sapphire font-medium">8 min</span>
+              </div>
+            </div>
+          </div>
+        </Card>
       </div>
 
+      {/* Investment Plans */}
+      {/* <InvestmentPlans /> */}
+
+      {/* Active Investments */}
+      {activeInvestments.length > 0 && (
+        <div className="px-4 mb-20">
+          <h3 className="text-lg font-semibold mb-4 text-foreground">Active Investments</h3>
+          <div className="space-y-3">
+            {activeInvestments.map((investment) => {
+              const progress = calculateInvestmentProgress(
+                new Date(investment.startDate),
+                new Date(investment.endDate)
+              );
+              const daysLeft = Math.ceil(
+                (new Date(investment.endDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+              );
+
+              return (
+                <Card key={investment.id} className="dark-card rounded-xl p-4 dark-border">
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <h4 className="font-semibold text-gold">Investment #{investment.id}</h4>
+                      <p className="text-muted-foreground text-sm">
+                        Started: {formatDate(new Date(investment.startDate))}
+                      </p>
+                    </div>
+                    <span className="bg-green-500 bg-opacity-20 text-green-400 px-2 py-1 rounded-full text-xs">
+                      Active
+                    </span>
+                  </div>
+                  <div className="space-y-2 mb-4">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Invested</span>
+                      <span className="text-foreground">{formatBitcoin(investment.amount)} BTC</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Current Profit</span>
+                      <span className="text-green-400">+{formatBitcoin(investment.currentProfit)} BTC</span>
+                    </div>
+                  </div>
+                  <Progress value={progress} className="w-full mb-2" />
+                  <p className="text-xs text-muted-foreground text-center">
+                    {daysLeft > 0 ? `${daysLeft} days remaining` : 'Completed'}
+                  </p>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Bottom spacing for navigation */}
+      <div className="h-20"></div>
+
+      {/* Bottom Navigation */}
       <BottomNavigation />
     </div>
   );
