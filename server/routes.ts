@@ -1,5 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+
+export function setupRoutes(app: Express): Server {
 import { WebSocketServer, WebSocket } from "ws";
 import { z } from "zod";
 
@@ -2251,3 +2253,5 @@ const { planId, dailyReturnRate } = z.object({
 
   return httpServer;
 }
+
+export { setupRoutes };
