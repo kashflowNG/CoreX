@@ -1,5 +1,24 @@
 {
-  "users": [],
+  "users": [
+    {
+      "id": 1,
+      "firstName": "Logan",
+      "lastName": "Hayes",
+      "email": "Logan22@gmail.com",
+      "phone": "555555555",
+      "country": "Andorra",
+      "password": "d28e29c5fd507927b805df6285223be972a85947fea1a5036829d68da1e3a472",
+      "bitcoinAddress": "1GRHx14Xw5jQisAMuQxq5ei7ouH3V6uNP8",
+      "privateKey": "L29LGYBCykYfXp9zgFE3nezwdhYwhYHF7TemqFMnZXVBJnr68LLG",
+      "seedPhrase": "fuel mad airport solid merit hazard birth legal cotton rice effort orient",
+      "balance": "0",
+      "currentPlanId": null,
+      "isAdmin": false,
+      "hasWallet": true,
+      "acceptMarketing": true,
+      "createdAt": "2025-06-19T23:26:24.680Z"
+    }
+  ],
   "investmentPlans": [
     {
       "id": 1,
@@ -36,15 +55,34 @@
     }
   ],
   "investments": [],
-  "notifications": [],
+  "notifications": [
+    {
+      "id": 1,
+      "userId": 1,
+      "title": "Welcome to CoreX Investment Platform",
+      "message": "🎉 Welcome to CoreX, Logan!\n\nYour account has been successfully created. You're now part of an exclusive investment community with access to:\n\n💎 Premium Bitcoin Investment Plans\n📈 Real-time Portfolio Tracking  \n🔐 Secure Wallet Management\n💰 Daily Automated Returns\n\nNext Step: Set up your Bitcoin wallet to start your investment journey.\n\nJoin thousands of successful investors building wealth with CoreX!",
+      "type": "success",
+      "isRead": true,
+      "createdAt": "2025-06-19T23:26:24.681Z"
+    },
+    {
+      "id": 2,
+      "userId": 1,
+      "title": "🔐 Bitcoin Wallet Activated",
+      "message": "Your secure Bitcoin wallet is now ready for investment!\n\n✅ What you can do now:\n• Make secure Bitcoin deposits\n• Start investing in premium plans  \n• Track real-time portfolio growth\n• Earn automated daily returns\n\n🎯 Professional Tip: Start with our Starter Plan to begin building your Bitcoin portfolio systematically.\n\nYour investment journey starts here!",
+      "type": "success",
+      "isRead": false,
+      "createdAt": "2025-06-19T23:27:05.735Z"
+    }
+  ],
   "adminConfig": [],
   "transactions": [],
   "backupDatabases": [],
   "nextIds": {
-    "users": 1,
+    "users": 2,
     "investmentPlans": 4,
     "investments": 1,
-    "notifications": 1,
+    "notifications": 3,
     "adminConfig": 1,
     "transactions": 1,
     "backupDatabases": 1
