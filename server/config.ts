@@ -2,8 +2,8 @@
 // Environment variables hardcoded for easy deployment
 
 export const config = {
-  // Database configuration - fallback to hardcoded Neon database
-  DATABASE_URL: process.env.DATABASE_URL || "postgresql://corex_user:HxQHpBWLRqRJ@ep-yellow-butterfly-a5dlu7r4.us-east-2.aws.neon.tech/corex?sslmode=require",
+  // Database configuration - use Replit's PostgreSQL database
+  DATABASE_URL: process.env.DATABASE_URL,
   
   // Session configuration
   SESSION_SECRET: process.env.SESSION_SECRET || "5fC7gluqorDXJBsk11WetGFDd7s1ec47VezC3fRNhFRDAU5Yx2OA6US3kYtZx+/VCCuDYZoufk+050B3SopuCw==",
