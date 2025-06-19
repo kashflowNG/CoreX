@@ -6,7 +6,7 @@ import { BitcoinSync } from "@/components/bitcoin-sync";
 import { BottomNavigation } from "@/components/bottom-navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Bell, User, ArrowUpRight, ArrowDownLeft, TrendingUp, Activity, Shield, Zap } from "lucide-react";
+import { Bell, User, ArrowUpRight, ArrowDownLeft, TrendingUp, Activity } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import type { Investment, InvestmentPlan } from "@shared/schema";
 import { Badge } from "@/components/ui/badge";
@@ -272,7 +272,7 @@ export default function Home() {
               <TrendingUp className="w-6 h-6 text-black" />
             </div>
           </div>
-
+          
           <div className="grid grid-cols-3 gap-2 mb-3">
             <div className="text-center">
               <p className="text-lg font-bold text-emerald">+{((totalProfit / totalInvestedAmount) * 100 || 0).toFixed(1)}%</p>

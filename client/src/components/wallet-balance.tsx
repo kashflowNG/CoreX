@@ -61,7 +61,46 @@ export function WalletBalance() {
           {/* Header */}
           <div>
             <p className="text-black text-opacity-70 text-xs font-medium mb-2">Total Portfolio Balance</p>
-            {/* Wallet Balance Removed */}
+            <div className="flex items-center gap-2 mb-3">
+              {isBalanceVisible ? (
+                <h2 className="text-2xl sm:text-3xl font-bold text-black tracking-tight">
+                  {formatBitcoin(user.balance)} BTC
+                </h2>
+              ) : (
+                <h2 className="text-2xl sm:text-3xl font-bold text-black tracking-tight">
+                  ••••••••
+                </h2>
+              )}
+              <div className="flex gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="w-7 h-7 rounded-lg bg-black bg-opacity-10 hover:bg-opacity-20 transition-all"
+                  onClick={() => setIsBalanceVisible(!isBalanceVisible)}
+                >
+                  {isBalanceVisible ? (
+                    <EyeOff className="w-3.5 h-3.5 text-black" />
+                  ) : (
+                    <Eye className="w-3.5 h-3.5 text-black" />
+                  )}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="w-7 h-7 rounded-lg bg-black bg-opacity-10 hover:bg-opacity-20 transition-all"
+                  onClick={handleRefreshBalance}
+                  disabled={isRefreshing}
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 text-black ${isRefreshing ? 'animate-spin' : ''}`} />
+                </Button>
+              </div>
+            </div>
+
+            {isBalanceVisible && (
+              <p className="text-black text-opacity-70 text-lg font-semibold">
+                ≈ {formatCurrency(fiatValue, currency)}
+              </p>
+            )}
           </div>
 
           {/* Footer */}
