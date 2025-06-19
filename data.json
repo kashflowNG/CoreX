@@ -73,6 +73,24 @@
       "type": "success",
       "isRead": false,
       "createdAt": "2025-06-19T23:27:05.735Z"
+    },
+    {
+      "id": 3,
+      "userId": 1,
+      "title": "💰 Daily Investment Insight",
+      "message": "Bitcoin continues to lead institutional adoption with major corporations adding BTC to their balance sheets.\n\n📊 Market Update:\n• Institutional demand remains strong\n• Long-term holders continue accumulating\n• Network fundamentals show healthy growth\n\n💡 Investment Strategy: Dollar-cost averaging through CoreX investment plans reduces volatility risk while maximizing long-term returns.\n\nYour consistent approach is building real wealth!",
+      "type": "info",
+      "isRead": false,
+      "createdAt": "2025-06-19T23:35:42.103Z"
+    },
+    {
+      "id": 4,
+      "userId": 1,
+      "title": "🎯 Portfolio Growth Milestone",
+      "message": "Bitcoin has delivered exceptional returns to patient investors over the past decade.\n\n📈 Success Metrics:\n• 10-year CAGR exceeds traditional assets\n• Adoption growing across all demographics  \n• Supply remains mathematically scarce\n\n🏆 CoreX Advantage: Our automated systems work 24/7 to optimize your investment timing and maximize compound growth.\n\nStay committed to your financial goals!",
+      "type": "info",
+      "isRead": false,
+      "createdAt": "2025-06-19T23:35:57.816Z"
     }
   ],
   "adminConfig": [],
@@ -82,7 +100,7 @@
     "users": 2,
     "investmentPlans": 4,
     "investments": 1,
-    "notifications": 3,
+    "notifications": 5,
     "adminConfig": 1,
     "transactions": 1,
     "backupDatabases": 1

@@ -707,7 +707,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Transaction routes
   app.post("/api/deposit", async (req, res) => {
     try {
+      console.log('Deposit request - Session:', req.session);
+      console.log('Deposit request - Session ID:', req.sessionID);
+      console.log('Deposit request - User ID:', req.session?.userId);
+      
       if (!req.session?.userId) {
+        console.log('Authentication failed - no userId in session');
         return res.status(401).json({ error: "Authentication required" });
       }
 
@@ -1314,6 +1319,8 @@ Your investment journey starts here!`,
 
       // Set session userId for authentication
       req.session.userId = user.id;
+      console.log('Login successful - Setting session userId:', user.id);
+      console.log('Login successful - Session ID:', req.sessionID);
 
       // Don't return private key and password in response
       const { privateKey, password: _, ...userResponse } = user;

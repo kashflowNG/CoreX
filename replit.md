@@ -105,6 +105,9 @@ npx esbuild server/index.ts --platform=node --packages=external --bundle --forma
 - `PORT`: Server port (defaults to 5000)
 
 ## Changelog
+- June 19, 2025. Successfully migrated from PostgreSQL to JSON file storage system for Render compatibility
+- June 19, 2025. Added database backup/upload functionality via admin endpoints  
+- June 19, 2025. Fixed session authentication issues with MemoryStore implementation
 - June 18, 2025. Added comprehensive backup database management system with real-time data synchronization
 - June 15, 2025. Initial setup
 
