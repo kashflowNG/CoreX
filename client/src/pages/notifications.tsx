@@ -148,14 +148,14 @@ export default function Notifications() {
   // Helper function to extract transaction ID from notification and check if it's pending
   const getRelatedPendingTransaction = (notification: Notification) => {
     if (!transactions) return null;
-    
+
     // Only show cancel button for specific pending transaction notifications
     const isPendingTransactionNotification = (
       notification.title.includes("Investment Submitted") || 
       notification.title.includes("Deposit Submitted") ||
       notification.title.includes("Transaction Pending")
     ) && notification.type === 'info';
-    
+
     if (isPendingTransactionNotification) {
       // Look for pending transactions that match the timeframe of this notification
       const pendingTransactions = transactions.filter(t => t.status === 'pending');

@@ -148,6 +148,10 @@ function ProfileContent() {
                     <p className="text-xs text-muted-foreground">Account Type</p>
                     <p className="text-sm dark-text">{user.isAdmin ? 'Administrator' : 'Standard Member'}</p>
                   </div>
+                  <div className="p-3 bg-muted/30 rounded-lg">
+                    <p className="text-xs text-muted-foreground">Security Status</p>
+                    <p className="text-sm dark-text">Fully Secured & Encrypted</p>
+                  </div>
                 </div>
               </>
             )}

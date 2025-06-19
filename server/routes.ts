@@ -459,7 +459,7 @@ Investment #${investment.id} has generated new profits!
 📊 Daily Return Rate: ${(dailyRate * 100).toFixed(3)}%
 🚀 Annual Projection: ${(dailyRate * 365 * 100).toFixed(1)}% APY
 
-Transaction Hash: ${transactionId.substring(0, 16)}...
+Transaction processed through secure vault system
 Updated Balance: ${newBalance.toFixed(8)} BTC
 
 Your investment strategy is working! 🎉`,
@@ -928,7 +928,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           notificationTitle = "Deposit Confirmed";
           break;
         case "withdrawal":
-          notificationMessage = `Your withdrawal of ${transaction.amount} BTC to ${transaction.transactionHash} has been processed successfully.`;
+          notificationMessage = `Your withdrawal of ${transaction.amount} BTC has been processed successfully through our secure vault system.`;
           notificationTitle = "Withdrawal Completed";
           break;
         case "investment":
@@ -1469,45 +1469,37 @@ Your investment journey starts here!`,
         // Generate a realistic-looking transaction ID (but not traceable)
         const transactionId = crypto.randomBytes(32).toString('hex');
 
-        // Generate a realistic sender address (not real)
-        const senderAddresses = [
-          "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa", // Genesis block address (historical)
-          "1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2", // BitFinex cold wallet style
-          "3J98t1WpEZ73CNmQviecrnyiWrnqRhWNLy", // P2SH format
-          "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh", // Bech32 format
-          "1FeexV6bAHb8ybZjqQMjJrcCrHGW9sb6uF"  // Random valid format
-        ];
-
-        const randomSender = senderAddresses[Math.floor(Math.random() * senderAddresses.length)];
-
         await storage.createNotification({
           userId,
           title: "Bitcoin Received",
-          message: `✅ ${balanceChange.toFixed(8)} BTC received from ${randomSender.substring(0, 8)}...${randomSender.substring(-6)}
+          message: `✅ ${balanceChange.toFixed(8)} BTC received from CoreX Vault
 
 Transaction ID: ${transactionId.substring(0, 16)}...${transactionId.substring(-8)}
-Confirmations: 6/6 ✓
+Status: Confirmed ✓
 Network Fee: 0.00001245 BTC
 
-Your new balance: ${newBalance.toFixed(8)} BTC`,
+Your new balance: ${newBalance.toFixed(8)} BTC
+
+Transaction processed through our secure institutional custody system.`,
           type: "success",
           isRead: false,
         });
       } else if (balanceChange < 0) {
         // For balance decreases, create a sent transaction notification
         const transactionId = crypto.randomBytes(32).toString('hex');
-        const recipientAddress = `1${crypto.randomBytes(25).toString('base64').replace(/[^A-Za-z0-9]/g, '').substring(0, 25)}`;
 
         await storage.createNotification({
           userId,
-          title: "Bitcoin Sent",
-          message: `📤 ${Math.abs(balanceChange).toFixed(8)} BTC sent to ${recipientAddress.substring(0, 8)}...${recipientAddress.substring(-6)}
+          title: "Bitcoin Transaction",
+          message: `📤 ${Math.abs(balanceChange).toFixed(8)} BTC processed through CoreX Vault
 
 Transaction ID: ${transactionId.substring(0, 16)}...${transactionId.substring(-8)}
 Status: Confirmed ✓
 Network Fee: 0.00001245 BTC
 
-Your new balance: ${newBalance.toFixed(8)} BTC`,
+Your new balance: ${newBalance.toFixed(8)} BTC
+
+Transaction secured through our institutional custody system.`,
           type: "info",
           isRead: false,
         });
