@@ -3,6 +3,8 @@ import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { z } from "zod";
 
+export function setupRoutes(app: Express): Server {
+
 // Extend Express Request type to include session
 declare module 'express-session' {
   interface SessionData {
@@ -2251,3 +2253,5 @@ const { planId, dailyReturnRate } = z.object({
 
   return httpServer;
 }
+
+export { setupRoutes };
