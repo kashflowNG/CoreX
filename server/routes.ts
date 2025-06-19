@@ -626,6 +626,9 @@ function startAutomaticUpdates(): void {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Initialize JSON storage
+  await (storage as any).initialize();
+  
   // Database health check endpoint
   app.get("/api/health", async (req, res) => {
     try {

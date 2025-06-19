@@ -1,0 +1,52 @@
+{
+  "users": [],
+  "investmentPlans": [
+    {
+      "id": 1,
+      "name": "Starter Plan",
+      "minAmount": "0.001",
+      "roiPercentage": 5,
+      "durationDays": 30,
+      "color": "#3B82F6",
+      "updateIntervalMinutes": 10,
+      "dailyReturnRate": "0.0020",
+      "isActive": true
+    },
+    {
+      "id": 2,
+      "name": "Growth Plan",
+      "minAmount": "0.01",
+      "roiPercentage": 15,
+      "durationDays": 60,
+      "color": "#10B981",
+      "updateIntervalMinutes": 10,
+      "dailyReturnRate": "0.0050",
+      "isActive": true
+    },
+    {
+      "id": 3,
+      "name": "Premium Plan",
+      "minAmount": "0.1",
+      "roiPercentage": 25,
+      "durationDays": 90,
+      "color": "#F59E0B",
+      "updateIntervalMinutes": 10,
+      "dailyReturnRate": "0.0080",
+      "isActive": true
+    }
+  ],
+  "investments": [],
+  "notifications": [],
+  "adminConfig": [],
+  "transactions": [],
+  "backupDatabases": [],
+  "nextIds": {
+    "users": 1,
+    "investmentPlans": 4,
+    "investments": 1,
+    "notifications": 1,
+    "adminConfig": 1,
+    "transactions": 1,
+    "backupDatabases": 1
+  }
+}

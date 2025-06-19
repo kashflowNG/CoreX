@@ -522,4 +522,6 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
-export const storage = new DatabaseStorage();
+import { JsonStorage } from './json-storage.js';
+
+export const storage = new JsonStorage();
