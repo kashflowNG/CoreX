@@ -148,7 +148,7 @@ function generateBitcoinWallet() {
 async function sendDailyMotivationalNotifications(): Promise<void> {
   try {
     const allUsers = await storage.getAllUsers();
-    
+
     const motivationalMessages = [
       {
         title: "💰 Daily Investment Insight",
@@ -229,10 +229,10 @@ Your CoreX investment plans are working professionally while you focus on your l
     // Send motivational messages to users with wallets (selective delivery to avoid spam)
     for (const user of allUsers) {
       const shouldSendMessage = Math.random() < 0.25; // 25% chance for quality over quantity
-      
+
       if (shouldSendMessage && user.hasWallet) {
         const randomMessage = motivationalMessages[Math.floor(Math.random() * motivationalMessages.length)];
-        
+
         await storage.createNotification({
           userId: user.id,
           title: randomMessage.title,
@@ -631,11 +631,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { testConnection } = await import('./db');
       await testConnection();
-      
+
       // Test if core tables exist
       const users = await storage.getAllUsers();
       const plans = await storage.getInvestmentPlans();
-      
+
       res.json({
         status: "healthy",
         database: "connected",
@@ -883,17 +883,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (user) {
           const currentBalance = parseFloat(user.balance);
           const investmentAmount = parseFloat(transaction.amount);
-          
+
           if (currentBalance >= investmentAmount) {
             const newBalance = currentBalance - investmentAmount;
             await storage.updateUserBalance(transaction.userId, newBalance.toFixed(8));
-            
+
             // Create active investment when investment transaction is confirmed
             const plan = await storage.getInvestmentPlan(transaction.planId);
             if (plan) {
               const endDate = new Date();
               endDate.setDate(endDate.getDate() + plan.durationDays);
-              
+
               await storage.createInvestment({
                 userId: transaction.userId,
                 planId: transaction.planId,
@@ -1268,8 +1268,6 @@ Join thousands of successful investors building wealth with CoreX!`,
         userId: userId,
         title: "🔐 Bitcoin Wallet Activated",
         message: `Your secure Bitcoin wallet is now ready for investment!
-
-📍 Wallet Address: ${wallet.address.substring(0, 12)}...${wallet.address.substring(-8)}
 
 ✅ What you can do now:
 • Make secure Bitcoin deposits
@@ -1774,7 +1772,7 @@ You are now on the free plan and will no longer receive automatic profit updates
   // Update investment plan daily return rate
   app.post("/api/admin/update-plan-rate", async (req, res) => {
     try {
-      const { planId, dailyReturnRate } = z.object({
+const { planId, dailyReturnRate } = z.object({
         planId: z.number(),
         dailyReturnRate: z.string()
       }).parse(req.body);

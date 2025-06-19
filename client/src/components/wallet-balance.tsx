@@ -40,79 +40,79 @@ export function WalletBalance() {
     }
   };
 
-
   return (
-    <div className="px-6 mb-8">
-      <Card className="gradient-primary rounded-3xl p-8 relative overflow-hidden border-0 shadow-2xl animate-glow">
+    <div className="px-4 mb-6">
+      <Card className="gradient-primary rounded-2xl p-6 relative overflow-hidden border-0 shadow-xl">
         {/* Background decorative elements */}
-        <div className="absolute top-0 right-0 w-40 h-40 bg-white opacity-10 rounded-full -translate-y-20 translate-x-20 animate-pulse-slow"></div>
-        <div className="absolute bottom-0 left-0 w-32 h-32 bg-white opacity-5 rounded-full translate-y-16 -translate-x-16 animate-float"></div>
+        <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-8 rounded-full -translate-y-16 translate-x-16"></div>
+        <div className="absolute bottom-0 left-0 w-24 h-24 bg-white opacity-5 rounded-full translate-y-12 -translate-x-12"></div>
 
         {/* Security indicators */}
-        <div className="absolute top-4 right-4 flex gap-2">
-          <div className="w-8 h-8 rounded-full bg-white bg-opacity-20 flex items-center justify-center">
-            <Shield className="w-4 h-4 text-white" />
+        <div className="absolute top-3 right-3 flex gap-1.5">
+          <div className="w-6 h-6 rounded-full bg-white bg-opacity-20 flex items-center justify-center">
+            <Shield className="w-3 h-3 text-white" />
           </div>
-          <div className="w-8 h-8 rounded-full bg-white bg-opacity-20 flex items-center justify-center animate-pulse">
-            <Zap className="w-4 h-4 text-white" />
+          <div className="w-6 h-6 rounded-full bg-white bg-opacity-20 flex items-center justify-center animate-pulse">
+            <Zap className="w-3 h-3 text-white" />
           </div>
         </div>
 
-        <div className="relative z-10">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <p className="text-black text-opacity-70 text-sm font-medium mb-1">Total Portfolio Balance</p>
-              <div className="flex items-center gap-3">
-                {isBalanceVisible ? (
-                  <h2 className="text-4xl font-bold text-black tracking-tight">
-                    {formatBitcoin(user.balance)} BTC
-                  </h2>
-                ) : (
-                  <h2 className="text-4xl font-bold text-black tracking-tight">
-                    ••••••••
-                  </h2>
-                )}
+        <div className="relative z-10 space-y-4">
+          {/* Header */}
+          <div>
+            <p className="text-black text-opacity-70 text-xs font-medium mb-2">Total Portfolio Balance</p>
+            <div className="flex items-center gap-2 mb-3">
+              {isBalanceVisible ? (
+                <h2 className="text-2xl sm:text-3xl font-bold text-black tracking-tight">
+                  {formatBitcoin(user.balance)} BTC
+                </h2>
+              ) : (
+                <h2 className="text-2xl sm:text-3xl font-bold text-black tracking-tight">
+                  ••••••••
+                </h2>
+              )}
+              <div className="flex gap-1">
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="w-8 h-8 rounded-xl bg-black bg-opacity-10 hover:bg-opacity-20 transition-all"
+                  className="w-7 h-7 rounded-lg bg-black bg-opacity-10 hover:bg-opacity-20 transition-all"
                   onClick={() => setIsBalanceVisible(!isBalanceVisible)}
                 >
                   {isBalanceVisible ? (
-                    <EyeOff className="w-4 h-4 text-black" />
+                    <EyeOff className="w-3.5 h-3.5 text-black" />
                   ) : (
-                    <Eye className="w-4 h-4 text-black" />
+                    <Eye className="w-3.5 h-3.5 text-black" />
                   )}
                 </Button>
                 <Button
-                    variant="ghost"
-                    size="icon"
-                    className="w-8 h-8 rounded-xl bg-black bg-opacity-10 hover:bg-opacity-20 transition-all"
-                    onClick={handleRefreshBalance}
-                    disabled={isRefreshing}
-                  >
-                    <RefreshCw className={`w-4 h-4 text-black ${isRefreshing ? 'animate-spin' : ''}`} />
-                  </Button>
+                  variant="ghost"
+                  size="icon"
+                  className="w-7 h-7 rounded-lg bg-black bg-opacity-10 hover:bg-opacity-20 transition-all"
+                  onClick={handleRefreshBalance}
+                  disabled={isRefreshing}
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 text-black ${isRefreshing ? 'animate-spin' : ''}`} />
+                </Button>
               </div>
             </div>
+
+            {isBalanceVisible && (
+              <p className="text-black text-opacity-70 text-lg font-semibold">
+                ≈ {formatCurrency(fiatValue, currency)}
+              </p>
+            )}
           </div>
 
-          {isBalanceVisible && (
-            <p className="text-black text-opacity-70 text-xl font-semibold mb-6">
-              ≈ {formatCurrency(fiatValue, currency)}
-            </p>
-          )}
-
-          <div className="flex items-center justify-between pt-4 border-t border-black border-opacity-20">
+          {/* Footer */}
+          <div className="flex items-center justify-between pt-3 border-t border-black border-opacity-20">
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-emerald animate-pulse"></div>
-              <p className="text-black text-opacity-70 text-sm font-medium">
-                Secure Vault • Multi-Sig Protected
+              <div className="w-2 h-2 rounded-full bg-emerald animate-pulse"></div>
+              <p className="text-black text-opacity-70 text-xs font-medium">
+                Secure Vault Protected
               </p>
             </div>
             <div className="text-right">
-              <p className="text-black text-opacity-70 text-xs">Last Updated</p>
-              <p className="text-black text-sm font-medium">Just now</p>
+              <p className="text-black text-opacity-70 text-xs">Live</p>
             </div>
           </div>
         </div>

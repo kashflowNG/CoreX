@@ -365,6 +365,7 @@ export default function Notifications() {
                                   variant="outline"
                                   size="sm"
                                   className="text-red-600 border-red-300 hover:bg-red-50 dark:text-red-400 dark:border-red-700 dark:hover:bg-red-900/20 h-6 px-2 text-xs"
+                                  onClick={(e) => e.stopPropagation()}
                                 >
                                   <X className="w-3 h-3 mr-1" />
                                   Cancel

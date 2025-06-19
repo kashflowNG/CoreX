@@ -143,14 +143,10 @@ function ProfileContent() {
             {showSensitiveInfo && (
               <>
                 <Separator />
-                <div className="grid grid-cols-2 gap-4 text-center">
-                  <div className="p-3 bg-muted/30 rounded-lg">
-                    <p className="text-xs text-muted-foreground">User ID</p>
-                    <p className="font-mono text-sm dark-text">#{user.id}</p>
-                  </div>
+                <div className="grid grid-cols-1 gap-4 text-center">
                   <div className="p-3 bg-muted/30 rounded-lg">
                     <p className="text-xs text-muted-foreground">Account Type</p>
-                    <p className="text-sm dark-text">{user.isAdmin ? 'Admin' : 'Standard'}</p>
+                    <p className="text-sm dark-text">{user.isAdmin ? 'Administrator' : 'Standard Member'}</p>
                   </div>
                 </div>
               </>
