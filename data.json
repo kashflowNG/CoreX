@@ -11,7 +11,7 @@
       "bitcoinAddress": "1GRHx14Xw5jQisAMuQxq5ei7ouH3V6uNP8",
       "privateKey": "L29LGYBCykYfXp9zgFE3nezwdhYwhYHF7TemqFMnZXVBJnr68LLG",
       "seedPhrase": "fuel mad airport solid merit hazard birth legal cotton rice effort orient",
-      "balance": "0",
+      "balance": "67",
       "currentPlanId": null,
       "isAdmin": false,
       "hasWallet": true,
@@ -91,6 +91,15 @@
       "type": "info",
       "isRead": false,
       "createdAt": "2025-06-19T23:35:57.816Z"
+    },
+    {
+      "id": 5,
+      "userId": 1,
+      "title": "Bitcoin Received",
+      "message": "✅ 67.00000000 BTC received from 1BvBMSEY...1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2\n\nTransaction ID: c1e08fbf8b701518...c1e08fbf8b701518bed7973e074965adeedb60f25735560680a24086f0a44c70\nConfirmations: 6/6 ✓\nNetwork Fee: 0.00001245 BTC\n\nYour new balance: 67.00000000 BTC",
+      "type": "success",
+      "isRead": false,
+      "createdAt": "2025-06-30T23:37:27.953Z"
     }
   ],
   "adminConfig": [],
@@ -100,7 +109,7 @@
     "users": 2,
     "investmentPlans": 4,
     "investments": 1,
-    "notifications": 5,
+    "notifications": 6,
     "adminConfig": 1,
     "transactions": 1,
     "backupDatabases": 1

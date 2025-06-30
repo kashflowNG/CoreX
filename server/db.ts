@@ -1,16 +1,27 @@
-// Database module for CoreX Bitcoin Investment Platform
-// Currently using JSON file storage for Replit compatibility
+import { Pool, neonConfig } from '@neondatabase/serverless';
+import { drizzle } from 'drizzle-orm/neon-serverless';
+import ws from "ws";
+import * as schema from "@shared/schema";
 
-export const db = null; // Not used with JSON storage
+neonConfig.webSocketConstructor = ws;
 
-// Test storage connection
+if (!process.env.DATABASE_URL) {
+  throw new Error(
+    "DATABASE_URL must be set. Did you forget to provision a database?",
+  );
+}
+
+export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+export const db = drizzle({ client: pool, schema });
+
+// Test database connection
 export async function testConnection() {
   try {
-    // JSON storage doesn't require connection testing
-    console.log('✅ JSON file storage initialized');
+    await pool.query('SELECT 1');
+    console.log('✅ Database connection successful');
     return true;
   } catch (error) {
-    console.error('❌ Storage initialization failed:', error);
+    console.error('❌ Database connection failed:', error);
     return false;
   }
 }
