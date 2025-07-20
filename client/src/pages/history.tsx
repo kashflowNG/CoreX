@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { BottomNavigation } from "@/components/bottom-navigation";
 import { useCurrency } from "@/hooks/use-currency";
-import { formatBitcoinAmount } from "@/lib/bitcoin";
+// removed unused import
 import { ArrowLeft, Clock, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownLeft, DollarSign } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -141,7 +141,7 @@ export default function History() {
             {/* All transactions including investment history */}
             <div className="space-y-3">
               {/* Recent transactions from API */}
-              {transactions?.map((transaction) => {
+              {Array.isArray(transactions) && transactions?.map((transaction) => {
                 const getTransactionIcon = (type: string, status: string) => {
                   if (type === 'deposit') return <ArrowDownLeft className="w-4 h-4 text-green-500" />;
                   if (type === 'withdrawal') return <ArrowUpRight className="w-4 h-4 text-red-500" />;
@@ -157,7 +157,7 @@ export default function History() {
                 };
 
                 const getPlanName = (planId: number) => {
-                  return investmentPlans?.find(plan => plan.id === planId)?.name || `Plan ${planId}`;
+                  return investmentPlans?.find((plan: any) => plan.id === planId)?.name || `Plan ${planId}`;
                 };
 
                 return (
@@ -236,11 +236,11 @@ export default function History() {
               })}
 
               {/* Investment History as Transactions */}
-              {investments?.map((investment) => {
+              {Array.isArray(investments) && investments?.map((investment) => {
                 const currentValue = parseFloat(investment.amount) + parseFloat(investment.currentProfit);
                 const progress = calculateInvestmentProgress(new Date(investment.startDate), new Date(investment.endDate));
                 const getPlanName = (planId: number) => {
-                  return investmentPlans?.find(plan => plan.id === planId)?.name || `Plan ${planId}`;
+                  return investmentPlans?.find((plan: any) => plan.id === planId)?.name || `Plan ${planId}`;
                 };
 
                 return (
