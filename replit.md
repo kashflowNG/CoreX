@@ -70,7 +70,7 @@ CoreX is a Bitcoin investment platform that provides users with cryptocurrency w
 - **QR Code API**: QR code generation for Bitcoin addresses
 
 ### Database
-- **Replit PostgreSQL**: Replit-hosted PostgreSQL database with secure environment variables
+- **PostgreSQL**: Cloud-hosted PostgreSQL database with secure environment variables
 - **Connection**: Serverless connection using @neondatabase/serverless package
 - **Data Export/Import**: Admin interface for downloading and importing complete database backups
 
@@ -106,9 +106,9 @@ npx esbuild server/index.ts --platform=node --packages=external --bundle --forma
 - `PORT`: Server port (defaults to 5000)
 
 ## Changelog
-- June 30, 2025. Successfully migrated to Replit environment with PostgreSQL database
+- June 30, 2025. Successfully deployed with PostgreSQL database
 - June 30, 2025. Added PostgreSQL data export and import functionality for complete database backup/restore
-- June 30, 2025. Updated database configuration to use Replit's PostgreSQL service
+- June 30, 2025. Updated database configuration to use cloud PostgreSQL service
 - June 19, 2025. Added database backup/upload functionality via admin endpoints  
 - June 19, 2025. Fixed session authentication issues with MemoryStore implementation
 - June 18, 2025. Added comprehensive backup database management system with real-time data synchronization
