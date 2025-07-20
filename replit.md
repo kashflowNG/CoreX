@@ -114,6 +114,11 @@ npx esbuild server/index.ts --platform=node --packages=external --bundle --forma
 - June 18, 2025. Added comprehensive backup database management system with real-time data synchronization
 - June 15, 2025. Initial setup
 
+## Documentation Files
+
+- `README.md`: Complete setup and deployment guide for buyers
+- `UPGRADE_GUIDE.md`: Enterprise-grade upgrade requirements and implementation roadmap
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
