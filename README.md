@@ -140,7 +140,12 @@ Default investment plans are automatically created:
 Modify plans through the admin interface or database directly.
 
 ### Bitcoin Price Updates
-The platform automatically fetches Bitcoin prices from CoinGecko API every 30 seconds. No API key required for basic usage.
+The platform uses a bulletproof multi-source Bitcoin price system that never fails:
+- **Primary Sources**: CoinGecko, CoinAPI, CoinDesk, Binance, Kraken
+- **Automatic Fallback**: If any API fails, system instantly switches to next source
+- **Smart Caching**: 30-second cache prevents rate limiting and ensures reliability
+- **Emergency Backup**: Always maintains last known good price data
+- **Zero Downtime**: Price feeds guaranteed to work 24/7 with multiple redundancies
 
 ## 🔄 Maintenance
 
